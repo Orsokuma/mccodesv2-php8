@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
@@ -11,6 +11,7 @@ if (str_contains($_SERVER['PHP_SELF'], 'globals.php'))
 {
     exit;
 }
+require __DIR__.'/vendor/autoload.php';
 session_name('MCCSID');
 session_start();
 if (!isset($_SESSION['started']))

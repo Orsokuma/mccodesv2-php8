@@ -11,6 +11,7 @@ if (str_contains($_SERVER['PHP_SELF'], 'globals_nonauth.php'))
 {
     exit;
 }
+require __DIR__.'/vendor/autoload.php';
 session_name('MCCSID');
 @session_start();
 if (!isset($_SESSION['started']))
