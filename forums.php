@@ -601,13 +601,6 @@ function reply(): void
         exit;
     }
     if ($topic['ft_locked'] == 0) {
-        $u = htmlentities($ir['username'], ENT_QUOTES, 'ISO-8859-1');
-        if ($ir['donatordays'] > 0) {
-            $u =
-                '<span style="color: red;">'
-                . htmlentities($ir['username'], ENT_QUOTES,
-                    'ISO-8859-1') . '</span>';
-        }
         $_POST['fp_subject'] = strip_tags(stripslashes($_POST['fp_subject']));
         if ((strlen($_POST['fp_subject']) > 150)) {
             echo 'You can only submit a max of 150 characters.<br />&gt; <a href="forums.php">Go Back</a>';
@@ -615,52 +608,59 @@ function reply(): void
             exit;
         }
         $_POST['fp_text'] = stripslashes($_POST['fp_text']);
-        if ((strlen($_POST['fp_text']) > 65535)) {
+        if (strlen($_POST['fp_text']) > 65535) {
             echo 'You can only submit a max of 65535 characters.<br />&gt; <a href="forums.php">Go Back</a>';
             $h->endpage();
             exit;
         }
-        $post_time = time();
-        $db->insert(
-            'forum_posts',
-            [
-                'fp_topic_id' => $_GET['reply'],
-                'fp_forum_id' => $forum['ff_id'],
-                'fp_poster_id' => $userid,
-                'fp_poster_name' => $u,
-                'fp_time' => $post_time,
-                'fp_subject' => $_POST['fp_subject'],
-                'fp_text' => $_POST['fp_text'],
-                'fp_editor_name' => '',
-            ],
-        );
-        $db->update(
-            'forum_topics',
-            [
-                'ft_last_id' => $userid,
-                'ft_last_name' => $u,
-                'ft_last_time' => $post_time,
-                'ft_posts' => new EasyPlaceholder('ft_posts + 1'),
-            ],
-            ['ft_id' => $_GET['reply']],
-        );
-        $db->update(
-            'forum_forums',
-            [
-                'ff_lp_time' => $post_time,
-                'ff_posts' => new EasyPlaceholder('ff_posts + 1'),
-                'ff_lp_poster_id' => $userid,
-                'ff_lp_poster_name' => $u,
-                'ff_lp_t_id' => $_GET['reply'],
-                'ff_lp_t_name' => $topic['ft_name'],
-            ],
-            ['ff_id' => $forum['ff_id']],
-        );
-        $db->update(
-            'users',
-            ['posts' => new EasyPlaceholder('posts + 1')],
-            ['userid' => $userid],
-        );
+        $save = function () use ($db, $ir, $userid, $forum, $topic) {
+            $u = htmlentities($ir['username'], ENT_QUOTES, 'ISO-8859-1');
+            if ($ir['donatordays'] > 0) {
+                $u = '<span style="color: red;">' . $u . '</span>';
+            }
+            $post_time = time();
+            $db->insert(
+                'forum_posts',
+                [
+                    'fp_topic_id' => $_GET['reply'],
+                    'fp_forum_id' => $forum['ff_id'],
+                    'fp_poster_id' => $userid,
+                    'fp_poster_name' => $u,
+                    'fp_time' => $post_time,
+                    'fp_subject' => $_POST['fp_subject'],
+                    'fp_text' => $_POST['fp_text'],
+                    'fp_editor_name' => '',
+                ],
+            );
+            $db->update(
+                'forum_topics',
+                [
+                    'ft_last_id' => $userid,
+                    'ft_last_name' => $u,
+                    'ft_last_time' => $post_time,
+                    'ft_posts' => new EasyPlaceholder('ft_posts + 1'),
+                ],
+                ['ft_id' => $_GET['reply']],
+            );
+            $db->update(
+                'forum_forums',
+                [
+                    'ff_lp_time' => $post_time,
+                    'ff_posts' => new EasyPlaceholder('ff_posts + 1'),
+                    'ff_lp_poster_id' => $userid,
+                    'ff_lp_poster_name' => $u,
+                    'ff_lp_t_id' => $_GET['reply'],
+                    'ff_lp_t_name' => $topic['ft_name'],
+                ],
+                ['ff_id' => $forum['ff_id']],
+            );
+            $db->update(
+                'users',
+                ['posts' => new EasyPlaceholder('posts + 1')],
+                ['userid' => $userid],
+            );
+        };
+        $db->tryFlatTransaction($save);
         echo '<b>Reply Posted!</b><hr /><br />';
         $_GET['lastpost']  = 1;
         $_GET['viewtopic'] = $_GET['reply'];
@@ -775,13 +775,6 @@ You have no permission to view this forum.<br />
         $h->endpage();
         exit;
     }
-    $u = htmlentities($ir['username'], ENT_QUOTES, 'ISO-8859-1');
-    if ($ir['donatordays'] > 0) {
-        $u =
-            '<span style="color: red;">'
-            . htmlentities($ir['username'], ENT_QUOTES,
-                'ISO-8859-1') . '</span>';
-    }
     $_POST['ft_name'] = strip_tags(stripslashes($_POST['ft_name']));
     if ((strlen($_POST['ft_name']) > 255)) {
         echo 'You can only submit a max of 255 characters.<br />&gt; <a href="forums.php">Go Back</a>';
@@ -800,58 +793,66 @@ You have no permission to view this forum.<br />
         $h->endpage();
         exit;
     }
-    $post_time = time();
-    $i         = $db->insert(
-        'forum_topics',
-        [
-            'ft_forum_id' => $_GET['forum'],
-            'ft_name' => $_POST['ft_name'],
-            'ft_desc' => $_POST['ft_desc'],
-            'ft_owner_id' => $userid,
-            'ft_owner_name' => $u,
-            'ft_start_time' => $post_time,
-            'ft_last_id' => $userid,
-            'ft_last_name' => $u,
-            'ft_last_time' => $post_time,
-            'ft_posts' => 1,
-        ],
-    );
-    $db->insert(
-        'forum_posts',
-        [
-            'fp_topic_id' => $i,
-            'fp_forum_id' => $_GET['forum'],
-            'fp_poster_id' => $userid,
-            'fp_poster_name' => $u,
-            'fp_time' => $post_time,
-            'fp_subject' => $_POST['ft_desc'],
-            'fp_text' => $_POST['fp_text'],
-            'fp_editor_name' => '',
-        ],
-    );
-    $db->update(
-        'forum_forums',
-        [
-            'ff_lp_time' => $post_time,
-            'ff_posts' => new EasyPlaceholder('ff_posts + 1'),
-            'ff_topics' => new EasyPlaceholder('ff_topics + 1'),
-            'ff_lp_poster_id' => $userid,
-            'ff_lp_poster_name' => $u,
-            'ff_lp_t_id' => $i,
-            'ff_lp_t_name' => $_POST['ft_name'],
-        ],
-        ['ff_id' => $r['ff_id']],
-    );
-    $db->update(
-        'users',
-        ['posts' => new EasyPlaceholder('posts + 1')],
-        ['userid' => $userid],
-    );
+    $i    = 0;
+    $save = function () use (&$i, $db, $ir, $userid, $r) {
+        $u = htmlentities($ir['username'], ENT_QUOTES, 'ISO-8859-1');
+        if ($ir['donatordays'] > 0) {
+            $u = '<span style="color: red;">' . $u . '</span>';
+        }
+        $post_time = time();
+        $i         = $db->insert(
+            'forum_topics',
+            [
+                'ft_forum_id' => $_GET['forum'],
+                'ft_name' => $_POST['ft_name'],
+                'ft_desc' => $_POST['ft_desc'],
+                'ft_owner_id' => $userid,
+                'ft_owner_name' => $u,
+                'ft_start_time' => $post_time,
+                'ft_last_id' => $userid,
+                'ft_last_name' => $u,
+                'ft_last_time' => $post_time,
+                'ft_posts' => 1,
+            ],
+        );
+        $db->insert(
+            'forum_posts',
+            [
+                'fp_topic_id' => $i,
+                'fp_forum_id' => $_GET['forum'],
+                'fp_poster_id' => $userid,
+                'fp_poster_name' => $u,
+                'fp_time' => $post_time,
+                'fp_subject' => $_POST['ft_desc'],
+                'fp_text' => $_POST['fp_text'],
+                'fp_editor_name' => '',
+            ],
+        );
+        $db->update(
+            'forum_forums',
+            [
+                'ff_lp_time' => $post_time,
+                'ff_posts' => new EasyPlaceholder('ff_posts + 1'),
+                'ff_topics' => new EasyPlaceholder('ff_topics + 1'),
+                'ff_lp_poster_id' => $userid,
+                'ff_lp_poster_name' => $u,
+                'ff_lp_t_id' => $i,
+                'ff_lp_t_name' => $_POST['ft_name'],
+            ],
+            ['ff_id' => $r['ff_id']],
+        );
+        $db->update(
+            'users',
+            ['posts' => new EasyPlaceholder('posts + 1')],
+            ['userid' => $userid],
+        );
+    };
+    $db->tryFlatTransaction($save);
     echo '
 <b>Topic Posted!</b>
 <hr />
 <br />
-   ';
+    ';
     $_GET['viewtopic'] = $i;
     viewtopic();
 }
@@ -859,22 +860,29 @@ You have no permission to view this forum.<br />
 /**
  * @return void
  */
-function emptyallforums(): void
+function emptyallforums(bool $wrapTransaction = true): void
 {
     global $db;
-    $db->safeQuery(
-        'UPDATE forum_forums SET
-            ff_lp_time = 0,
-            ff_lp_poster_id = 0,
-            ff_lp_poster_name = \'N/A\',
-            ff_lp_t_id = 0,
-            ff_lp_t_name = \'N/A\',
-            ff_posts = 0,
-            ff_topics = 0
-        WHERE ff_posts <> 0 OR ff_topics <> 0'
-    );
-    $db->safeQuery('TRUNCATE TABLE forum_topics');
-    $db->safeQuery('TRUNCATE TABLE forum_posts');
+    $save = function () use ($db) {
+        $db->safeQuery(
+            'UPDATE forum_forums SET
+                ff_lp_time = 0,
+                ff_lp_poster_id = 0,
+                ff_lp_poster_name = \'N/A\',
+                ff_lp_t_id = 0,
+                ff_lp_t_name = \'N/A\',
+                ff_posts = 0,
+                ff_topics = 0
+            WHERE ff_posts <> 0 OR ff_topics <> 0'
+        );
+        $db->safeQuery('TRUNCATE TABLE forum_topics');
+        $db->safeQuery('TRUNCATE TABLE forum_posts');
+    };
+    if ($wrapTransaction) {
+        $db->tryFlatTransaction($save);
+    } else {
+        $save();
+    }
 }
 
 /**
@@ -882,7 +890,7 @@ function emptyallforums(): void
  */
 function quote(): void
 {
-    global $ir, $h, $db;
+    global $ir, $h;
     $_GET['viewtopic'] =
         (isset($_GET['viewtopic']) && is_numeric($_GET['viewtopic']))
             ? abs(intval($_GET['viewtopic'])) : '';
@@ -1303,21 +1311,23 @@ function move(): void
         $h->endpage();
         exit;
     }
-    $db->update(
-        'forum_topics',
-        ['ft_forum_id' => $_POST['forum']],
-        ['ft_id' => $_GET['topic']],
-    );
-    $db->update(
-        'forum_posts',
-        ['fp_forum_id' => $_POST['forum']],
-        ['fp_topic_id' => $_GET['topic']],
-    );
-    echo 'Topic moved...<br />';
-    stafflog_add("Moved Topic {$topic['ft_name']} to {$forum['ff_name']}");
-    recache_forum($topic['ft_forum_id']);
-    recache_forum($_POST['forum']);
-    echo '&gt; <a href="forums.php" title="Go Back">Go Back</a><br />';
+    $save = function () use ($db, $forum, $topic) {
+        $db->update(
+            'forum_topics',
+            ['ft_forum_id' => $_POST['forum']],
+            ['ft_id' => $_GET['topic']],
+        );
+        $db->update(
+            'forum_posts',
+            ['fp_forum_id' => $_POST['forum']],
+            ['fp_topic_id' => $_GET['topic']],
+        );
+        stafflog_add("Moved Topic {$topic['ft_name']} to {$forum['ff_name']}");
+        recache_forum($topic['ft_forum_id']);
+        recache_forum($_POST['forum']);
+    };
+    $db->tryFlatTransaction($save);
+    echo 'Topic moved...<br />&gt; <a href="forums.php" title="Go Back">Go Back</a><br />';
 }
 
 /**
@@ -1348,25 +1358,17 @@ function lock(): void
         $h->endpage();
         exit;
     }
-    if ($r['ft_locked'] == 1) {
+    $prefix = $r['ft_locked'] == 1 ? 'unl' : 'l';
+    $save   = function () use ($db, $r, $prefix) {
         $db->update(
             'forum_topics',
-            ['ft_locked' => 0],
+            ['ft_locked' => (int)(!!$r['ft_locked'])],
             ['ft_id' => $_GET['topic']],
         );
-        echo 'Topic unlocked.<br />&gt; <a href="forums.php?viewforum='
-            . $r['ft_forum_id'] . '" title="Go Back">Go Back</a>';
-        stafflog_add("Unlocked Topic {$r['ft_name']}");
-    } else {
-        $db->update(
-            'forum_topics',
-            ['ft_locked' => 1],
-            ['ft_id' => $_GET['topic']],
-        );
-        echo 'Topic locked.<br />&gt; <a href="forums.php?viewforum='
-            . $r['ft_forum_id'] . '" title="Go Back">Go Back</a>';
-        stafflog_add("Locked Topic {$r['ft_name']}");
-    }
+        stafflog_add(ucfirst($prefix) . "ocked Topic {$r['ft_name']}");
+    };
+    $db->tryFlatTransaction($save);
+    echo 'Topic ' . $prefix . 'ocked.<br />&gt; <a href="forums.php?viewforum=' . $r['ft_forum_id'] . '" title="Go Back">Go Back</a>';
 }
 
 /**
@@ -1397,25 +1399,17 @@ function pin(): void
         $h->endpage();
         exit;
     }
-    if ($r['ft_pinned'] == 1) {
+    $prefix = $r['ft_pinned'] == 1 ? 'unp' : 'p';
+    $save   = function () use ($db, $r, $prefix) {
         $db->update(
             'forum_topics',
-            ['ft_pinned' => 0],
+            ['ft_pinned' => (int)(!!$r['ft_pinned'])],
             ['ft_id' => $_GET['topic']],
         );
-        echo 'Topic unpinned.<br />&gt; <a href="forums.php?viewforum='
-            . $r['ft_forum_id'] . '" title="Go Back">Go Back</a>';
-        stafflog_add("Unpinned Topic {$r['ft_name']}");
-    } else {
-        $db->update(
-            'forum_topics',
-            ['ft_pinned' => 1],
-            ['ft_id' => $_GET['topic']],
-        );
-        echo 'Topic pinned.<br />&gt; <a href="forums.php?viewforum='
-            . $r['ft_forum_id'] . '" title="Go Back">Go Back</a>';
-        stafflog_add("Pinned Topic {$r['ft_name']}");
-    }
+        stafflog_add(ucfirst($prefix) . 'inned Topic ' . $r['ft_name']);
+    };
+    $db->tryFlatTransaction($save);
+    echo 'Topic ' . $prefix . 'inned.<br />&gt; <a href="forums.php?viewforum=' . $r['ft_forum_id'] . '" title="Go Back">Go Back</a>';
 }
 
 /**
@@ -1456,15 +1450,17 @@ function delepost(): void
         $h->endpage();
         exit;
     }
-    $db->delete(
-        'forum_posts',
-        ['fp_id' => $post['fp_id']],
-    );
+    $save = function () use ($db, $topic, $post) {
+        $db->delete(
+            'forum_posts',
+            ['fp_id' => $post['fp_id']],
+        );
+        recache_topic($post['fp_topic_id']);
+        recache_forum($post['fp_forum_id']);
+        stafflog_add("Deleted post ({$post['fp_subject']}) in {$topic['ft_name']}");
+    };
+    $db->tryFlatTransaction($save);
     echo 'Post deleted...<br />';
-    recache_topic($post['fp_topic_id']);
-    recache_forum($post['fp_forum_id']);
-    stafflog_add("Deleted post ({$post['fp_subject']}) in {$topic['ft_name']}");
-
 }
 
 /**
@@ -1489,17 +1485,20 @@ function deletopic(): void
         $h->endpage();
         exit;
     }
-    $db->delete(
-        'forum_topics',
-        ['ft_id' => $_GET['topic']],
-    );
-    $db->delete(
-        'forum_posts',
-        ['fp_topid_id' => $_GET['topic']],
-    );
+    $save = function () use ($db, $topic) {
+        $db->delete(
+            'forum_topics',
+            ['ft_id' => $_GET['topic']],
+        );
+        $db->delete(
+            'forum_posts',
+            ['fp_topid_id' => $_GET['topic']],
+        );
+        recache_forum($topic['ft_forum_id']);
+        stafflog_add("Deleted topic {$topic['ft_name']}");
+    };
+    $db->tryFlatTransaction($save);
     echo 'Deleting topic... Done<br />';
-    recache_forum($topic['ft_forum_id']);
-    stafflog_add("Deleted topic {$topic['ft_name']}");
 }
 
 /**

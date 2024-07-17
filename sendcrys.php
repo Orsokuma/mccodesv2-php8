@@ -50,30 +50,33 @@ if (!((int)$_GET['ID'])) {
         } elseif ($_POST['crystals'] > $ir['crystals']) {
             echo 'Not enough crystals to send.';
         } else {
-            $db->update(
-                'users',
-                ['crystals' => new EasyPlaceholder('crystals - ?', $_POST['crystals'])],
-                ['userid' => $userid],
-            );
-            $db->update(
-                'users',
-                ['crystals' => new EasyPlaceholder('crystals + ?', $_POST['crystals'])],
-                ['userid' => $_GET['ID']],
-            );
+            $save = function () use ($db, $userid, $ir, $er) {
+                $db->update(
+                    'users',
+                    ['crystals' => new EasyPlaceholder('crystals - ?', $_POST['crystals'])],
+                    ['userid' => $userid],
+                );
+                $db->update(
+                    'users',
+                    ['crystals' => new EasyPlaceholder('crystals + ?', $_POST['crystals'])],
+                    ['userid' => $_GET['ID']],
+                );
+                event_add($_GET['ID'],
+                    "You received {$_POST['crystals']} crystals from {$ir['username']}.");
+                $db->insert(
+                    'crystalxferlogs',
+                    [
+                        'cxFROM' => $userid,
+                        'cxTO' => $_GET['ID'],
+                        'cxAMOUNT' => $_POST['crystals'],
+                        'cxTIME' => time(),
+                        'cxFROMIP' => $ir['lastip'],
+                        'cxTOIP' => $er['lastip'],
+                    ],
+                );
+            };
+            $db->tryFlatTransaction($save);
             echo "You sent {$_POST['crystals']} crystals to {$er['username']} (ID {$_GET['ID']}).";
-            event_add($_GET['ID'],
-                "You received {$_POST['crystals']} crystals from {$ir['username']}.");
-            $db->insert(
-                'crystalxferlogs',
-                [
-                    'cxFROM' => $userid,
-                    'cxTO' => $_GET['ID'],
-                    'cxAMOUNT' => $_POST['crystals'],
-                    'cxTIME' => time(),
-                    'cxFROMIP' => $ir['lastip'],
-                    'cxTOIP' => $er['lastip'],
-                ],
-            );
         }
     } else {
         $code = request_csrf_code("sendcrys_{$_GET['ID']}");

@@ -37,15 +37,18 @@ if (isset($_POST['type'])) {
         $h->endpage();
         exit;
     }
-    if ($ir['equip_armor'] > 0) {
-        item_add($userid, $ir['equip_armor'], 1);
-    }
-    item_remove($userid, $r['itmid'], 1);
-    $db->update(
-        'users',
-        ['equip_armor' => $r['itmid']],
-        ['userid' => $userid],
-    );
+    $save = function () use ($db, $userid, $ir, $r) {
+        if ($ir['equip_armor'] > 0) {
+            item_add($userid, $ir['equip_armor'], 1);
+        }
+        item_remove($userid, $r['itmid'], 1);
+        $db->update(
+            'users',
+            ['equip_armor' => $r['itmid']],
+            ['userid' => $userid],
+        );
+    };
+    $db->tryFlatTransaction($save);
     echo "Item {$r['itmname']} equipped successfully.";
 } else {
     echo "<h3>Equip Armor</h3><hr />

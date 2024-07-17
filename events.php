@@ -111,15 +111,18 @@ foreach ($q as $r) {
 }
 echo '</table>';
 if ($ir['new_events'] > 0) {
-    $db->update(
-        'events',
-        ['evREAD' => 1],
-        ['evUSER' => $userid],
-    );
-    $db->update(
-        'users',
-        ['new_events' => 0],
-        ['userid' => $userid],
-    );
+    $save = function () use ($db, $userid) {
+        $db->update(
+            'events',
+            ['evREAD' => 1],
+            ['evUSER' => $userid],
+        );
+        $db->update(
+            'users',
+            ['new_events' => 0],
+            ['userid' => $userid],
+        );
+    };
+    $db->tryFlatTransaction($save);
 }
 $h->endpage();

@@ -145,19 +145,22 @@ function add_friend(): void
         } elseif (empty($r)) {
             echo "Oh no, you're trying to add a ghost.";
         } else {
-            $db->insert(
-                'friendslist',
-                [
-                    'fl_ADDER' => $userid,
-                    'fl_ADDED' => $_POST['ID'],
-                    'fl_COMMENT' => $_POST['comment'],
-                ],
-            );
-            $db->update(
-                'users',
-                ['friend_count' => new EasyPlaceholder('friend_count + 1')],
-                ['userid' => $_POST['ID']],
-            );
+            $save = function () use ($db, $userid) {
+                $db->insert(
+                    'friendslist',
+                    [
+                        'fl_ADDER' => $userid,
+                        'fl_ADDED' => $_POST['ID'],
+                        'fl_COMMENT' => $_POST['comment'],
+                    ],
+                );
+                $db->update(
+                    'users',
+                    ['friend_count' => new EasyPlaceholder('friend_count + 1')],
+                    ['userid' => $_POST['ID']],
+                );
+            };
+            $db->tryFlatTransaction($save);
             echo "{$r['username']} was added to your friends list.<br />
 					<a href='friendslist.php'>&gt; Back</a>";
         }
@@ -206,15 +209,18 @@ You didn\'t select a real friend.<br />
         $h->endpage();
         exit;
     }
-    $db->delete(
-        'friendslist',
-        ['fl_ID' => $r['fl_ID']],
-    );
-    $db->update(
-        'users',
-        ['friend_count' => new EasyPlaceholder('friend_count - 1')],
-        ['userid' => $r['fl_ADDED']],
-    );
+    $save = function () use ($db, $r) {
+        $db->delete(
+            'friendslist',
+            ['fl_ID' => $r['fl_ID']],
+        );
+        $db->update(
+            'users',
+            ['friend_count' => new EasyPlaceholder('friend_count - 1')],
+            ['userid' => $r['fl_ADDED']],
+        );
+    };
+    $db->tryFlatTransaction($save);
     echo "
 Friends list entry removed!<br />
 <a href='friendslist.php'>&gt; Back</a>
@@ -244,9 +250,7 @@ function change_comment(): void
         }
         $db->update(
             'friendslist',
-            [
-                'fl_COMMENT' => $_POST['comment'],
-            ],
+            ['fl_COMMENT' => $_POST['comment']],
             [
                 'fl_ID' => $_POST['f'],
                 'fl_ADDER' => $userid,

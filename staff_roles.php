@@ -108,14 +108,7 @@ class StaffRolesManagement
                 'message' => 'You didn\'t enter a valid name',
             ];
         }
-        $conf = [
-            'insert' => [
-                'cols' => ['name'],
-                'params' => ['\'' . $_POST['name'] . '\''],
-            ],
-            'update' => 'name = \'' . $_POST['name'] . '\'',
-        ];
-        $map  = [
+        $map = [
             'name' => $_POST['name'],
         ];
         foreach ($permission_columns as $column) {
@@ -138,20 +131,23 @@ class StaffRolesManagement
                 'message' => 'Another role with that name already exists',
             ];
         }
-        if (empty($role_id)) {
-            $this->db->insert(
-                'staff_roles',
-                $map,
-            );
-        } else {
-            $this->db->update(
-                'staff_roles',
-                $map,
-                ['id' => $role_id],
-            );
-        }
-        $log = $_GET['action'] . 'ed the staff role: ' . $_POST['name'];
-        stafflog_add(ucfirst($log));
+        $log  = $_GET['action'] . 'ed the staff role: ' . $_POST['name'];
+        $save = function () use ($role_id, $map, $log) {
+            if (empty($role_id)) {
+                $this->db->insert(
+                    'staff_roles',
+                    $map,
+                );
+            } else {
+                $this->db->update(
+                    'staff_roles',
+                    $map,
+                    ['id' => $role_id],
+                );
+            }
+            stafflog_add(ucfirst($log));
+        };
+        $this->db->tryFlatTransaction($save);
         $this->setRoles();
         return [
             'type' => 'success',
@@ -196,16 +192,19 @@ class StaffRolesManagement
                 'message' => 'You must confirm the desire to remove the staff role: ' . $role['name'],
             ];
         }
-        $log = 'deleted the staff role: ' . $role['name'];
-        $this->db->delete(
-            'users_roles',
-            ['staff_role' => $role_id],
-        );
-        $this->db->delete(
-            'staff_roles',
-            ['id' => $role_id],
-        );
-        stafflog_add(ucfirst($log));
+        $log  = 'deleted the staff role: ' . $role['name'];
+        $save = function () use ($role_id, $log) {
+            $this->db->delete(
+                'users_roles',
+                ['staff_role' => $role_id],
+            );
+            $this->db->delete(
+                'staff_roles',
+                ['id' => $role_id],
+            );
+            stafflog_add(ucfirst($log));
+        };
+        $this->db->tryFlatTransaction($save);
         $this->setRoles();
         return [
             'type' => 'success',
@@ -242,15 +241,18 @@ class StaffRolesManagement
                 'message' => $data['user']['username'] . ' already has the ' . $data['role']['name'] . ' role',
             ];
         }
-        $log = 'granted staff role ' . $data['role']['name'] . ' to ' . $data['user']['username'] . ' [' . $data['user']['userid'] . ']';
-        $this->db->insert(
-            'users_roles',
-            [
-                'userid' => $data['user']['userid'],
-                'staff_role' => $data['role']['name'],
-            ],
-        );
-        stafflog_add(ucfirst($log));
+        $log  = 'granted staff role ' . $data['role']['name'] . ' to ' . $data['user']['username'] . ' [' . $data['user']['userid'] . ']';
+        $save = function () use ($data, $log) {
+            $this->db->insert(
+                'users_roles',
+                [
+                    'userid' => $data['user']['userid'],
+                    'staff_role' => $data['role']['name'],
+                ],
+            );
+            stafflog_add(ucfirst($log));
+        };
+        $this->db->tryFlatTransaction($save);
         return [
             'type' => 'success',
             'message' => 'You\'ve ' . $log,
@@ -325,15 +327,18 @@ class StaffRolesManagement
                 'message' => $data['user']['username'] . ' doesn\'t have the ' . $data['role']['name'] . ' role',
             ];
         }
-        $this->db->delete(
-            'users_roles',
-            [
-                'userid' => $data['user']['userid'],
-                'staff_role' => $data['role']['id'],
-            ],
-        );
-        $log = 'revoked staff role ' . $data['role']['name'] . ' from ' . $data['user']['username'] . ' [' . $data['user']['userid'] . ']';
-        stafflog_add(ucfirst($log));
+        $log  = 'revoked staff role ' . $data['role']['name'] . ' from ' . $data['user']['username'] . ' [' . $data['user']['userid'] . ']';
+        $save = function () use ($data, $log) {
+            $this->db->delete(
+                'users_roles',
+                [
+                    'userid' => $data['user']['userid'],
+                    'staff_role' => $data['role']['id'],
+                ],
+            );
+            stafflog_add(ucfirst($log));
+        };
+        $this->db->tryFlatTransaction($save);
         return [
             'type' => 'success',
             'message' => 'You\'ve ' . $log,

@@ -31,56 +31,42 @@ if (!$_GET['ID']) {
             $h->endpage();
             exit;
         }
+        $updates = [];
         for ($enum = 1; $enum <= 3; $enum++) {
             if ($r["effect{$enum}_on"]) {
                 $einfo = unserialize($r["effect{$enum}"]);
                 if ($einfo['inc_type'] == 'percent') {
-                    if (in_array($einfo['stat'],
-                        ['energy', 'will', 'brave', 'hp'])) {
-                        $inc =
-                            round(
-                                $ir['max' . $einfo['stat']] / 100
-                                * $einfo['inc_amount']);
-                    } else {
-                        $inc =
-                            round(
-                                $ir[$einfo['stat']] / 100
-                                * $einfo['inc_amount']);
-                    }
+                    $inc = in_array($einfo['stat'], ['energy', 'will', 'brave', 'hp'])
+                        ? round($ir['max' . $einfo['stat']] / 100 * $einfo['inc_amount'])
+                        : round($ir[$einfo['stat']] / 100 * $einfo['inc_amount']);
                 } else {
                     $inc = $einfo['inc_amount'];
                 }
                 if ($einfo['dir'] == 'pos') {
-                    if (in_array($einfo['stat'],
-                        ['energy', 'will', 'brave', 'hp'])) {
-                        $ir[$einfo['stat']] =
-                            min($ir[$einfo['stat']] + $inc,
-                                $ir['max' . $einfo['stat']]);
+                    if (in_array($einfo['stat'], ['energy', 'will', 'brave', 'hp'])) {
+                        $ir[$einfo['stat']] = min($ir[$einfo['stat']] + $inc, $ir['max' . $einfo['stat']]);
                     } else {
                         $ir[$einfo['stat']] += $inc;
                     }
                 } else {
                     $ir[$einfo['stat']] = max($ir[$einfo['stat']] - $inc, 0);
                 }
-                $upd = $ir[$einfo['stat']];
-                if (in_array($einfo['stat'],
-                    ['strength', 'agility', 'guard', 'labour', 'IQ'])) {
-                    $db->update(
-                        'userstats',
-                        [$einfo['stat'] => $upd],
-                        ['userid' => $userid],
-                    );
-                } else {
-                    $db->update(
-                        'users',
-                        [$einfo['stat'] => $upd],
-                        ['userid' => $userid],
-                    );
-                }
+                $updates[$einfo['stat']] = $ir[$einfo['stat']];
             }
         }
+        $save = function () use ($db, $userid, $updates, $r) {
+            foreach ($updates as $stat => $val) {
+                $table = in_array($stat, ['strength', 'agility', 'guard', 'labour', 'IQ']) ? 'userstats' : 'users';
+                $db->update(
+                    $table,
+                    [$stat => $val],
+                    ['userid' => $userid],
+                );
+            }
+            item_remove($userid, (int)$r['inv_itemid'], 1);
+        };
+        $db->tryFlatTransaction($save);
         echo $r['itmname'] . ' used successfully!';
-        item_remove($userid, (int)$r['inv_itemid'], 1);
     }
 }
 $h->endpage();

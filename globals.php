@@ -7,36 +7,33 @@ declare(strict_types=1);
  * License: MIT License
  */
 
-if (str_contains($_SERVER['PHP_SELF'], 'globals.php'))
-{
+if (str_contains($_SERVER['PHP_SELF'], 'globals.php')) {
     exit;
 }
-require __DIR__.'/vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 session_name('MCCSID');
 session_start();
-if (!isset($_SESSION['started']))
-{
+if (!isset($_SESSION['started'])) {
     session_regenerate_id();
     $_SESSION['started'] = true;
 }
 ob_start();
-require __DIR__.'/lib/basic_error_handler.php';
+require __DIR__ . '/lib/basic_error_handler.php';
 set_error_handler('error_php');
-require __DIR__.'/global_func.php';
+require __DIR__ . '/global_func.php';
 $domain = determine_game_urlbase();
-if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] == 0)
-{
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] == 0) {
     $login_url = "https://{$domain}/login.php";
     header("Location: {$login_url}");
     exit;
 }
 $userid = (int)($_SESSION['userid'] ?? 0);
-require __DIR__.'/header.php';
+require __DIR__ . '/header.php';
 
 global $_CONFIG;
-include __DIR__.'/config.php';
+include __DIR__ . '/config.php';
 const MONO_ON = 1;
-$db = ParagonIE\EasyDB\Factory::fromArray([
+$db  = ParagonIE\EasyDB\Factory::fromArray([
     'mysql:host=' . $_CONFIG['hostname'] . ';dbname=' . $_CONFIG['database'],
     $_CONFIG['username'],
     $_CONFIG['password'],
@@ -47,7 +44,7 @@ if ($set['use_timestamps_over_crons']) {
     require_once __DIR__ . '/crons/cronless_crons.php';
 }
 global $jobquery, $housequery;
-$statement = match(true) {
+$statement = match (true) {
     isset($jobquery) && $jobquery => 'SELECT u.*, us.*, j.*, jr.*
         FROM users AS u
         INNER JOIN userstats AS us ON u.userid = us.userid
@@ -67,16 +64,15 @@ $statement = match(true) {
         WHERE u.userid = ?
         LIMIT 1',
 };
-$ir = $db->row($statement, $userid);
+$ir        = $db->row($statement, $userid);
 set_userdata_data_types($ir);
 if (empty($ir)) {
     session_unset();
     session_destroy();
-    header('Location: https://' .$domain. '/login.php');
+    header('Location: https://' . $domain . '/login.php');
     exit;
 }
-if ($ir['force_logout'] > 0)
-{
+if ($ir['force_logout'] > 0) {
     $db->update(
         'users',
         ['force_logout' => 0],
@@ -89,32 +85,26 @@ if ($ir['force_logout'] > 0)
     exit;
 }
 global $macropage;
-if ($macropage && !$ir['verified'] && $set['validate_on'] == 1)
-{
+if ($macropage && !$ir['verified'] && $set['validate_on'] == 1) {
     $macro_url = "https://{$domain}/macro1.php?refer=$macropage";
     header("Location: {$macro_url}");
     exit;
 }
 check_level();
 $h = new headers();
-if (!isset($nohdr) || !$nohdr)
-{
+if (!isset($nohdr) || !$nohdr) {
     $h->startheaders();
     $fm = money_formatter($ir['money']);
     $cm = money_formatter($ir['crystals'], '');
     $lv = date('F j, Y, g:i a', $ir['laston']);
     global $atkpage;
-    if ($atkpage)
-    {
+    if ($atkpage) {
         $h->userdata($ir, $lv, $fm, $cm, 0);
-    }
-    else
-    {
+    } else {
         $h->userdata($ir, $lv, $fm, $cm);
     }
     global $menuhide;
-    if (!$menuhide)
-    {
+    if (!$menuhide) {
         $h->menuarea();
     }
 }

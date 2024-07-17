@@ -22,12 +22,15 @@ if ($ir[$_GET['type']] == 0) {
     $h->endpage();
     exit;
 }
-item_add($userid, $ir[$_GET['type']], 1);
-$db->update(
-    'users',
-    [$_GET['type'] => 0],
-    ['userid' => $ir['userid']],
-);
+$save = function () use ($db, $ir, $userid) {
+    item_add($userid, $ir[$_GET['type']], 1);
+    $db->update(
+        'users',
+        [$_GET['type'] => 0],
+        ['userid' => $ir['userid']],
+    );
+};
+$db->tryFlatTransaction($save);
 $names =
     ['equip_primary' => 'Primary Weapon',
         'equip_secondary' => 'Secondary Weapon',

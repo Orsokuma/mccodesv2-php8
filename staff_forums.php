@@ -62,19 +62,22 @@ function addforum(): void
             $h->endpage();
             exit;
         }
-        $db->insert(
-            'forum_forums',
-            [
-                'ff_name' => $name,
-                'ff_desc' => $desc,
-                'ff_auth' => $auth,
-                'ff_lp_poster_name' => 'N/A',
-                'ff_lp_t_name' => 'N/A',
-            ],
-        );
+        $save = function () use ($db, $name, $desc, $auth) {
+            $db->insert(
+                'forum_forums',
+                [
+                    'ff_name' => $name,
+                    'ff_desc' => $desc,
+                    'ff_auth' => $auth,
+                    'ff_lp_poster_name' => 'N/A',
+                    'ff_lp_t_name' => 'N/A',
+                ],
+            );
+            stafflog_add('Created ' . $auth . ' Forum ' . $name);
+        };
+        $db->tryFlatTransaction($save);
         echo 'Forum ' . $name
             . ' added to the game.<br />&gt; <a href="staff.php">Goto Main</a>';
-        stafflog_add('Created ' . $auth . ' Forum ' . $name);
     } else {
         $csrf = request_csrf_html('staff_addforum');
         echo "
@@ -222,19 +225,22 @@ function edit_forum_do(): void
         $h->endpage();
         exit;
     }
-    $db->update(
-        'forum_forums',
-        [
-            'ff_name' => $name,
-            'ff_desc' => $desc,
-            'ff_auth' => $auth,
-        ],
-        ['ff_id' => $_POST['id']],
-    );
+    $save = function () use ($db, $name, $desc, $auth) {
+        $db->update(
+            'forum_forums',
+            [
+                'ff_name' => $name,
+                'ff_desc' => $desc,
+                'ff_auth' => $auth,
+            ],
+            ['ff_id' => $_POST['id']],
+        );
+        stafflog_add("Edited forum $name");
+    };
+    $db->tryFlatTransaction($save);
     echo 'Forum ' . $name
         . ' was edited successfully.<br />
                 &gt; <a href="staff.php">Goto Main</a>';
-    stafflog_add("Edited forum $name");
 }
 
 /**
@@ -291,29 +297,32 @@ function delforum(): void
             $h->endpage();
             exit;
         }
-        $db->update(
-            'forum_posts',
-            ['fp_forum_id' => $_POST['forum2']],
-            ['fp_forum_id' => $_POST['forum']],
-        );
-        $db->update(
-            'forum_topics',
-            ['ft_forum_id' => $_POST['forum2']],
-            ['ft_forum_id' => $_POST['forum']],
-        );
-        recache_forum($_POST['forum2']);
-        $old = $db->cell(
+        $old  = $db->cell(
             'SELECT ff_name FROM forum_forums WHERE ff_id = ?',
             $_POST['forum'],
         );
-        $db->delete(
-            'forum_forums',
-            ['ff_id' => $_POST['forum']],
-        );
+        $save = function () use ($db, $old) {
+            $db->update(
+                'forum_posts',
+                ['fp_forum_id' => $_POST['forum2']],
+                ['fp_forum_id' => $_POST['forum']],
+            );
+            $db->update(
+                'forum_topics',
+                ['ft_forum_id' => $_POST['forum2']],
+                ['ft_forum_id' => $_POST['forum']],
+            );
+            recache_forum($_POST['forum2']);
+            $db->delete(
+                'forum_forums',
+                ['ff_id' => $_POST['forum']],
+            );
+            stafflog_add("Deleted forum {$old}");
+        };
+        $db->tryFlatTransaction($save);
         echo 'Forum ' . $old
             . ' deleted.<br />
         &gt; <a href="staff.php">Goto Main</a>';
-        stafflog_add("Deleted forum {$old}");
     } else {
         $csrf = request_csrf_html('staff_delforum');
         echo "

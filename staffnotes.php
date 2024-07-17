@@ -34,21 +34,25 @@ if (empty($old)) {
     $h->endpage();
     exit;
 }
-$db->update(
-    'users',
-    ['staffnotes' => $_POST['staffnotes']],
-    ['userid' => $_POST['ID']],
-);
-$db->insert(
-    'staffnotelogs',
-    [
-        'snCHANGER' => $userid,
-        'snCHANGED' => $_POST['ID'],
-        'snTIME' => time(),
-        'snOLD' => $old,
-        'snNEW' => $_POST['staffnotes'],
-    ],
-);
+$save = function () use ($db, $userid, $old) {
+    $db->update(
+        'users',
+        ['staffnotes' => $_POST['staffnotes']],
+        ['userid' => $_POST['ID']],
+    );
+    $db->insert(
+        'staffnotelogs',
+        [
+            'snCHANGER' => $userid,
+            'snCHANGED' => $_POST['ID'],
+            'snTIME' => time(),
+            'snOLD' => $old,
+            'snNEW' => $_POST['staffnotes'],
+        ],
+    );
+    stafflog_add('Updated the staff notes on user ID ' . $_POST['ID']);
+};
+$db->tryFlatTransaction($save);
 echo '
 User notes updated!
 <br />

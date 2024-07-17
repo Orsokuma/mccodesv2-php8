@@ -46,16 +46,19 @@ if ($ir['money'] < $cost) {
 
 echo "You successfully bailed {$r['username']} out of jail for $cf.<br />
   &gt; <a href='jail.php'>Back</a>";
-$db->update(
-    'users',
-    ['money' => new EasyPlaceholder('money - ?', $cost)],
-    ['userid' => $userid],
-);
-$db->update(
-    'users',
-    ['jail' => 0],
-    ['userid' => $userid],
-);
-event_add($r['userid'],
-    "<a href='viewuser.php?u={$ir['userid']}'>{$ir['username']}</a> bailed you out of jail.");
+$save = function () use ($db, $userid, $cost, $ir, $r) {
+    $db->update(
+        'users',
+        ['money' => new EasyPlaceholder('money - ?', $cost)],
+        ['userid' => $userid],
+    );
+    $db->update(
+        'users',
+        ['jail' => 0],
+        ['userid' => $userid],
+    );
+    event_add($r['userid'],
+        "<a href='viewuser.php?u={$ir['userid']}'>{$ir['username']}</a> bailed you out of jail.");
+};
+$db->tryFlatTransaction($save);
 $h->endpage();

@@ -394,97 +394,103 @@ EOF;
     fclose($f);
     echo '... file written.<br />';
     $db = ParagonIE\EasyDB\Factory::fromArray([
-        'mysql:host='.$db_hostname.';dbname='.$db_database,
+        'mysql:host=' . $db_hostname . ';dbname=' . $db_database,
         $db_username,
-        $db_password
+        $db_password,
     ]);
     echo 'Writing base database schema...<br />';
     $fo    = fopen('dbdata.sql', 'r');
-    $query = '';
     $lines = explode("\n", fread($fo, 1024768));
     fclose($fo);
-    foreach ($lines as $line) {
-        if (!(str_starts_with($line, '--')) && trim($line) != '') {
-            $query .= $line;
-            if (!(!str_contains($line, ';'))) {
-                $db->safeQuery($query);
-                $query = '';
+    $save = function () use ($db, $lines) {
+        $query = '';
+        foreach ($lines as $line) {
+            if (!(str_starts_with($line, '--')) && trim($line) != '') {
+                $query .= $line;
+                if (!(!str_contains($line, ';'))) {
+                    $db->safeQuery($query);
+                    $query = '';
+                }
             }
         }
-    }
+    };
+    $db->tryFlatTransaction($save);
     echo '... done.<br />';
     echo 'Writing game configuration...<br />';
-    $ins_username   = htmlentities($adm_username, ENT_QUOTES, 'ISO-8859-1');
-    $salt           = generate_pass_salt();
-    $encpsw         = encode_password($adm_pswd, $salt);
-    $IP             = $_SERVER['REMOTE_ADDR'];
-    $ins_game_name  = htmlentities($game_name, ENT_QUOTES, 'ISO-8859-1');
-    $ins_game_desc  = htmlentities($description, ENT_QUOTES, 'ISO-8859-1');
-    $ins_game_owner = htmlentities($owner, ENT_QUOTES, 'ISO-8859-1');
-    $maps = [
-        [
-            'conf_name' => 'game_name',
-            'conf_value' => $ins_game_name,
-        ],
-        [
-            'conf_name' => 'game_owner',
-            'conf_value' => $ins_game_owner,
-        ],
-        [
-            'conf_name' => 'game_description',
-            'conf_value' => $ins_game_desc,
-        ],
-        [
-            'conf_name' => 'paypal',
-            'conf_value' => $paypal,
-        ],
-    ];
-    $i              = $db->insert(
-        'users',
-        [
-            'username' => $ins_username,
-            'login_name' => $ins_username,
-            'userpass' => $encpsw,
-            'pass_salt' => $salt,
-            'email' => $adm_email,
-            'gender' => $adm_gender,
-            'lastip' => $IP,
-            'lastip_signup' => $IP,
-            'signedup' => time(),
-            'level' => 1,
-            'money' => 100,
-            'user_level' => 2,
-            'energy' => 12,
-            'maxenergy' => 12,
-            'brave' => 5,
-            'maxbrave' => 5,
-            'will' => 100,
-            'maxwill' => 100,
-            'hp' => 100,
-            'maxhp' => 100,
-            'bankmoney' => -1,
-            'cybermoney' => -1,
-            'location' => 1,
-            'display_pic' => '',
-            'staffnotes' => '',
-            'voted' => '',
-            'user_notepad' => '',
-        ],
-    );
-    $db->insert(
-        'userstats',
-        [
-            'userid' => $i,
-            'strength' => 10,
-            'agility' => 10,
-            'guard' => 10,
-            'labour' => 10,
-            'IQ' => 10,
-        ],
-    );
-    foreach ($maps as $map) {
-        $db->insert('settings', $map);
-    }
+    $save = function () use ($db, $adm_username, $adm_pswd, $adm_email, $game_name, $description, $owner, $paypal, $adm_gender) {
+        $ins_username   = htmlentities($adm_username, ENT_QUOTES, 'ISO-8859-1');
+        $salt           = generate_pass_salt();
+        $encpsw         = encode_password($adm_pswd, $salt);
+        $IP             = $_SERVER['REMOTE_ADDR'];
+        $ins_game_name  = htmlentities($game_name, ENT_QUOTES, 'ISO-8859-1');
+        $ins_game_desc  = htmlentities($description, ENT_QUOTES, 'ISO-8859-1');
+        $ins_game_owner = htmlentities($owner, ENT_QUOTES, 'ISO-8859-1');
+        $maps           = [
+            [
+                'conf_name' => 'game_name',
+                'conf_value' => $ins_game_name,
+            ],
+            [
+                'conf_name' => 'game_owner',
+                'conf_value' => $ins_game_owner,
+            ],
+            [
+                'conf_name' => 'game_description',
+                'conf_value' => $ins_game_desc,
+            ],
+            [
+                'conf_name' => 'paypal',
+                'conf_value' => $paypal,
+            ],
+        ];
+        $i              = $db->insert(
+            'users',
+            [
+                'username' => $ins_username,
+                'login_name' => $ins_username,
+                'userpass' => $encpsw,
+                'pass_salt' => $salt,
+                'email' => $adm_email,
+                'gender' => $adm_gender,
+                'lastip' => $IP,
+                'lastip_signup' => $IP,
+                'signedup' => time(),
+                'level' => 1,
+                'money' => 100,
+                'user_level' => 2,
+                'energy' => 12,
+                'maxenergy' => 12,
+                'brave' => 5,
+                'maxbrave' => 5,
+                'will' => 100,
+                'maxwill' => 100,
+                'hp' => 100,
+                'maxhp' => 100,
+                'bankmoney' => -1,
+                'cybermoney' => -1,
+                'location' => 1,
+                'display_pic' => '',
+                'staffnotes' => '',
+                'voted' => '',
+                'user_notepad' => '',
+            ],
+        );
+        $db->insert(
+            'userstats',
+            [
+                'userid' => $i,
+                'strength' => 10,
+                'agility' => 10,
+                'guard' => 10,
+                'labour' => 10,
+                'IQ' => 10,
+            ],
+        );
+        foreach ($maps as $map) {
+            $db->insert('settings', $map);
+        }
+    };
+    $db->tryFlatTransaction($save);
     echo '... Done.<br />';
     $path = dirname($_SERVER['SCRIPT_FILENAME']);
     echo "

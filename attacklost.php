@@ -25,29 +25,7 @@ if (!empty($r)) {
     $expgain  = abs(($ir['level'] - $r['level']) ^ 3);
     $expgainp = $expgain / $ir['exp_needed'] * 100;
     echo " and lost $expgainp% EXP!";
-    // Figure out their EXP, 0 or decreased?
-    $newexp = max($ir['exp'] - $expgain, 0);
-    $db->update(
-        'users',
-        [
-            'exp' => $newexp,
-            'attacking' => 0,
-        ],
-        ['userid' => $userid],
-    );
-    event_add($r['userid'],
-        "<a href='viewuser.php?u=$userid'>{$ir['username']}</a> attacked you and lost.");
-    $db->insert(
-        'attacklogs',
-        [
-            'attacker' => $userid,
-            'attacked' => $r['userid'],
-            'result' => 'lost',
-            'time' => time(),
-            'stole' => 0,
-            'attacklog' => $_SESSION['attacklog'],
-        ]
-    );
+    $war = 0;
     if ($ir['gang'] > 0 && $r['gang'] > 0) {
         $war = $db->cell(
             'SELECT COUNT(*) FROM gangwars
@@ -58,11 +36,36 @@ if (!empty($r)) {
             $ir['gang'],
             $r['gang'],
         );
-        if ($war > 0) {
+    }
+    $save = function () use ($db, $userid, $ir, $r, $expgain, $war) {
+        // Figure out their EXP, 0 or decreased?
+        $newexp = max($ir['exp'] - $expgain, 0);
+        $db->update(
+            'users',
+            [
+                'exp' => $newexp,
+                'attacking' => 0,
+            ],
+            ['userid' => $userid],
+        );
+        event_add($r['userid'], "<a href='viewuser.php?u=$userid'>{$ir['username']}</a> attacked you and lost.");
+        $db->insert(
+            'attacklogs',
+            [
+                'attacker' => $userid,
+                'attacked' => $r['userid'],
+                'result' => 'lost',
+                'time' => time(),
+                'stole' => 0,
+                'attacklog' => $_SESSION['attacklog'],
+            ]
+        );
+        if ($ir['gang'] > 0 && $r['gang'] > 0 && $war > 0) {
             attack_update_gang_respect($r['gang'], $ir['gang'], 1);
             echo '<br />You lost 1 respect for your gang!';
         }
-    }
+    };
+    $db->tryFlatTransaction($save);
 } else {
     echo 'You lost to Mr. Non-existent! =O';
 }

@@ -26,8 +26,7 @@ $q = $db->run(
     WHERE u.hospital > 0
     ORDER BY u.hospital DESC'
 );
-foreach ($q as $r)
-{
+foreach ($q as $r) {
     echo "
 		<tr>
 			<td>{$r['gangPREF']} <a href='viewuser.php?u={$r['userid']}'>{$r['username']}</a> [{$r['userid']}]</td>

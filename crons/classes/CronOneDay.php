@@ -81,47 +81,50 @@ final class CronOneDay extends CronHandler
             } else {
                 $course = $course_cache[$row['course']];
             }
-            $inserted = $this->db->insert(
-                'coursesdone',
-                [
-                    'userid' => $row['userid'],
-                    'courseid' => $row['course'],
-                ]
-            );
-            if ($inserted > 0) {
-                $this->updateAffectedRowCnt(1);
-            }
-            $statement = '';
-            $params    = [];
-            $ev        = '';
-            if ($course['crSTR'] > 0) {
-                $statement .= ', us.strength = us.strength + ?';
-                $params[]  = $course['crSTR'];
-                $ev        .= ', ' . $course['crSTR'] . ' strength';
-            }
-            if ($course['crGUARD'] > 0) {
-                $statement .= ', us.guard = us.guard + ?';
-                $params[]  = $course['crGUARD'];
-                $ev        .= ', ' . $course['crGUARD'] . ' guard';
-            }
-            if ($course['crLABOUR'] > 0) {
-                $statement .= ', us.labour = us.labour + ?';
-                $params[]  = $course['crLABOUR'];
-                $ev        .= ', ' . $course['crLABOUR'] . ' labour';
-            }
-            if ($course['crAGIL'] > 0) {
-                $statement .= ', us.agility = us.agility + ?';
-                $params[]  = $course['crAGIL'];
-                $ev        .= ', ' . $course['crAGIL'] . ' agility';
-            }
-            if ($course['crIQ'] > 0) {
-                $statement .= ', us.IQ = us.IQ + ?';
-                $params[]  = $course['crIQ'];
-                $ev        .= ', ' . $course['crIQ'] . ' IQ';
-            }
-            $params[] = $row['userid'];
-            $ev       = substr($ev, 1);
-            $save     = function () use ($statement, $params, $ev, $course, $row) {
+        }
+        foreach ($users_on_course as $row) {
+            $save = function () use ($row, $course_cache) {
+                $course   = $course_cache[$row['course']];
+                $inserted = $this->db->insert(
+                    'coursesdone',
+                    [
+                        'userid' => $row['userid'],
+                        'courseid' => $row['course'],
+                    ]
+                );
+                if ($inserted > 0) {
+                    $this->updateAffectedRowCnt(1);
+                }
+                $statement = '';
+                $params    = [];
+                $ev        = '';
+                if ($course['crSTR'] > 0) {
+                    $statement .= ', us.strength = us.strength + ?';
+                    $params[]  = $course['crSTR'];
+                    $ev        .= ', ' . $course['crSTR'] . ' strength';
+                }
+                if ($course['crGUARD'] > 0) {
+                    $statement .= ', us.guard = us.guard + ?';
+                    $params[]  = $course['crGUARD'];
+                    $ev        .= ', ' . $course['crGUARD'] . ' guard';
+                }
+                if ($course['crLABOUR'] > 0) {
+                    $statement .= ', us.labour = us.labour + ?';
+                    $params[]  = $course['crLABOUR'];
+                    $ev        .= ', ' . $course['crLABOUR'] . ' labour';
+                }
+                if ($course['crAGIL'] > 0) {
+                    $statement .= ', us.agility = us.agility + ?';
+                    $params[]  = $course['crAGIL'];
+                    $ev        .= ', ' . $course['crAGIL'] . ' agility';
+                }
+                if ($course['crIQ'] > 0) {
+                    $statement .= ', us.IQ = us.IQ + ?';
+                    $params[]  = $course['crIQ'];
+                    $ev        .= ', ' . $course['crIQ'] . ' IQ';
+                }
+                $params[] = $row['userid'];
+                $ev       = substr($ev, 1);
                 /** @noinspection SqlWithoutWhere */
                 $this->basicQueryWrap(
                     'UPDATE users AS u
@@ -139,30 +142,34 @@ final class CronOneDay extends CronHandler
 
     /**
      * @return void
+     * @throws Throwable
      */
     public function updateDailyTicks(): void
     {
-        $this->basicQueryWrap(
-            'UPDATE users SET 
+        $save = function () {
+            $this->basicQueryWrap(
+                'UPDATE users SET 
                  daysingang = daysingang + IF(gang > 0, ?, 0),
                  boxes_opened = 0,
                  mailban = mailban - IF(mailban > 0, GREATEST(?, 1), 0),
                  donatordays = donatordays - IF(donatordays > 0, GREATEST(?, 1), 0),
                  cdays = cdays - IF(course > 0, GREATEST(?, 1), 0)
              WHERE gang > 0 OR mailban > 0 OR donatordays > 0 OR cdays > 0 OR boxes_opened <> 0',
-            $this->pendingIncrements,
-            $this->pendingIncrements,
-            $this->pendingIncrements,
-            $this->pendingIncrements,
-        );
-        $this->basicQueryWrap(
-            'UPDATE users SET daysold = daysold + ? WHERE user_level > 0',
-            $this->pendingIncrements,
-        );
+                $this->pendingIncrements,
+                $this->pendingIncrements,
+                $this->pendingIncrements,
+                $this->pendingIncrements,
+            );
+            $this->basicQueryWrap(
+                'UPDATE users SET daysold = daysold + ? WHERE user_level > 0',
+                $this->pendingIncrements,
+            );
+        };
+        $this->db->tryFlatTransaction($save);
     }
 
     /**
-     * @throws Exception
+     * @throws Exception|Throwable
      */
     public function updatePunishments(): void
     {
@@ -177,15 +184,18 @@ final class CronOneDay extends CronHandler
         foreach ($fedjail as $row) {
             $ids[] = $row['fed_userid'];
         }
-        if (count($ids) > 0) {
-            $statement = EasyStatement::open()
-                ->in('userid IN (?*)', $ids);
-            $this->basicQueryWrap(
-                'UPDATE users SET fedjail = 0 WHERE ' . $statement,
-                ...$statement->values(),
-            );
-        }
-        $this->basicQueryWrap('DELETE FROM fedjail WHERE fed_days <= 0');
+        $save = function () use ($ids) {
+            if (count($ids) > 0) {
+                $statement = EasyStatement::open()
+                    ->in('userid IN (?*)', $ids);
+                $this->basicQueryWrap(
+                    'UPDATE users SET fedjail = 0 WHERE ' . $statement,
+                    ...$statement->values(),
+                );
+            }
+            $this->basicQueryWrap('DELETE FROM fedjail WHERE fed_days <= 0');
+        };
+        $this->db->tryFlatTransaction($save);
     }
 
     /**

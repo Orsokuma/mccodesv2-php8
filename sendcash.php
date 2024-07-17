@@ -47,32 +47,34 @@ if (!((int)$_GET['ID'])) {
         } elseif ($_POST['money'] > $ir['money']) {
             echo 'Not enough money to send.';
         } else {
-            $db->update(
-                'users',
-                ['money' => new EasyPlaceholder('money - ?', $_POST['money'])],
-                ['userid' => $userid],
-            );
-            $db->update(
-                'users',
-                ['money' => new EasyPlaceholder('money + ?', $_POST['money'])],
-                ['userid' => $_GET['ID']],
-            );
-            echo 'You sent ' . money_formatter($_POST['money'])
-                . " to {$er['username']} (ID {$_GET['ID']}).";
-            event_add($_GET['ID'],
-                'You received ' . money_formatter($_POST['money'])
-                . " from {$ir['username']}.");
-            $db->insert(
-                'cashxferlogs',
-                [
-                    'cxFROM' => $userid,
-                    'cxTO' => $_GET['ID'],
-                    'cxAMOUNT' => $_POST['money'],
-                    'cxTIME' => time(),
-                    'cxFROMIP' => $ir['lastip'],
-                    'cxTOIP' => $er['lastip'],
-                ],
-            );
+            $save = function () use ($db, $userid, $ir, $er) {
+                $db->update(
+                    'users',
+                    ['money' => new EasyPlaceholder('money - ?', $_POST['money'])],
+                    ['userid' => $userid],
+                );
+                $db->update(
+                    'users',
+                    ['money' => new EasyPlaceholder('money + ?', $_POST['money'])],
+                    ['userid' => $_GET['ID']],
+                );
+                event_add($_GET['ID'],
+                    'You received ' . money_formatter($_POST['money'])
+                    . " from {$ir['username']}.");
+                $db->insert(
+                    'cashxferlogs',
+                    [
+                        'cxFROM' => $userid,
+                        'cxTO' => $_GET['ID'],
+                        'cxAMOUNT' => $_POST['money'],
+                        'cxTIME' => time(),
+                        'cxFROMIP' => $ir['lastip'],
+                        'cxTOIP' => $er['lastip'],
+                    ],
+                );
+            };
+            $db->tryFlatTransaction($save);
+            echo 'You sent ' . money_formatter($_POST['money']) . " to {$er['username']} (ID {$_GET['ID']}).";
         }
     } else {
         $code = request_csrf_code("sendcash_{$_GET['ID']}");

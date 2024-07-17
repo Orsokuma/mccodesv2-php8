@@ -56,24 +56,27 @@ final class CronOneMinute extends CronHandler
      */
     public function updateJailHospitalTimes(): void
     {
-        $this->basicQueryWrap(
-            'UPDATE users SET hospital = GREATEST(hospital - ?, 0), jail = GREATEST(jail - ?, 0) WHERE jail > 0 OR hospital > 0',
-            $this->pendingIncrements,
-            $this->pendingIncrements,
-        );
         $counts = $this->db->row(
             'SELECT 
             SUM(IF(hospital > 0, 1, 0)) AS hc,
             SUM(IF(jail > 0, 1, 0)) AS jc
             FROM users'
         );
-        $this->basicQueryWrap(
-            'UPDATE settings SET 
+        $save   = function () use ($counts) {
+            $this->basicQueryWrap(
+                'UPDATE users SET hospital = GREATEST(hospital - ?, 0), jail = GREATEST(jail - ?, 0) WHERE jail > 0 OR hospital > 0',
+                $this->pendingIncrements,
+                $this->pendingIncrements,
+            );
+            $this->basicQueryWrap(
+                'UPDATE settings SET 
                     conf_value = IF(conf_name = \'hospital_count\', ?, conf_value),
                     conf_value = IF(conf_name = \'jail_count\', ?, conf_value)
                 WHERE conf_name IN (\'hospital_count\', \'jail_count\')',
-            $counts['hc'],
-            $counts['jc'],
-        );
+                $counts['hc'],
+                $counts['jc'],
+            );
+        };
+        $this->db->tryFlatTransaction($save);
     }
 }

@@ -64,15 +64,18 @@ function addhouse(): void
             $h->endpage();
             exit;
         }
-        $db->insert(
-            'houses',
-            [
-                'hNAME' => $name,
-                'hWILL' => $will,
-                'hPRICE' => $price,
-            ],
-        );
-        stafflog_add('Created House ' . $name);
+        $save = function () use ($db, $price, $name, $will) {
+            $db->insert(
+                'houses',
+                [
+                    'hNAME' => $name,
+                    'hWILL' => $will,
+                    'hPRICE' => $price,
+                ],
+            );
+            stafflog_add('Created House ' . $name);
+        };
+        $db->tryFlatTransaction($save);
         echo 'House ' . $name
             . ' added to the game.<br />
                 &gt; <a href="staff.php">Go Back</a>';
@@ -211,24 +214,27 @@ function edit_house_do(): void
         $h->endpage();
         exit;
     }
-    $db->update(
-        'houses',
-        [
-            'hWILL' => $will,
-            'hNAME' => $name,
-            'hPRICE' => $price,
-        ],
-        ['hID' => $_POST['ID']],
-    );
-    $db->update(
-        'users',
-        [
-            'maxwill' => $will,
-            'will' => new EasyPlaceholder('LEAST(will, ?)', $will),
-        ],
-        ['maxwill' => $oldwill],
-    );
-    stafflog_add('Edited house ' . $name);
+    $save = function () use ($db, $name, $will, $price, $oldwill) {
+        $db->update(
+            'houses',
+            [
+                'hWILL' => $will,
+                'hNAME' => $name,
+                'hPRICE' => $price,
+            ],
+            ['hID' => $_POST['ID']],
+        );
+        $db->update(
+            'users',
+            [
+                'maxwill' => $will,
+                'will' => new EasyPlaceholder('LEAST(will, ?)', $will),
+            ],
+            ['maxwill' => $oldwill],
+        );
+        stafflog_add('Edited house ' . $name);
+    };
+    $db->tryFlatTransaction($save);
     echo 'House ' . $name
         . ' was edited successfully.<br />
                 &gt; <a href="staff_houses.php?action=edithouse">Go Back</a>';
@@ -286,20 +292,23 @@ function delhouse(): void
             $h->endpage();
             exit;
         }
-        $db->update(
-            'users',
-            [
-                'money' => new EasyPlaceholder('money + ?', $old['hPRICE']),
-                'maxwill' => 100,
-                'will' => new EasyPlaceholder('LEAST(100, will)'),
-            ],
-            ['maxwill' => $old['hWILL']],
-        );
-        $db->delete(
-            'houses',
-            ['hID' => $old['hID']],
-        );
-        stafflog_add('Deleted house ' . $old['hNAME']);
+        $save = function () use ($db, $old) {
+            $db->update(
+                'users',
+                [
+                    'money' => new EasyPlaceholder('money + ?', $old['hPRICE']),
+                    'maxwill' => 100,
+                    'will' => new EasyPlaceholder('LEAST(100, will)'),
+                ],
+                ['maxwill' => $old['hWILL']],
+            );
+            $db->delete(
+                'houses',
+                ['hID' => $old['hID']],
+            );
+            stafflog_add('Deleted house ' . $old['hNAME']);
+        };
+        $db->tryFlatTransaction($save);
         echo 'House ' . $old['hNAME']
             . ' deleted.<br />
                 &gt; <a href="staff_houses.php?action=delhouse">Go Back</a>';

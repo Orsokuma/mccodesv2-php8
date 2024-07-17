@@ -164,18 +164,21 @@ function give_dp_submit(): void
                  u.donatordays = u.donatordays + 115';
         $d   = 115;
     }
-    $db->safeQuery(
-        'UPDATE users AS u
+    $save = function () use ($db, $don, $d) {
+        $db->safeQuery(
+            'UPDATE users AS u
              INNER JOIN userstats AS us
              ON u.userid = us.userid
              SET ' . $don . '
              WHERE u.userid = ?',
-        [$_POST['user']],
-    );
-    event_add($_POST['user'],
-        "You were given one {$d}-day donator pack (Pack {$_POST['type']}) from the administration.");
-    stafflog_add(
-        "Gave ID {$_POST['user']} a {$d}-day donator pack (Pack {$_POST['type']})");
+            [$_POST['user']],
+        );
+        event_add($_POST['user'],
+            "You were given one {$d}-day donator pack (Pack {$_POST['type']}) from the administration.");
+        stafflog_add(
+            "Gave ID {$_POST['user']} a {$d}-day donator pack (Pack {$_POST['type']})");
+    };
+    $db->tryFlatTransaction($save);
     echo 'User given a DP.<br />
     &gt; <a href="staff.php">Go Home</a>';
     $h->endpage();
@@ -210,7 +213,6 @@ function massmailer(): void
         staff_csrf_stdverify('staff_massmailer',
             'staff_special.php?action=massmailer');
         $recipients = [];
-        $subj       = 'Mass mail from Administrator';
         if ($_POST['recipients'] === 'all') {
             $get_users = $db->run(
                 'SELECT userid FROM users WHERE user_level > 0',
@@ -269,26 +271,31 @@ function massmailer(): void
             $h->endpage();
             exit;
         }
-        $uc        = [];
-        $send_time = time();
-        foreach ($recipients as $recipient) {
-            $db->insert(
-                'mail',
-                [
-                    'mail_to' => $recipient,
-                    'mail_time' => $send_time,
-                    'mail_subject' => $subj,
-                    'mail_text' => $_POST['text'],
-                ],
+        $uc   = [];
+        $save = function () use ($db, $recipients, &$uc) {
+            $subj      = 'Mass mail from Administrator';
+            $send_time = time();
+            foreach ($recipients as $recipient) {
+                $db->insert(
+                    'mail',
+                    [
+                        'mail_to' => $recipient,
+                        'mail_time' => $send_time,
+                        'mail_subject' => $subj,
+                        'mail_text' => $_POST['text'],
+                    ],
+                );
+                $uc[] = $recipient;
+            }
+            $statement = EasyStatement::open()
+                ->in('userid IN (?*)', $uc);
+            $db->safeQuery(
+                'UPDATE users SET new_mail = new_mail + 1 WHERE ' . $statement,
+                $statement->values(),
             );
-            $uc[] = $recipient;
-        }
-        $statement = EasyStatement::open()
-            ->in('userid IN (?*)', $uc);
-        $db->safeQuery(
-            'UPDATE users SET new_mail = new_mail + 1 WHERE ' . $statement,
-            $statement->values(),
-        );
+            stafflog_add('Sent a mass mail');
+        };
+        $db->tryFlatTransaction($save);
         echo '
         Sent ' . count($uc)
             . ' Mails.

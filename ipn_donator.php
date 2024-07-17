@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
  *
@@ -8,33 +9,33 @@ declare(strict_types=1);
  */
 
 use ParagonIE\EasyDB\EasyPlaceholder;
+
 global $db, $set;
 require_once('globals_nonauth.php');
 
 // read the post from PayPal system and add 'cmd'
 $req = 'cmd=_notify-validate';
 
-foreach ($_POST as $key => $value)
-{
+foreach ($_POST as $key => $value) {
     $value = urlencode(stripslashes($value));
-    $req .= "&$key=$value";
+    $req   .= "&$key=$value";
 }
 
 // post back to PayPal system to validate
 $header = "POST /cgi-bin/webscr HTTP/1.0\r\n";
 $header .= "Content-Type: application/x-www-form-urlencoded\r\n";
 $header .= 'Content-Length: ' . strlen($req) . "\r\n\r\n";
-$fp = fsockopen('www.paypal.com', 80, $errno, $errstr, 30);
+$fp     = fsockopen('www.paypal.com', 80, $errno, $errstr, 30);
 
 // assign posted variables to local variables
-$item_name = $_POST['item_name'];
-$item_number = $_POST['item_number'];
-$payment_status = $_POST['payment_status'];
-$payment_amount = $_POST['mc_gross'];
+$item_name        = $_POST['item_name'];
+$item_number      = $_POST['item_number'];
+$payment_status   = $_POST['payment_status'];
+$payment_amount   = $_POST['mc_gross'];
 $payment_currency = $_POST['mc_currency'];
-$txn_id = $_POST['txn_id'];
-$receiver_email = $_POST['receiver_email'];
-$payer_email = $_POST['payer_email'];
+$txn_id           = $_POST['txn_id'];
+$receiver_email   = $_POST['receiver_email'];
+$payer_email      = $_POST['payer_email'];
 
 if ($fp) {
     fputs($fp, $header . $req);
@@ -99,97 +100,100 @@ if ($fp) {
             // grab IDs
             $buyer = abs((int)$packr[3]);
             $for   = $buyer;
-            $t = '';
             // all seems to be in order, credit it.
-            if ($pack == 1) {
-                $db->update(
-                    'users',
+            $save = function () use ($db, $pack, $buyer, $for, $txn_id, $payment_amount) {
+                $t = '';
+                switch ($pack) {
+                    case 1:
+                        $db->update(
+                            'users',
+                            [
+                                'money' => new EasyPlaceholder('money + 5000'),
+                                'crystals' => new EasyPlaceholder('crystals + 50'),
+                                'donatordays' => new EasyPlaceholder('donatordays + 30'),
+                            ],
+                            ['userid' => $for],
+                        );
+                        $db->update(
+                            'userstats',
+                            ['IQ' => new EasyPlaceholder('IQ + 50')],
+                            ['userid' => $for],
+                        );
+                        $t = 'standard';
+                        break;
+                    case 2:
+                        $db->update(
+                            'users',
+                            [
+                                'crystals' => new EasyPlaceholder('crystals + 100'),
+                                'donatordays' => new EasyPlaceholder('donatordays + 30'),
+                            ],
+                            ['userid' => $for],
+                        );
+                        $t = 'crystals';
+                        break;
+                    case 3:
+                        $db->update(
+                            'users',
+                            ['donatordays' => new EasyPlaceholder('donatordays + 30')],
+                            ['userid' => $for],
+                        );
+                        $db->update(
+                            'userstats',
+                            ['IQ' => new EasyPlaceholder('IQ + 50')],
+                            ['userid' => $for],
+                        );
+                        $t = 'iq';
+                        break;
+                    case 4:
+                        $db->update(
+                            'users',
+                            [
+                                'money' => new EasyPlaceholder('money + 15000'),
+                                'crystals' => new EasyPlaceholder('crystals + 75'),
+                                'donatordays' => new EasyPlaceholder('donatordays + 55'),
+                            ],
+                            ['userid' => $for],
+                        );
+                        $db->update(
+                            'userstats',
+                            ['IQ' => new EasyPlaceholder('IQ + 80')],
+                            ['userid' => $for],
+                        );
+                        $t = 'fivedollars';
+                        break;
+                    case 5:
+                        $db->update(
+                            'users',
+                            [
+                                'money' => new EasyPlaceholder('money + 35000'),
+                                'crystals' => new EasyPlaceholder('crystals + 160'),
+                                'donatordays' => new EasyPlaceholder('donatordays + 115'),
+                            ],
+                            ['userid' => $for],
+                        );
+                        $db->update(
+                            'userstats',
+                            ['IQ' => new EasyPlaceholder('IQ + 180')],
+                            ['userid' => $for],
+                        );
+                        $t = 'tendollars';
+                        break;
+                }
+                // process payment
+                event_add($for,
+                    "Your \${$payment_amount} Pack {$pack} Donator Pack has been successfully credited to you.");
+                $db->insert(
+                    'dps_accepted',
                     [
-                        'money' => new EasyPlaceholder('money + 5000'),
-                        'crystals' => new EasyPlaceholder('crystals + 50'),
-                        'donatordays' => new EasyPlaceholder('donatordays + 30'),
-                    ],
-                    ['userid' => $for],
+                        'dpBUYER' => $buyer,
+                        'dpFOR' => $for,
+                        'dpTYPE' => $t,
+                        'dpTIME' => time(),
+                        'dpTXN' => $txn_id,
+                    ]
                 );
-                $db->update(
-                    'userstats',
-                    ['IQ' => new EasyPlaceholder('IQ + 50')],
-                    ['userid' => $for],
-                );
-                $d = 30;
-                $t = 'standard';
-            } elseif ($pack == 2) {
-                $db->update(
-                    'users',
-                    [
-                        'crystals' => new EasyPlaceholder('crystals + 100'),
-                        'donatordays' => new EasyPlaceholder('donatordays + 30'),
-                    ],
-                    ['userid' => $for],
-                );
-                $d = 30;
-                $t = 'crystals';
-            } elseif ($pack == 3) {
-                $db->update(
-                    'users',
-                    ['donatordays' => new EasyPlaceholder('donatordays + 30')],
-                    ['userid' => $for],
-                );
-                $db->update(
-                    'userstats',
-                    ['IQ' => new EasyPlaceholder('IQ + 50')],
-                    ['userid' => $for],
-                );
-                $d = 30;
-                $t = 'iq';
-            } elseif ($pack == 4) {
-                $db->update(
-                    'users',
-                    [
-                        'money' => new EasyPlaceholder('money + 15000'),
-                        'crystals' => new EasyPlaceholder('crystals + 75'),
-                        'donatordays' => new EasyPlaceholder('donatordays + 55'),
-                    ],
-                    ['userid' => $for],
-                );
-                $db->update(
-                    'userstats',
-                    ['IQ' => new EasyPlaceholder('IQ + 80')],
-                    ['userid' => $for],
-                );
-                $d = 55;
-                $t = 'fivedollars';
-            } elseif ($pack == 5) {
-                $db->update(
-                    'users',
-                    [
-                        'money' => new EasyPlaceholder('money + 35000'),
-                        'crystals' => new EasyPlaceholder('crystals + 160'),
-                        'donatordays' => new EasyPlaceholder('donatordays + 115'),
-                    ],
-                    ['userid' => $for],
-                );
-                $db->update(
-                    'userstats',
-                    ['IQ' => new EasyPlaceholder('IQ + 180')],
-                    ['userid' => $for],
-                );
-                $d = 115;
-                $t = 'tendollars';
-            }
-            // process payment
-            event_add($for,
-                "Your \${$payment_amount} Pack {$pack} Donator Pack has been successfully credited to you.");
-            $db->insert(
-                'dps_accepted',
-                [
-                    'dpBUYER' => $buyer,
-                    'dpFOR' => $for,
-                    'dpTYPE' => $t,
-                    'dpTIME' => time(),
-                    'dpTXN' => $txn_id,
-                ]
-            );
+            };
         }
     }
 

@@ -35,27 +35,30 @@ if (isset($_POST['submit']) && isset($_POST['desc'])
         $h->endpage();
         exit;
     }
-    $name = htmlentities(stripslashes($_POST['name']), ENT_QUOTES, 'ISO-8859-1');
-    $desc = htmlentities(stripslashes($_POST['desc']), ENT_QUOTES, 'ISO-8859-1');
-    $i    = $db->insert(
-        'gangs',
-        [
-            'gangNAME' => $name,
-            'gangDESC' => $desc,
-            'gangRESPECT' => 100,
-            'gangPRESIDENT' => $userid,
-            'gangVICEPRES' => $userid,
-            'gangCAPACITY' => 5,
-        ],
-    );
-    $db->update(
-        'users',
-        [
-            'gang' => $i,
-            'money' => new EasyPlaceholder('money - ?', $cg_price),
-        ],
-        ['userid' => $userid],
-    );
+    $save = function () use ($db, $userid, $cg_price) {
+        $name = htmlentities(stripslashes($_POST['name']), ENT_QUOTES, 'ISO-8859-1');
+        $desc = htmlentities(stripslashes($_POST['desc']), ENT_QUOTES, 'ISO-8859-1');
+        $i    = $db->insert(
+            'gangs',
+            [
+                'gangNAME' => $name,
+                'gangDESC' => $desc,
+                'gangRESPECT' => 100,
+                'gangPRESIDENT' => $userid,
+                'gangVICEPRES' => $userid,
+                'gangCAPACITY' => 5,
+            ],
+        );
+        $db->update(
+            'users',
+            [
+                'gang' => $i,
+                'money' => new EasyPlaceholder('money - ?', $cg_price),
+            ],
+            ['userid' => $userid],
+        );
+    };
+    $db->tryFlatTransaction($save);
     echo 'Gang created!';
 } else {
     $code = request_csrf_code('creategang');

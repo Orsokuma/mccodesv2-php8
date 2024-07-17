@@ -160,29 +160,32 @@ function new_crime_submit(): void
             exit;
         }
     }
-    $db->insert(
-        'crimes',
-        [
-            'crimeNAME' => $_POST['name'],
-            'crimeBRAVE' => $_POST['brave'],
-            'crimePERCFORM' => $_POST['percform'],
-            'crimeSUCCESSMUNY' => $_POST['money'],
-            'crimeSUCCESSCRYS' => $_POST['crys'],
-            'crimeSUCCESSITEM' => $_POST['item'],
-            'crimeGROUP' => $_POST['group'],
-            'crimeITEXT' => $_POST['itext'],
-            'crimeSTEXT' => $_POST['stext'],
-            'crimeFTEXT' => $_POST['ftext'],
-            'crimeJTEXT' => $_POST['jtext'],
-            'crimeJAILTIME' => $_POST['jailtime'],
-            'crimeJREASON' => $_POST['jailreason'],
-            'crimeXP' => $_POST['crimexp'],
-        ],
-    );
+    $save = function () use ($db) {
+        $db->insert(
+            'crimes',
+            [
+                'crimeNAME' => $_POST['name'],
+                'crimeBRAVE' => $_POST['brave'],
+                'crimePERCFORM' => $_POST['percform'],
+                'crimeSUCCESSMUNY' => $_POST['money'],
+                'crimeSUCCESSCRYS' => $_POST['crys'],
+                'crimeSUCCESSITEM' => $_POST['item'],
+                'crimeGROUP' => $_POST['group'],
+                'crimeITEXT' => $_POST['itext'],
+                'crimeSTEXT' => $_POST['stext'],
+                'crimeFTEXT' => $_POST['ftext'],
+                'crimeJTEXT' => $_POST['jtext'],
+                'crimeJAILTIME' => $_POST['jailtime'],
+                'crimeJREASON' => $_POST['jailreason'],
+                'crimeXP' => $_POST['crimexp'],
+            ],
+        );
+        stafflog_add('Created crime ' . $_POST['name']);
+    };
+    $db->tryFlatTransaction($save);
     echo 'Crime (' . $_POST['name']
         . ') created.<br />
             &gt; <a href="staff.php">Goto Main</a>';
-    stafflog_add('Created crime ' . $_POST['name']);
 }
 
 /**
@@ -367,30 +370,33 @@ function edit_crime_sub(): void
             exit;
         }
     }
-    $db->update(
-        'crimes',
-        [
-            'crimeNAME' => $_POST['crimeNAME'],
-            'crimeBRAVE' => $_POST['crimeBRAVE'],
-            'crimePERCFORM' => $_POST['crimePERCFORM'],
-            'crimeSUCCESSMUNY' => $_POST['crimeSUCCESSMUNY'],
-            'crimeSUCCESSCRYS' => $_POST['crimeSUCCESSCRYS'],
-            'crimeSUCCESSITEM' => $_POST['crimeSUCCESSITEM'],
-            'crimeGROUP' => $_POST['crimeGROUP'],
-            'crimeITEXT' => $_POST['crimeITEXT'],
-            'crimeSTEXT' => $_POST['crimeSTEXT'],
-            'crimeFTEXT' => $_POST['crimeFTEXT'],
-            'crimeJTEXT' => $_POST['crimeJTEXT'],
-            'crimeJAILTIME' => $_POST['crimeJAILTIME'],
-            'crimeJREASON' => $_POST['crimeJREASON'],
-            'crimeXP' => $_POST['crimeXP'],
-        ],
-        ['crimeID' => $_POST['crimeID']]
-    );
+    $save = function () use ($db) {
+        $db->update(
+            'crimes',
+            [
+                'crimeNAME' => $_POST['crimeNAME'],
+                'crimeBRAVE' => $_POST['crimeBRAVE'],
+                'crimePERCFORM' => $_POST['crimePERCFORM'],
+                'crimeSUCCESSMUNY' => $_POST['crimeSUCCESSMUNY'],
+                'crimeSUCCESSCRYS' => $_POST['crimeSUCCESSCRYS'],
+                'crimeSUCCESSITEM' => $_POST['crimeSUCCESSITEM'],
+                'crimeGROUP' => $_POST['crimeGROUP'],
+                'crimeITEXT' => $_POST['crimeITEXT'],
+                'crimeSTEXT' => $_POST['crimeSTEXT'],
+                'crimeFTEXT' => $_POST['crimeFTEXT'],
+                'crimeJTEXT' => $_POST['crimeJTEXT'],
+                'crimeJAILTIME' => $_POST['crimeJAILTIME'],
+                'crimeJREASON' => $_POST['crimeJREASON'],
+                'crimeXP' => $_POST['crimeXP'],
+            ],
+            ['crimeID' => $_POST['crimeID']]
+        );
+        stafflog_add('Edited crime ' . $_POST['crimeNAME']);
+    };
+    $db->tryFlatTransaction($save);
     echo 'Crime (' . $_POST['crimeNAME']
         . ') edited.<br />
             &gt; <a href="staff.php">Goto Main</a>';
-    stafflog_add('Edited crime ' . $_POST['crimeNAME']);
 
 }
 
@@ -484,14 +490,17 @@ function delcrime(): void
                 $h->endpage();
                 exit;
             }
-            $db->delete(
-                'crimes',
-                ['crimeID' => $target],
-            );
+            $save = function () use ($db, $target, $itemi) {
+                $db->delete(
+                    'crimes',
+                    ['crimeID' => $target],
+                );
+                stafflog_add('Deleted crime ' . $itemi['crimeNAME']);
+            };
+            $db->tryFlatTransaction($save);
             echo 'Crime (' . $itemi['crimeNAME']
                 . ') Deleted.<br />
                 &gt; <a href="staff.php">Goto Main.</a>';
-            stafflog_add('Deleted crime ' . $itemi['crimeNAME']);
             break;
     }
 }
@@ -551,16 +560,19 @@ function new_crimegroup_submit(): void
         $h->endpage();
         exit;
     }
-    $db->insert(
-        'crimegroups',
-        [
-            'cgNAME' => $_POST['cgNAME'],
-            'cgORDER' => $_POST['cgORDER'],
-        ],
-    );
+    $save = function () use ($db) {
+        $db->insert(
+            'crimegroups',
+            [
+                'cgNAME' => $_POST['cgNAME'],
+                'cgORDER' => $_POST['cgORDER'],
+            ],
+        );
+        stafflog_add('Created Crime Group ' . $_POST['cgNAME']);
+    };
+    $db->tryFlatTransaction($save);
     echo 'Crime Group created!<br />
     &gt; <a href="staff_crimes.php?action=newcrimegroup">Go Back</a>';
-    stafflog_add('Created Crime Group ' . $_POST['cgNAME']);
 }
 
 /**
@@ -662,17 +674,20 @@ function edit_crimegroup_sub(): void
             $h->endpage();
             exit;
         }
-        $db->update(
-            'crimegroups',
-            [
-                'cgNAME' => $_POST['cgNAME'],
-                'cgORDER' => $_POST['cgORDER'],
-            ],
-            ['cgID' => $_POST['cgID']],
-        );
+        $save = function () use ($db) {
+            $db->update(
+                'crimegroups',
+                [
+                    'cgNAME' => $_POST['cgNAME'],
+                    'cgORDER' => $_POST['cgORDER'],
+                ],
+                ['cgID' => $_POST['cgID']],
+            );
+            stafflog_add("Edited Crime Group {$_POST['cgNAME']}");
+        };
+        $db->tryFlatTransaction($save);
         echo 'Crime Group edited<br />
         &gt; <a href="staff_crimes.php?action=editcrimegroup">Go Back</a>';
-        stafflog_add("Edited Crime Group {$_POST['cgNAME']}");
     }
 }
 
@@ -793,16 +808,19 @@ function delete_crimegroup_do(): void
         'SELECT cgNAME FROM crimegroups WHERE cgID = ?',
         $target,
     );
-    $db->delete(
-        'crimegroups',
-        ['cgID' => $target],
-    );
-    $db->update(
-        'crimes',
-        ['crimeGROUP' => $target2],
-        ['crimeGROUP' => $target],
-    );
-    stafflog_add("Deleted crime group {$itemi['cgNAME']}");
+    $save  = function () use ($db, $target, $target2, $itemi) {
+        $db->delete(
+            'crimegroups',
+            ['cgID' => $target],
+        );
+        $db->update(
+            'crimes',
+            ['crimeGROUP' => $target2],
+            ['crimeGROUP' => $target],
+        );
+        stafflog_add("Deleted crime group {$itemi['cgNAME']}");
+    };
+    $db->tryFlatTransaction($save);
     echo 'Crime Group deleted.<br />
         &gt; <a href="staff.php">Goto Main</a>';
 }
@@ -866,16 +884,19 @@ function reorder_crimegroups(): void
             $h->endpage();
             exit;
         }
-        foreach ($_POST as $k => $v) {
-            $cg = str_replace('order', '', $k);
-            $db->update(
-                'crimegroups',
-                ['cgORDER' => $v],
-                ['cgID' => $cg],
-            );
-        }
+        $save = function () use ($db) {
+            foreach ($_POST as $k => $v) {
+                $cg = str_replace('order', '', $k);
+                $db->update(
+                    'crimegroups',
+                    ['cgORDER' => $v],
+                    ['cgID' => $cg],
+                );
+            }
+            stafflog_add('Reordered crime groups');
+        };
+        $db->tryFlatTransaction($save);
         echo 'Crime group order updated!';
-        stafflog_add('Reordered crime groups');
     } else {
         $rows      = $db->run(
             'SELECT cgID, cgNAME FROM crimegroups ORDER BY cgORDER, cgID'

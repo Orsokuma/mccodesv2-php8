@@ -188,18 +188,21 @@ function update_basic_settings(): void
         $_POST['willp_item'] = 0;
         echo 'Please remember to make a will potion item and set it<br />';
     }
-    foreach ($_POST as $k => $v) {
-        $db->update(
-            'settings',
-            ['conf_value' => $v],
-            ['conf_name' => $k],
-        );
-    }
+    $save = function () use ($db) {
+        foreach ($_POST as $k => $v) {
+            $db->update(
+                'settings',
+                ['conf_value' => $v],
+                ['conf_name' => $k],
+            );
+        }
+        stafflog_add('Updated the basic game settings');
+    };
+    $db->tryFlatTransaction($save);
     echo '
         Settings updated!<br />
         &gt; <a href="staff.php?action=basicset">Go Back</a>
            ';
-    stafflog_add('Updated the basic game settings');
 }
 
 /**
@@ -240,16 +243,19 @@ function announcements(): void
     if (!empty($_POST['text'])) {
         staff_csrf_stdverify('staff_announcement', 'staff.php?action=announce');
         $_POST['text'] = htmlentities(stripslashes($_POST['text']), ENT_QUOTES, 'ISO-8859-1');
-        $db->insert(
-            'announcements',
-            [
-                'a_text' => $_POST['text'],
-                'a_time' => time(),
-            ],
-        );
-        $db->safeQuery(
-            'UPDATE users SET new_announcements = new_announcements + 1',
-        );
+        $save          = function () use ($db) {
+            $db->insert(
+                'announcements',
+                [
+                    'a_text' => $_POST['text'],
+                    'a_time' => time(),
+                ],
+            );
+            $db->safeQuery(
+                'UPDATE users SET new_announcements = new_announcements + 1',
+            );
+        };
+        $db->tryFlatTransaction($save);
         echo '
         Announcement added!<br />
         &gt; <a href="staff.php">Back</a>

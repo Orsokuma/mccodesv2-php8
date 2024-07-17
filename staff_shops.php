@@ -89,15 +89,18 @@ function new_shop_submit(): void
             $h->endpage();
             exit;
         }
-        $db->insert(
-            'shops',
-            [
-                'shopLOCATION' => $_POST['sl'],
-                'shopNAME' => $_POST['sn'],
-                'shopDESCRIPTION' => $_POST['sd'],
-            ],
-        );
-        stafflog_add('Added Shop ' . $_POST['sn']);
+        $save = function () use ($db) {
+            $db->insert(
+                'shops',
+                [
+                    'shopLOCATION' => $_POST['sl'],
+                    'shopNAME' => $_POST['sn'],
+                    'shopDESCRIPTION' => $_POST['sd'],
+                ],
+            );
+            stafflog_add('Added Shop ' . $_POST['sn']);
+        };
+        $db->tryFlatTransaction($save);
         echo 'The ' . $_POST['sn']
             . ' Shop was successfully added to the game.<br />
                 &gt; <a href="staff.php">Go Home</a>';
@@ -159,16 +162,19 @@ function new_stock_submit(): void
         $h->endpage();
         exit;
     }
-    $db->insert(
-        'shopitems',
-        [
-            'sitemSHOP' => $_POST['shop'],
-            'sitemITEMID' => $_POST['item'],
-        ],
-    );
-    stafflog_add(
-        'Added Item ID ' . $_POST['item'] . ' to shop ID '
-        . $_POST['shop']);
+    $save = function () use ($db) {
+        $db->insert(
+            'shopitems',
+            [
+                'sitemSHOP' => $_POST['shop'],
+                'sitemITEMID' => $_POST['item'],
+            ],
+        );
+        stafflog_add(
+            'Added Item ID ' . $_POST['item'] . ' to shop ID '
+            . $_POST['shop']);
+    };
+    $db->tryFlatTransaction($save);
     echo 'Item ID ' . $_POST['item'] . ' was successfully added to shop ID '
         . $_POST['shop']
         . '<br />
@@ -198,15 +204,18 @@ function delshop(): void
             $h->endpage();
             exit;
         }
-        $db->delete(
-            'shops',
-            ['shopID' => $_POST['shop']],
-        );
-        $db->delete(
-            'shopitems',
-            ['sitemSHOP' => $_POST['shop']],
-        );
-        stafflog_add('Deleted Shop ' . $sn);
+        $save = function () use ($db, $sn) {
+            $db->delete(
+                'shops',
+                ['shopID' => $_POST['shop']],
+            );
+            $db->delete(
+                'shopitems',
+                ['sitemSHOP' => $_POST['shop']],
+            );
+            stafflog_add('Deleted Shop ' . $sn);
+        };
+        $db->tryFlatTransaction($save);
         echo 'Shop ' . $sn
             . ' Deleted.<br />
                 &gt; <a href="staff.php">Go Home</a>';

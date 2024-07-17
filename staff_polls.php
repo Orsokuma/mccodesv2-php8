@@ -11,24 +11,22 @@ global $ir, $h;
 require_once('sglobals.php');
 check_access('manage_polls');
 //This contains shop stuffs
-if (!isset($_GET['action']))
-{
+if (!isset($_GET['action'])) {
     $_GET['action'] = '';
 }
-switch ($_GET['action'])
-{
-case 'spoll':
-    startpoll();
-    break;
-case 'startpoll':
-    startpollsub();
-    break;
-case 'endpoll':
-    endpoll();
-    break;
-default:
-    echo 'Error: This script requires an action.';
-    break;
+switch ($_GET['action']) {
+    case 'spoll':
+        startpoll();
+        break;
+    case 'startpoll':
+        startpollsub();
+        break;
+    case 'endpoll':
+        endpoll();
+        break;
+    default:
+        echo 'Error: This script requires an action.';
+        break;
 }
 
 /**
@@ -82,74 +80,43 @@ function startpollsub(): void
     echo 'Starting new poll...';
     staff_csrf_stdverify('staff_startpoll', 'staff_polls.php?action=spoll');
     $question =
-            (isset($_POST['question']))
-                    ? strip_tags(stripslashes($_POST['question']))
-                    : '';
-    $choice1 =
-            (isset($_POST['choice1']))
-                    ? strip_tags(stripslashes($_POST['choice1']))
-                    : '';
-    $choice2 =
-            (isset($_POST['choice2']))
-                    ? strip_tags(stripslashes($_POST['choice2']))
-                    : '';
-    $choice3 =
-            (isset($_POST['choice3']))
-                    ? strip_tags(stripslashes($_POST['choice3']))
-                    : '';
-    $choice4 =
-            (isset($_POST['choice4']))
-                    ? strip_tags(stripslashes($_POST['choice4']))
-                    : '';
-    $choice5 =
-            (isset($_POST['choice5']))
-                    ? strip_tags(stripslashes($_POST['choice5']))
-                    : '';
-    $choice6 =
-            (isset($_POST['choice6']))
-                    ? strip_tags(stripslashes($_POST['choice6']))
-                    : '';
-    $choice7 =
-            (isset($_POST['choice7']))
-                    ? strip_tags(stripslashes($_POST['choice7']))
-                    : '';
-    $choice8 =
-            (isset($_POST['choice8']))
-                    ? strip_tags(stripslashes($_POST['choice8']))
-                    : '';
-    $choice9 =
-            (isset($_POST['choice9']))
-                    ? strip_tags(stripslashes($_POST['choice9']))
-                    : '';
-    $choice10 =
-            (isset($_POST['choice10']))
-                    ? strip_tags(stripslashes($_POST['choice10']))
-                    : '';
-    if (empty($question) || empty($choice1) || empty($choice2))
-    {
+        (isset($_POST['question']))
+            ? strip_tags(stripslashes($_POST['question']))
+            : '';
+    $choice1  =
+        (isset($_POST['choice1']))
+            ? strip_tags(stripslashes($_POST['choice1']))
+            : '';
+    $choice2  =
+        (isset($_POST['choice2']))
+            ? strip_tags(stripslashes($_POST['choice2']))
+            : '';
+    if (empty($question) || empty($choice1) || empty($choice2)) {
         echo 'You must input a question and atleast two answers.<br />
         &gt; <a href="staff_polls.php?action=spoll">Go Back</a>';
         $h->endpage();
         exit;
     }
-    $db->insert(
-        'polls',
-        [
+    $save = function () use ($db, $question) {
+        $map = [
             'active' => '1',
             'question' => $question,
-            'choice1' => $choice1,
-            'choice2' => $choice2,
-            'choice3' => $choice3,
-            'choice4' => $choice4,
-            'choice5' => $choice5,
-            'choice6' => $choice6,
-            'choice7' => $choice7,
-            'choice8' => $choice8,
-            'choice9' => $choice9,
-            'choice10' => $choice10,
             'hidden' => $_POST['hidden'],
-        ],
-    );
+            'choice1' => $_POST['choice1'],
+            'choice2' => $_POST['choice2'],
+        ];
+        for ($i = 3; $i <= 10; ++$i) {
+            $key       = 'choice' . $i;
+            $choice    = array_key_exists($key, $_POST) ? strip_tags(stripslashes($_POST[$key])) : '';
+            $map[$key] = $choice;
+        }
+        $db->insert(
+            'polls',
+            $map,
+        );
+        stafflog_add('Added poll: ' . $question);
+    };
+    $db->tryFlatTransaction($save);
     echo 'New Poll Started.<br />
     &gt; <a href="staff.php">Go Home</a>';
     $h->endpage();
@@ -163,10 +130,9 @@ function endpoll(): void
 {
     global $db, $h;
     $_POST['poll'] =
-            (isset($_POST['poll']) && is_numeric($_POST['poll']))
-                    ? abs(intval($_POST['poll'])) : '';
-    if (empty($_POST['poll']))
-    {
+        (isset($_POST['poll']) && is_numeric($_POST['poll']))
+            ? abs(intval($_POST['poll'])) : '';
+    if (empty($_POST['poll'])) {
         $csrf = request_csrf_html('staff_endpoll');
         echo "
         Choose a poll to close
@@ -176,43 +142,46 @@ function endpoll(): void
         $exists = $db->run(
             "SELECT id, question FROM polls WHERE active = '1'"
         );
-        foreach ($exists as $r)
-        {
+        foreach ($exists as $r) {
             echo '
 					<input type="radio" name="poll" value="' . $r['id']
-                    . '" /> Poll ID ' . $r['id'] . ' - ' . $r['question']
-                    . '
+                . '" /> Poll ID ' . $r['id'] . ' - ' . $r['question']
+                . '
 					<br />
    			';
         }
         echo $csrf
-                . '
+            . '
 			<input type="submit" value="Close Selected Poll" />
 		</form>
    		';
-    }
-    else
-    {
+    } else {
         staff_csrf_stdverify('staff_endpoll', 'staff_polls.php?action=endpoll');
-        $exists = $db->exists(
-            'SELECT COUNT(id) FROM polls WHERE id = ?',
+        $question = $db->exists(
+            'SELECT question FROM polls WHERE id = ?',
             $_POST['poll'],
         );
-        if (!$exists)
-        {
+        if (empty($question)) {
             echo 'Invalid poll.<br />
             &gt; <a href="staff_polls.php?action=endpoll">Go Back</a>';
             $h->endpage();
             exit;
         }
-        $db->query(
-            'UPDATE polls SET active = \'0\' WHERE id = ?',
-            $_POST['poll'],
-        );
+        $save = function () use ($db, $question) {
+            $db->query(
+                'UPDATE polls SET active = \'0\' WHERE id = ?',
+                $_POST['poll'],
+            );
+            $str = 'Closed poll: ' . $question;
+            $log = strlen($str) > 255 ? substr($str, 0, 242) . '...' : $str;
+            stafflog_add($log);
+        };
+        $db->tryFlatTransaction($save);
         echo 'Poll closed.<br />
         &gt; <a href="staff.php">Go Home</a>';
         $h->endpage();
         exit;
     }
 }
+
 $h->endpage();

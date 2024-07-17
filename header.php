@@ -21,7 +21,6 @@ declare(strict_types=1);
  * Signature: 52c201ce2e8c549ae70d2936473022f0
  * Date: Fri, 20 Apr 12 08:50:30 +0000
  */
-
 class headers
 {
 
@@ -108,7 +107,7 @@ EOF;
                      title='Donator: {$ir['donatordays']} Days Left' />";
         }
 
-        $gn = '';
+        $gn      = '';
         $bgcolor = 'FFFFFF';
 
         print

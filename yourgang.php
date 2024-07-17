@@ -9,6 +9,7 @@ declare(strict_types=1);
  */
 
 use ParagonIE\EasyDB\EasyPlaceholder;
+use ParagonIE\EasyDB\EasyStatement;
 
 global $db, $ir, $h;
 require_once('globals.php');
@@ -320,38 +321,41 @@ function gang_staff_kick(): void
                 $gangdata['gangID'],
             );
             if (!empty($kdata)) {
-                $db->update(
-                    'users',
-                    [
-                        'gang' => 0,
-                        'daysingang' => 0,
-                    ],
-                    ['userid' => $who],
-                );
                 $d_username =
                     htmlentities($kdata['username'], ENT_QUOTES,
                         'ISO-8859-1');
-                $d_oname    =
-                    htmlentities($ir['username'], ENT_QUOTES, 'ISO-8859-1');
+                $save       = function () use ($db, $who, $gangdata, $userid, $ir, $d_username) {
+                    $d_oname =
+                        htmlentities($ir['username'], ENT_QUOTES, 'ISO-8859-1');
+                    $db->update(
+                        'users',
+                        [
+                            'gang' => 0,
+                            'daysingang' => 0,
+                        ],
+                        ['userid' => $who],
+                    );
+                    $their_event =
+                        "You were kicked out of {$gangdata['gangNAME']} by "
+                        . "<a href='viewuser.php?u={$userid}'>"
+                        . $d_oname . '</a>';
+                    event_add($who, $their_event);
+                    $gang_event = "<a href='viewuser.php?u={$who}'>"
+                        . $d_username
+                        . '</a> was kicked out of the gang by '
+                        . "<a href='viewuser.php?u={$userid}'>"
+                        . $d_oname . '</a>';
+                    $db->insert(
+                        'gangevents',
+                        [
+                            'gevGANG' => $gangdata['gangID'],
+                            'gevTIME' => time(),
+                            'gevTEXT' => $gang_event,
+                        ],
+                    );
+                };
+                $db->tryFlatTransaction($save);
                 echo "<b>{$d_username}</b> was kicked from the Gang.";
-                $their_event =
-                    "You were kicked out of {$gangdata['gangNAME']} by "
-                    . "<a href='viewuser.php?u={$userid}'>"
-                    . $d_oname . '</a>';
-                event_add($who, $their_event);
-                $gang_event = "<a href='viewuser.php?u={$who}'>"
-                    . $d_username
-                    . '</a> was kicked out of the gang by '
-                    . "<a href='viewuser.php?u={$userid}'>"
-                    . $d_oname . '</a>';
-                $db->insert(
-                    'gangevents',
-                    [
-                        'gevGANG' => $gangdata['gangID'],
-                        'gevTIME' => time(),
-                        'gevTEXT' => $gang_event,
-                    ],
-                );
             } else {
                 echo 'Trying to kick non-existent user';
             }
@@ -461,37 +465,40 @@ function gang_donate2(): void
         	please go back and try again.<br />
         &gt; <a href="yourgang.php?action=donate">Back</a>';
     } else {
-        $db->update(
-            'users',
-            [
-                'money' => new EasyPlaceholder('money - ?', $_POST['money']),
-                'crystals' => new EasyPlaceholder('crystals - ?', $_POST['crystals']),
-            ],
-            ['userid' => $userid],
-        );
-        $db->update(
-            'gangs',
-            [
-                'gangMONEY' => new EasyPlaceholder('gangMONEY + ?', $_POST['money']),
-                'gangCRYSTALS' => new EasyPlaceholder('gangCRYSTALS + ?', $_POST['crystals']),
-            ],
-            ['gangID' => $gangdata['gangID']],
-        );
-        $my_name    = htmlentities($ir['username'], ENT_QUOTES, 'ISO-8859-1');
-        $gang_event = "<a href='viewuser.php?u={$userid}'>" . $my_name
-            . '</a>' . ' donated '
-            . money_formatter($_POST['money'])
-            . ' and/or '
-            . number_format($_POST['crystals'])
-            . ' crystals to the Gang.';
-        $db->insert(
-            'gangevents',
-            [
-                'gevGANG' => $gangdata['gangID'],
-                'gevTIME' => time(),
-                'gevTEXT' => $gang_event,
-            ],
-        );
+        $save = function () use ($db, $userid, $gangdata, $ir) {
+            $db->update(
+                'users',
+                [
+                    'money' => new EasyPlaceholder('money - ?', $_POST['money']),
+                    'crystals' => new EasyPlaceholder('crystals - ?', $_POST['crystals']),
+                ],
+                ['userid' => $userid],
+            );
+            $db->update(
+                'gangs',
+                [
+                    'gangMONEY' => new EasyPlaceholder('gangMONEY + ?', $_POST['money']),
+                    'gangCRYSTALS' => new EasyPlaceholder('gangCRYSTALS + ?', $_POST['crystals']),
+                ],
+                ['gangID' => $gangdata['gangID']],
+            );
+            $my_name    = htmlentities($ir['username'], ENT_QUOTES, 'ISO-8859-1');
+            $gang_event = "<a href='viewuser.php?u={$userid}'>" . $my_name
+                . '</a>' . ' donated '
+                . money_formatter($_POST['money'])
+                . ' and/or '
+                . number_format($_POST['crystals'])
+                . ' crystals to the Gang.';
+            $db->insert(
+                'gangevents',
+                [
+                    'gevGANG' => $gangdata['gangID'],
+                    'gevTIME' => time(),
+                    'gevTEXT' => $gang_event,
+                ],
+            );
+        };
+        $db->tryFlatTransaction($save);
         echo 'You donated ' . money_formatter($_POST['money'])
             . " and/or {$_POST['crystals']} crystals to the Gang.<br />
               &gt; <a href='index.php'>Go Home</a>";
@@ -514,25 +521,28 @@ function gang_leave(): void
     }
     if (isset($_POST['submit']) && $_POST['submit'] == 'Yes, leave!') {
         csrf_stdverify('yourgang_leave', 'leave');
-        $db->update(
-            'users',
-            [
-                'gang' => 0,
-                'daysingang' => 0,
-            ],
-            ['userid' => $userid],
-        );
-        $gang_event = "<a href='viewuser.php?u={$userid}'>"
-            . htmlentities($ir['username'], ENT_QUOTES,
-                'ISO-8859-1') . '</a> left the Gang.';
-        $db->insert(
-            'gangevents',
-            [
-                'gevGANG' => $ir['gang'],
-                'gevTIME' => time(),
-                'gevTEXT' => $gang_event,
-            ],
-        );
+        $save = function () use ($db, $userid, $ir) {
+            $db->update(
+                'users',
+                [
+                    'gang' => 0,
+                    'daysingang' => 0,
+                ],
+                ['userid' => $userid],
+            );
+            $gang_event = "<a href='viewuser.php?u={$userid}'>"
+                . htmlentities($ir['username'], ENT_QUOTES,
+                    'ISO-8859-1') . '</a> left the Gang.';
+            $db->insert(
+                'gangevents',
+                [
+                    'gevGANG' => $ir['gang'],
+                    'gevTIME' => time(),
+                    'gevTEXT' => $gang_event,
+                ],
+            );
+        };
+        $db->tryFlatTransaction($save);
     } elseif (isset($_POST['submit']) && $_POST['submit'] == 'No, stay!') {
         echo "You stayed in your gang.<br />
         &gt; <a href='yourgang.php'>Go back</a>";
@@ -791,26 +801,29 @@ function gang_staff_apps(): void
         );
         if (!empty($appdata)) {
             if ($what == 'decline') {
-                $db->delete(
-                    'applications',
-                    ['appID' => $_POST['app']],
-                );
-                event_add($appdata['appUSER'],
-                    "Your application to join the {$gangdata['gangNAME']} gang was declined");
-                $gang_event = "<a href='viewuser.php?u={$userid}'>"
-                    . $ir['username']
-                    . '</a> has declined '
-                    . "<a href='viewuser.php?u={$appdata['appUSER']}'>"
-                    . $appdata['username']
-                    . '</a>\'s application to join the Gang.';
-                $db->insert(
-                    'gangevents',
-                    [
-                        'gevGANG' => $gangdata['gangID'],
-                        'gevTIME' => time(),
-                        'gevTEXT' => $gang_event,
-                    ],
-                );
+                $save = function () use ($db, $appdata, $gangdata, $userid, $ir) {
+                    $db->delete(
+                        'applications',
+                        ['appID' => $_POST['app']],
+                    );
+                    event_add($appdata['appUSER'],
+                        "Your application to join the {$gangdata['gangNAME']} gang was declined");
+                    $gang_event = "<a href='viewuser.php?u={$userid}'>"
+                        . $ir['username']
+                        . '</a> has declined '
+                        . "<a href='viewuser.php?u={$appdata['appUSER']}'>"
+                        . $appdata['username']
+                        . '</a>\'s application to join the Gang.';
+                    $db->insert(
+                        'gangevents',
+                        [
+                            'gevGANG' => $gangdata['gangID'],
+                            'gevTIME' => time(),
+                            'gevTEXT' => $gang_event,
+                        ],
+                    );
+                };
+                $db->tryFlatTransaction($save);
                 echo "
                 You have declined the application by {$appdata['username']}.
                 <br />
@@ -830,34 +843,37 @@ function gang_staff_apps(): void
                     $h->endpage();
                     exit;
                 }
-                $db->delete(
-                    'applications',
-                    ['appID' => $_POST['app']],
-                );
-                event_add($appdata['appUSER'],
-                    "Your application to join the {$gangdata['gangNAME']} gang was accepted, Congrats!");
-                $gang_event = "<a href='viewuser.php?u={$userid}'>"
-                    . $ir['username']
-                    . '</a> has accepted '
-                    . "<a href='viewuser.php?u={$appdata['appUSER']}'>"
-                    . $appdata['username']
-                    . '</a>\'s application to join the Gang.';
-                $db->insert(
-                    'gangevents',
-                    [
-                        'gevGANG' => $gangdata['gangID'],
-                        'gevTIME' => time(),
-                        'gevTEXT' => $gang_event,
-                    ],
-                );
-                $db->update(
-                    'users',
-                    [
-                        'gang' => $gangdata['gangID'],
-                        'daysingang' => 0,
-                    ],
-                    ['userid' => $appdata['appUSER']],
-                );
+                $save = function () use ($db, $appdata, $gangdata, $userid, $ir) {
+                    $db->delete(
+                        'applications',
+                        ['appID' => $_POST['app']],
+                    );
+                    event_add($appdata['appUSER'],
+                        "Your application to join the {$gangdata['gangNAME']} gang was accepted, Congrats!");
+                    $gang_event = "<a href='viewuser.php?u={$userid}'>"
+                        . $ir['username']
+                        . '</a> has accepted '
+                        . "<a href='viewuser.php?u={$appdata['appUSER']}'>"
+                        . $appdata['username']
+                        . '</a>\'s application to join the Gang.';
+                    $db->insert(
+                        'gangevents',
+                        [
+                            'gevGANG' => $gangdata['gangID'],
+                            'gevTIME' => time(),
+                            'gevTEXT' => $gang_event,
+                        ],
+                    );
+                    $db->update(
+                        'users',
+                        [
+                            'gang' => $gangdata['gangID'],
+                            'daysingang' => 0,
+                        ],
+                        ['userid' => $appdata['appUSER']],
+                    );
+                };
+                $db->tryFlatTransaction($save);
                 echo "
                 You have accepted the application by {$appdata['username']}.
                 <br />
@@ -963,38 +979,41 @@ function gang_staff_vault(): void
             $dname = htmlentities($dname, ENT_QUOTES, 'ISO-8859-1');
             $money = $_POST['money'];
             $crys  = $_POST['crystals'];
-            $db->update(
-                'users',
-                [
-                    'money' => new EasyPlaceholder('money + ?', $money),
-                    'crystals' => new EasyPlaceholder('crystals + ?', $crys),
-                ],
-                ['userid' => $who],
-            );
-            $db->update(
-                'gangs',
-                [
-                    'gangMONEY' => new EasyPlaceholder('gangMONEY - ?', $money),
-                    'gangCRYSTALS' => new EasyPlaceholder('gangCRYSTALS - ?', $crys),
-                ],
-                ['gangID' => $gangdata['gangID']],
-            );
-            event_add($who,
-                'You were given ' . money_formatter($money)
-                . " and/or $crys crystals from your Gang.");
-            $gang_event = "<a href='viewuser.php?u=$who'>" . $dname
-                . '</a> was given '
-                . money_formatter($money) . ' and/or '
-                . number_format($crys)
-                . ' crystals from the Gang.';
-            $db->insert(
-                'gangevents',
-                [
-                    'gevGANG' => $gangdata['gangID'],
-                    'gevTIME' => time(),
-                    'gevTEXT' => $gang_event,
-                ],
-            );
+            $save  = function () use ($db, $money, $crys, $who, $gangdata, $dname) {
+                $db->update(
+                    'users',
+                    [
+                        'money' => new EasyPlaceholder('money + ?', $money),
+                        'crystals' => new EasyPlaceholder('crystals + ?', $crys),
+                    ],
+                    ['userid' => $who],
+                );
+                $db->update(
+                    'gangs',
+                    [
+                        'gangMONEY' => new EasyPlaceholder('gangMONEY - ?', $money),
+                        'gangCRYSTALS' => new EasyPlaceholder('gangCRYSTALS - ?', $crys),
+                    ],
+                    ['gangID' => $gangdata['gangID']],
+                );
+                event_add($who,
+                    'You were given ' . money_formatter($money)
+                    . " and/or $crys crystals from your Gang.");
+                $gang_event = "<a href='viewuser.php?u=$who'>" . $dname
+                    . '</a> was given '
+                    . money_formatter($money) . ' and/or '
+                    . number_format($crys)
+                    . ' crystals from the Gang.';
+                $db->insert(
+                    'gangevents',
+                    [
+                        'gevGANG' => $gangdata['gangID'],
+                        'gevTIME' => time(),
+                        'gevTEXT' => $gang_event,
+                    ],
+                );
+            };
+            $db->tryFlatTransaction($save);
             echo "<a href='viewuser.php?u=$who'>{$dname}</a> was given "
                 . money_formatter($money) . ' and/or '
                 . number_format($crys) . ' crystals from the Gang.';
@@ -1044,13 +1063,16 @@ function gang_staff_vicepres(): void
             $h->endpage();
             exit;
         }
-        $db->update(
-            'gangs',
-            ['gangVICEPRES' => $_POST['vp']],
-            ['gangID' => $gangdata['gangID']],
-        );
-        event_add($memb['userid'],
-            "You were transferred vice-presidency of {$gangdata['gangNAME']}.");
+        $save = function () use ($db, $gangdata, $memb) {
+            $db->update(
+                'gangs',
+                ['gangVICEPRES' => $_POST['vp']],
+                ['gangID' => $gangdata['gangID']],
+            );
+            event_add($memb['userid'],
+                "You were transferred vice-presidency of {$gangdata['gangNAME']}.");
+        };
+        $db->tryFlatTransaction($save);
         $m_name = htmlentities($memb['username'], ENT_QUOTES, 'ISO-8859-1');
         echo "Vice-Presidency was transferred to {$m_name}";
     } else {
@@ -1095,36 +1117,39 @@ function gang_staff_wardeclare(): void
             $h->endpage();
             exit;
         }
-        $db->insert(
-            'gangwars',
-            [
-                'warDECLARER' => $gangdata['gangID'],
-                'warDECLARED' => $_POST['gang'],
-                'warTIME' => time(),
-            ],
-        );
-        $event   = "<a href='gangs.php?action=view&amp;ID={$gangdata['gangID']}'>"
-            . $gangdata['gangNAME']
-            . '</a> declared war on '
-            . "<a href='gangs.php?action=view&amp;ID={$_POST['gang']}'>"
-            . $them . '</a>';
-        $ev_time = time();
-        $db->insert(
-            'gangevents',
-            [
-                'gevGANG' => $gangdata['gangID'],
-                'gevTIME' => $ev_time,
-                'gevTEXT' => $event,
-            ],
-        );
-        $db->insert(
-            'gangevents',
-            [
-                'gevGANG' => $_POST['gang'],
-                'gevTIME' => $ev_time,
-                'gevTEXT' => $event,
-            ],
-        );
+        $save = function () use ($db, $gangdata, $them) {
+            $db->insert(
+                'gangwars',
+                [
+                    'warDECLARER' => $gangdata['gangID'],
+                    'warDECLARED' => $_POST['gang'],
+                    'warTIME' => time(),
+                ],
+            );
+            $event   = "<a href='gangs.php?action=view&amp;ID={$gangdata['gangID']}'>"
+                . $gangdata['gangNAME']
+                . '</a> declared war on '
+                . "<a href='gangs.php?action=view&amp;ID={$_POST['gang']}'>"
+                . $them . '</a>';
+            $ev_time = time();
+            $db->insert(
+                'gangevents',
+                [
+                    'gevGANG' => $gangdata['gangID'],
+                    'gevTIME' => $ev_time,
+                    'gevTEXT' => $event,
+                ],
+            );
+            $db->insert(
+                'gangevents',
+                [
+                    'gevGANG' => $_POST['gang'],
+                    'gevTIME' => $ev_time,
+                    'gevTEXT' => $event,
+                ],
+            );
+        };
+        $db->tryFlatTransaction($save);
         echo 'You have declared war!';
     } else {
         $csrf = request_csrf_html('yourgang_staff_declare');
@@ -1172,7 +1197,7 @@ function gang_staff_surrender(): void
                     $f = 'warDECLARER';
                 }
                 $them = $db->cell(
-                    "SELECT gangNAME FROM gangs WHERE gangID = ?",
+                    'SELECT gangNAME FROM gangs WHERE gangID = ?',
                     $r[$f],
                 );
                 echo "<option value='{$r['warID']}'>{$them}</option>\n";
@@ -1192,7 +1217,7 @@ function gang_staff_surrender(): void
                 ? abs(intval($_POST['war'])) : 0;
         $e_msg        = htmlentities(stripslashes($_POST['msg']), ENT_QUOTES, 'ISO-8859-1');
         $r            = $db->row(
-            "SELECT * FROM gangwars WHERE warID = ?",
+            'SELECT * FROM gangwars WHERE warID = ?',
             $_POST['war'],
         );
         if (empty($r)) {
@@ -1211,42 +1236,45 @@ function gang_staff_surrender(): void
             $h->endpage();
             exit;
         }
-        $db->insert(
-            'surrenders',
-            [
-                'surWAR' => $_POST['war'],
-                'surWHO' => $gangdata['gangID'],
-                'surTO' => $r[$f],
-                'surMSG' => $e_msg,
-            ],
-        );
-        $them   = $db->cell(
-            "SELECT gangNAME FROM gangs WHERE gangID = ?",
+        $them = $db->cell(
+            'SELECT gangNAME FROM gangs WHERE gangID = ?',
             $r[$f],
         );
-        $event  =
-            "<a href='gangs.php?action=view&amp;ID={$gangdata['gangID']}'>"
-            . $gangdata['gangNAME']
-            . '</a> have asked to surrender the war against '
-            . "<a href='gangs.php?action=view&amp;ID={$r[$f]}'>"
-            . $them . '</a>';
-        $e_time = time();
-        $db->insert(
-            'gangevents',
-            [
-                'gevGANG' => $gangdata['gangID'],
-                'gevTIME' => $e_time,
-                'gevTEXT' => $event,
-            ],
-        );
-        $db->insert(
-            'gangevents',
-            [
-                'gevGANG' => $r[$f],
-                'gevTIME' => $e_time,
-                'gevTEXT' => $event,
-            ],
-        );
+        $save = function () use ($db, $gangdata, $r, $them, $f, $e_msg) {
+            $db->insert(
+                'surrenders',
+                [
+                    'surWAR' => $_POST['war'],
+                    'surWHO' => $gangdata['gangID'],
+                    'surTO' => $r[$f],
+                    'surMSG' => $e_msg,
+                ],
+            );
+            $event  =
+                "<a href='gangs.php?action=view&amp;ID={$gangdata['gangID']}'>"
+                . $gangdata['gangNAME']
+                . '</a> have asked to surrender the war against '
+                . "<a href='gangs.php?action=view&amp;ID={$r[$f]}'>"
+                . $them . '</a>';
+            $e_time = time();
+            $db->insert(
+                'gangevents',
+                [
+                    'gevGANG' => $gangdata['gangID'],
+                    'gevTIME' => $e_time,
+                    'gevTEXT' => $event,
+                ],
+            );
+            $db->insert(
+                'gangevents',
+                [
+                    'gevGANG' => $r[$f],
+                    'gevTIME' => $e_time,
+                    'gevTEXT' => $event,
+                ],
+            );
+        };
+        $db->tryFlatTransaction($save);
         echo 'You have asked to surrender.';
     }
 }
@@ -1279,7 +1307,7 @@ function gang_staff_viewsurrenders(): void
                     $f = 'warDECLARER';
                 }
                 $them = $db->cell(
-                    "SELECT gangNAME FROM gangs WHERE gangID = ?",
+                    'SELECT gangNAME FROM gangs WHERE gangID = ?',
                     $r[$f],
                 );
                 echo "<option value='{$r['surID']}'>War vs. {$them} (Msg: {$r['surMSG']})</option>";
@@ -1311,48 +1339,50 @@ function gang_staff_viewsurrenders(): void
             $h->endpage();
             exit;
         }
-        $warID = $surr['warID'];
-        if ($gangdata['gangID'] == $surr['warDECLARER']) {
-            $f = 'warDECLARED';
-        } else {
-            $f = 'warDECLARER';
-        }
-        // Fix: delete all surrenders for the same war at same time
-        $db->delete(
-            'surrenders',
-            ['surWAR' => $warID],
-        );
-        $db->delete(
-            'gangwars',
-            ['warID' => $warID],
-        );
-        $them    = $db->cell(
+        $f    = $gangdata['gangID'] == $surr['warDECLARER'] ? 'warDECLARED' : 'warDECLARER';
+        $them = $db->cell(
             'SELECT gangNAME FROM gangs WHERE gangID = ?',
             $surr[$f],
         );
-        $event   =
-            "<a href='gangs.php?action=view&amp;ID={$gangdata['gangID']}'>"
-            . $gangdata['gangNAME']
-            . '</a> have accepted the surrender from '
-            . "<a href='gangs.php?action=view&amp;ID={$surr[$f]}'>"
-            . $them . '</a>, the war is over!';
-        $ev_time = time();
-        $db->insert(
-            'gangevents',
-            [
-                'gevGANG' => $gangdata['gangID'],
-                'gevTIME' => $ev_time,
-                'gevTEXT' => $event,
-            ],
-        );
-        $db->insert(
-            'gangevents',
-            [
-                'gevGANG' => $surr[$f],
-                'gevTIME' => $ev_time,
-                'gevTEXT' => $event,
-            ],
-        );
+        $save = function () use ($db, $gangdata, $surr, $f, $them) {
+            $warID     = $surr['warID'];
+            $ids       = [$surr['warDECLARER'], $surr[$f]];
+            $statement = EasyStatement::open()
+                ->in('surWHO IN (?*)', $ids)
+                ->orIn('surTO IN (?*)', $ids);
+            $db->safeQuery(
+                'DELETE FROM surrenders WHERE ' . $statement,
+                $statement->values(),
+            );
+            $db->delete(
+                'gangwars',
+                ['warID' => $warID],
+            );
+            $event   =
+                "<a href='gangs.php?action=view&amp;ID={$gangdata['gangID']}'>"
+                . $gangdata['gangNAME']
+                . '</a> have accepted the surrender from '
+                . "<a href='gangs.php?action=view&amp;ID={$surr[$f]}'>"
+                . $them . '</a>, the war is over!';
+            $ev_time = time();
+            $db->insert(
+                'gangevents',
+                [
+                    'gevGANG' => $gangdata['gangID'],
+                    'gevTIME' => $ev_time,
+                    'gevTEXT' => $event,
+                ],
+            );
+            $db->insert(
+                'gangevents',
+                [
+                    'gevGANG' => $surr[$f],
+                    'gevTIME' => $ev_time,
+                    'gevTEXT' => $event,
+                ],
+            );
+        };
+        $db->tryFlatTransaction($save);
         echo "You have accepted the surrender from {$them}, the war is over.";
     }
 }
@@ -1446,13 +1476,16 @@ function gang_staff_pres(): void
                 $h->endpage();
                 exit;
             }
-            $db->update(
-                'gangs',
-                ['gangPRESIDENT' => $_POST['pres']],
-                ['gangID' => $gangdata['gangID']],
-            );
-            event_add($memb['userid'],
-                "You were transferred presidency of {$gangdata['gangNAME']}.");
+            $save = function () use ($db, $gangdata, $memb) {
+                $db->update(
+                    'gangs',
+                    ['gangPRESIDENT' => $_POST['pres']],
+                    ['gangID' => $gangdata['gangID']],
+                );
+                event_add($memb['userid'],
+                    "You were transferred presidency of {$gangdata['gangNAME']}.");
+            };
+            $db->tryFlatTransaction($save);
             echo "Presidency was transferred to {$memb['username']}<br />
             &gt; <a href='yourgang.php'>Gang home</a>";
         } else {
@@ -1527,25 +1560,28 @@ function gang_staff_massmailer(): void
     if (!empty($_POST['text'])) {
         csrf_stdverify('yourgang_staff_massmailer',
             'staff&amp;act2=massmailer');
-        $subj      = 'This is a mass mail from your gang';
-        $mass_time = time();
-        $q         = $db->run(
+        $q    = $db->run(
             'SELECT username, userid FROM users WHERE gang = ?',
             $gangdata['gangID']
         );
-        foreach ($q as $r) {
-            $db->insert(
-                'mail',
-                [
-                    'mail_from' => $ir['userid'],
-                    'mail_to' => $r['userid'],
-                    'mail_time' => $mass_time,
-                    'mail_subject' => $subj,
-                    'mail_text' => $_POST['text'],
-                ],
-            );
-            echo "Mass mail sent to {$r['username']}.<br />";
-        }
+        $save = function () use ($db, $q, $ir) {
+            $subj      = 'This is a mass mail from your gang';
+            $mass_time = time();
+            foreach ($q as $r) {
+                $db->insert(
+                    'mail',
+                    [
+                        'mail_from' => $ir['userid'],
+                        'mail_to' => $r['userid'],
+                        'mail_time' => $mass_time,
+                        'mail_subject' => $subj,
+                        'mail_text' => $_POST['text'],
+                    ],
+                );
+                echo "Mass mail sent to {$r['username']}.<br />";
+            }
+        };
+        $db->tryFlatTransaction($save);
         echo "
 		Mass mail sending complete!
 		<br />
@@ -1578,40 +1614,43 @@ function gang_staff_masspayment(): void
     if ($_POST['amt']) {
         csrf_stdverify('yourgang_staff_masspayment',
             'staff&amp;act2=masspayment');
-        $q = $db->run(
+        $q    = $db->run(
             'SELECT userid, username FROM users WHERE gang = ?',
             $gangdata['gangID'],
         );
-        foreach ($q as $r) {
-            if ($gangdata['gangMONEY'] >= $_POST['amt']) {
-                event_add($r['userid'],
-                    'You were given ' . money_formatter($_POST['amt'])
-                    . ' from your gang.');
-                $db->update(
-                    'users',
-                    ['money' => new EasyPlaceholder('money + ?', $_POST['amt'])],
-                    ['userid' => $r['userid']],
-                );
-                $gangdata['gangMONEY'] -= $_POST['amt'];
-                echo "Money sent to {$r['username']}.<br />";
-            } else {
-                echo "Not enough in the vault to pay {$r['username']}!<br />";
+        $save = function () use ($db, $gangdata, $q) {
+            foreach ($q as $r) {
+                if ($gangdata['gangMONEY'] >= $_POST['amt']) {
+                    event_add($r['userid'],
+                        'You were given ' . money_formatter($_POST['amt'])
+                        . ' from your gang.');
+                    $db->update(
+                        'users',
+                        ['money' => new EasyPlaceholder('money + ?', $_POST['amt'])],
+                        ['userid' => $r['userid']],
+                    );
+                    $gangdata['gangMONEY'] -= $_POST['amt'];
+                    echo "Money sent to {$r['username']}.<br />";
+                } else {
+                    echo "Not enough in the vault to pay {$r['username']}!<br />";
+                }
             }
-        }
-        $db->update(
-            'gangs',
-            ['gangMONEY' => $gangdata['gangMONEY']],
-            ['gangID' => $gangdata['gangID']],
-        );
-        $credit_evt = 'A mass payment of ' . money_formatter($_POST['amt']) . ' was sent to the members of the Gang.';
-        $db->insert(
-            'gangevents',
-            [
-                'gevGANG' => $gangdata['gangID'],
-                'gevTIME' => time(),
-                'gevTEXT' => $credit_evt,
-            ],
-        );
+            $db->update(
+                'gangs',
+                ['gangMONEY' => $gangdata['gangMONEY']],
+                ['gangID' => $gangdata['gangID']],
+            );
+            $credit_evt = 'A mass payment of ' . money_formatter($_POST['amt']) . ' was sent to the members of the Gang.';
+            $db->insert(
+                'gangevents',
+                [
+                    'gevGANG' => $gangdata['gangID'],
+                    'gevTIME' => time(),
+                    'gevTEXT' => $credit_evt,
+                ],
+            );
+        };
+        $db->tryFlatTransaction($save);
         echo "Mass payment sending complete!<br />
 		&gt; <a href='yourgang.php?action=staff'>Back</a>";
     } else {

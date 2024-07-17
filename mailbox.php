@@ -1,11 +1,14 @@
 <?php
 declare(strict_types=1);
+
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
  *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
+
+use ParagonIE\EasyDB\EasyPlaceholder;
 
 global $ir, $h;
 require_once('globals.php');
@@ -112,16 +115,19 @@ OUT;
 EOF;
     }
     if ($ir['new_mail'] > 0) {
-        $db->update(
-            'mail',
-            ['mail_read' => 1],
-            ['mail_to' => $userid],
-        );
-        $db->update(
-            'users',
-            ['new_mail' => 0],
-            ['userid' => $userid],
-        );
+        $save = function () use ($db, $userid) {
+            $db->update(
+                'mail',
+                ['mail_read' => 1],
+                ['mail_to' => $userid],
+            );
+            $db->update(
+                'users',
+                ['new_mail' => 0],
+                ['userid' => $userid],
+            );
+        };
+        $db->tryFlatTransaction($save);
     }
     echo '</table>';
 }
@@ -326,21 +332,24 @@ function mail_send(): void
         $h->endpage();
         exit;
     }
-    $db->insert(
-        'mail',
-        [
-            'mail_from' => $userid,
-            'mail_to' => $to,
-            'mail_time' => time(),
-            'mail_subject' => $subj,
-            'mail_text' => $msg,
-        ],
-    );
-    $db->update(
-        'users',
-        ['new_mail' => new \ParagonIE\EasyDB\EasyPlaceholder('new_mail + 1')],
-        ['userid' => $to],
-    );
+    $save = function () use ($db, $userid, $to, $subj, $msg) {
+        $db->insert(
+            'mail',
+            [
+                'mail_from' => $userid,
+                'mail_to' => $to,
+                'mail_time' => time(),
+                'mail_subject' => $subj,
+                'mail_text' => $msg,
+            ],
+        );
+        $db->update(
+            'users',
+            ['new_mail' => new EasyPlaceholder('new_mail + 1')],
+            ['userid' => $to],
+        );
+    };
+    $db->tryFlatTransaction($save);
     echo "Message sent.<br />
 	<a href='mailbox.php'>&gt; Back</a>";
 }

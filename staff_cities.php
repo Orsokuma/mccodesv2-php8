@@ -64,17 +64,20 @@ function addcity(): void
             $h->endpage();
             exit;
         }
-        $db->insert(
-            'cities',
-            [
-                'cityname' => $name,
-                'citydesc' => $desc,
-                'cityminlevel' => $minlevel,
-            ],
-        );
+        $save = function () use ($db, $name, $desc, $minlevel) {
+            $db->insert(
+                'cities',
+                [
+                    'cityname' => $name,
+                    'citydesc' => $desc,
+                    'cityminlevel' => $minlevel,
+                ],
+            );
+            stafflog_add("Created City $name");
+        };
+        $db->tryFlatTransaction($save);
         echo 'City ' . $name
             . ' added to the game.<br />&gt; <a href="staff.php">Goto Main</a>';
-        stafflog_add("Created City $name");
     } else {
         $csrf = request_csrf_html('staff_addcity');
         echo "
@@ -139,19 +142,22 @@ function edit_city_do(): void
         $h->endpage();
         exit;
     }
-    $db->update(
-        'cities',
-        [
-            'cityname' => $name,
-            'citydesc' => $desc,
-            'cityminlevel' => $minlevel,
-        ],
-        ['cityid' => $_POST['id']],
-    );
+    $save = function () use ($db, $name, $desc, $minlevel) {
+        $db->update(
+            'cities',
+            [
+                'cityname' => $name,
+                'citydesc' => $desc,
+                'cityminlevel' => $minlevel,
+            ],
+            ['cityid' => $_POST['id']],
+        );
+        stafflog_add("Edited city $name");
+    };
+    $db->tryFlatTransaction($save);
     echo 'City ' . $name
         . ' was edited successfully.<br />
                 &gt; <a href="staff.php">Goto Main</a>';
-    stafflog_add("Edited city $name");
 }
 
 /**
@@ -266,23 +272,25 @@ function delcity(): void
             $h->endpage();
             exit;
         }
-        $db->update(
-            'users',
-            ['location' => 1],
-            ['location' => $old['cityid']],
-        );
-        $db->update(
-            'shops',
-            ['shopLOCATION' => 1],
-            ['shopLOCATION' => $old['cityid']],
-        );
-        $db->delete(
-            'cities',
-            ['cityid' => $old['cityid']],
-        );
-        echo 'City ' . $old['cityname']
-            . ' deleted.<br />&gt; <a href="staff.php">Goto Main</a>';
-        stafflog_add("Deleted city {$old['cityname']}");
+        $save = function () use ($db, $old) {
+            $db->update(
+                'users',
+                ['location' => 1],
+                ['location' => $old['cityid']],
+            );
+            $db->update(
+                'shops',
+                ['shopLOCATION' => 1],
+                ['shopLOCATION' => $old['cityid']],
+            );
+            $db->delete(
+                'cities',
+                ['cityid' => $old['cityid']],
+            );
+            stafflog_add("Deleted city {$old['cityname']}");
+        };
+        $db->tryFlatTransaction($save);
+        echo 'City ' . $old['cityname'] . ' deleted.<br />&gt; <a href="staff.php">Goto Main</a>';
     } else {
         $csrf = request_csrf_html('staff_delcity');
         echo "

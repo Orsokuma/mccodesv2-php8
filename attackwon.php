@@ -30,47 +30,8 @@ if (!empty($r)) {
     if ($r['hp'] == 1) {
         echo 'What a cheater you are.';
     } else {
-        $stole = (int)round($r['money'] / (rand(200, 5000) / 10));
-        echo "You beat {$r['username']}!!<br />
-		You knock {$r['username']} on the floor a few times to make sure he is unconscious, "
-            . 'then open his wallet, snatch ' . money_formatter($stole)
-            . ', and run home happily.';
-        $hosptime = rand(20, 40) + floor($ir['level'] / 8);
-        $expgain  = 0;
-        $db->update(
-            'users',
-            [
-                'exp' => new EasyPlaceholder('exp + ?', $expgain),
-                'money' => new EasyPlaceholder('money + ?', $stole),
-            ],
-            ['userid' => $userid],
-        );
-        $hospreason = "Mugged by <a href='viewuser.php?u={$userid}'>{$ir['username']}</a>";
-        $db->update(
-            'users',
-            [
-                'hp' => 1,
-                'money' => new EasyPlaceholder('money - ?', $stole),
-                'hospital' => $hosptime,
-                'hospreason' => $hospreason,
-            ],
-            ['userid' => $r['userid']],
-        );
-        event_add($r['userid'],
-            "<a href='viewuser.php?u=$userid'>{$ir['username']}</a> mugged you and stole "
-            . money_formatter($stole) . '.');
-        $db->insert(
-            'attacklogs',
-            [
-                'attacker' => $userid,
-                'attacked' => $_GET['ID'],
-                'result' => 'won',
-                'time' => time(),
-                'stole' => $stole,
-                'attacklog' => $_SESSION['attacklog'],
-            ],
-        );
-        $_SESSION['attackwon'] = 0;
+        $ga  = null;
+        $war = 0;
         if ($ir['gang'] > 0 && $r['gang'] > 0) {
             $ga = $db->row(
                 'SELECT gangID, gangRESPECT FROM gangs WHERE gangID = ? LIMIT 1',
@@ -86,6 +47,47 @@ if (!empty($r)) {
                     $ir['gang'],
                     $r['gang'],
                 );
+            }
+        }
+        $stole = (int)round($r['money'] / (rand(200, 5000) / 10));
+        echo "You beat {$r['username']}!!<br />
+		You knock {$r['username']} on the floor a few times to make sure he is unconscious, "
+            . 'then open his wallet, snatch ' . money_formatter($stole)
+            . ', and run home happily.';
+        $save = function () use ($db, $ir, $r, $userid, $stole, $ga, $war) {
+            $hosptime = rand(20, 40) + floor($ir['level'] / 8);
+            $db->update(
+                'users',
+                ['money' => new EasyPlaceholder('money + ?', $stole)],
+                ['userid' => $userid],
+            );
+            $hospreason = "Mugged by <a href='viewuser.php?u={$userid}'>{$ir['username']}</a>";
+            $db->update(
+                'users',
+                [
+                    'hp' => 1,
+                    'money' => new EasyPlaceholder('money - ?', $stole),
+                    'hospital' => $hosptime,
+                    'hospreason' => $hospreason,
+                ],
+                ['userid' => $r['userid']],
+            );
+            event_add($r['userid'],
+                "<a href='viewuser.php?u=$userid'>{$ir['username']}</a> mugged you and stole "
+                . money_formatter($stole) . '.');
+            $db->insert(
+                'attacklogs',
+                [
+                    'attacker' => $userid,
+                    'attacked' => $_GET['ID'],
+                    'result' => 'won',
+                    'time' => time(),
+                    'stole' => $stole,
+                    'attacklog' => $_SESSION['attacklog'],
+                ],
+            );
+            $_SESSION['attackwon'] = 0;
+            if ($ir['gang'] > 0 && $r['gang'] > 0 && !empty($ga)) {
                 if ($war > 0) {
                     attack_update_gang_respect($ir['gang'], $r['gang'], 2);
                     $ga['gangRESPECT'] -= 2;
@@ -97,12 +99,12 @@ if (!empty($r)) {
                     destroy_gang_and_end_wars($r['gang']);
                 }
             }
-        }
 
-        if ($r['user_level'] == 0) {
-            check_challenge_beaten($r);
-        }
-
+            if ($r['user_level'] == 0) {
+                check_challenge_beaten($r);
+            }
+        };
+        $db->tryFlatTransaction($save);
     }
 } else {
     echo 'You beat Mr. non-existent! Haha, pwned!';

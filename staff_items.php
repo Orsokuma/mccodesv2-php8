@@ -206,7 +206,7 @@ function process_items_post_data(): void
  */
 function new_item_submit(): void
 {
-    global $db, $ir, $h;
+    global $db, $h;
     staff_csrf_stdverify('staff_newitem', 'staff_items.php?action=newitem');
     process_items_post_data();
     if (empty($_POST['itmname']) || empty($_POST['itmdesc']) || empty($_POST['itmtype'])
@@ -218,26 +218,29 @@ function new_item_submit(): void
     }
     $itmbuy  = (isset($_POST['itmbuyable']) && $_POST['itmbuyable'] == 'on') ? 1 : 0;
     $effects = generate_item_effects();
-    $db->insert(
-        'items',
-        [
-            'itmtype' => $_POST['itmtype'],
-            'itmname' => $_POST['itmname'],
-            'itmdesc' => $_POST['itmdesc'],
-            'itmbuyprice' => $_POST['itmbuyprice'],
-            'itmsellprice' => $_POST['itmsellprice'],
-            'itmbuyable' => $itmbuy,
-            'effect1_on' => $_POST['effect1on'],
-            'effect1' => $effects[1],
-            'effect2_on' => $_POST['effect2on'],
-            'effect2' => $effects[2],
-            'effect3_on' => $_POST['effect3on'],
-            'effect3' => $effects[3],
-            'weapon' => $_POST['weapon'],
-            'armor' => $_POST['armor'],
-        ]
-    );
-    stafflog_add("Created item {$_POST['itmname']}");
+    $save    = function () use ($db, $itmbuy, $effects) {
+        $db->insert(
+            'items',
+            [
+                'itmtype' => $_POST['itmtype'],
+                'itmname' => $_POST['itmname'],
+                'itmdesc' => $_POST['itmdesc'],
+                'itmbuyprice' => $_POST['itmbuyprice'],
+                'itmsellprice' => $_POST['itmsellprice'],
+                'itmbuyable' => $itmbuy,
+                'effect1_on' => $_POST['effect1on'],
+                'effect1' => $effects[1],
+                'effect2_on' => $_POST['effect2on'],
+                'effect2' => $effects[2],
+                'effect3_on' => $_POST['effect3on'],
+                'effect3' => $effects[3],
+                'weapon' => $_POST['weapon'],
+                'armor' => $_POST['armor'],
+            ]
+        );
+        stafflog_add("Created item {$_POST['itmname']}");
+    };
+    $db->tryFlatTransaction($save);
     echo 'The ' . $_POST['itmname']
         . ' Item was added to the game.<br />
             &gt; <a href="staff_items.php?action=newitem">Go Home</a>';
@@ -304,9 +307,12 @@ function give_item_submit(): void
         $h->endpage();
         exit;
     }
-    item_add($_POST['user'], $_POST['item'], $_POST['qty']);
-    stafflog_add(
-        "Gave {$_POST['qty']} of item ID {$_POST['item']} to user ID {$_POST['user']}");
+    $save = function () use ($db) {
+        item_add($_POST['user'], $_POST['item'], $_POST['qty']);
+        stafflog_add(
+            "Gave {$_POST['qty']} of item ID {$_POST['item']} to user ID {$_POST['user']}");
+    };
+    $db->tryFlatTransaction($save);
     echo 'You gave ' . $_POST['qty'] . ' of item ID ' . $_POST['item']
         . ' to user ID ' . $_POST['user']
         . '<br />
@@ -362,19 +368,22 @@ function kill_item_submit(): void
         $h->endpage();
         exit;
     }
-    $map = [
-        'items' => 'itmid',
-        'shopitems' => 'sitemITEMID',
-        'inventory' => 'inv_itemid',
-        'itemmarket' => 'imITEM',
-    ];
-    foreach ($map as $table => $column) {
-        $db->delete(
-            $table,
-            [$column => $_POST['item']],
-        );
-    }
-    stafflog_add("Deleted item {$itemname}");
+    $save = function () use ($db, $itemname) {
+        $map = [
+            'items' => 'itmid',
+            'shopitems' => 'sitemITEMID',
+            'inventory' => 'inv_itemid',
+            'itemmarket' => 'imITEM',
+        ];
+        foreach ($map as $table => $column) {
+            $db->delete(
+                $table,
+                [$column => $_POST['item']],
+            );
+        }
+        stafflog_add("Deleted item {$itemname}");
+    };
+    $db->tryFlatTransaction($save);
     echo 'The ' . $itemname
         . ' Item was removed from the game.<br />
             &gt; <a href="staff.php">Go Home</a>';
@@ -555,27 +564,30 @@ function edit_item_sub(): void
     }
     $itmbuy  = ($_POST['itmbuyable'] == 'on') ? 1 : 0;
     $effects = generate_item_effects();
-    $db->update(
-        'items',
-        [
-            'itmtype' => $_POST['itmtype'],
-            'itmname' => $_POST['itmname'],
-            'itmdesc' => $_POST['itmdesc'],
-            'itmbuyprice' => $_POST['itmbuyprice'],
-            'itmsellprice' => $_POST['itmsellprice'],
-            'itmbuyable' => $itmbuy,
-            'effect1_on' => $_POST['effect1on'],
-            'effect1' => $effects[1],
-            'effect2_on' => $_POST['effect2on'],
-            'effect2' => $effects[2],
-            'effect3_on' => $_POST['effect3on'],
-            'effect3' => $effects[3],
-            'weapon' => $_POST['weapon'],
-            'armor' => $_POST['armor'],
-        ],
-        ['itmid' => $_POST['itmid']],
-    );
-    stafflog_add("Edited item {$_POST['itmname']}");
+    $save    = function () use ($db, $itmbuy, $effects) {
+        $db->update(
+            'items',
+            [
+                'itmtype' => $_POST['itmtype'],
+                'itmname' => $_POST['itmname'],
+                'itmdesc' => $_POST['itmdesc'],
+                'itmbuyprice' => $_POST['itmbuyprice'],
+                'itmsellprice' => $_POST['itmsellprice'],
+                'itmbuyable' => $itmbuy,
+                'effect1_on' => $_POST['effect1on'],
+                'effect1' => $effects[1],
+                'effect2_on' => $_POST['effect2on'],
+                'effect2' => $effects[2],
+                'effect3_on' => $_POST['effect3on'],
+                'effect3' => $effects[3],
+                'weapon' => $_POST['weapon'],
+                'armor' => $_POST['armor'],
+            ],
+            ['itmid' => $_POST['itmid']],
+        );
+        stafflog_add("Edited item {$_POST['itmname']}");
+    };
+    $db->tryFlatTransaction($save);
     echo 'The ' . $_POST['itmname']
         . ' Item was edited successfully.<br />
             &gt; <a href="staff.php">Go Home</a>';
@@ -599,11 +611,14 @@ function newitemtype(): void
     if (!empty($_POST['name'])) {
         staff_csrf_stdverify('staff_newitemtype',
             'staff_items.php?action=newitemtype');
-        $db->insert(
-            'itemtypes',
-            ['itmtypename' => $_POST['name']],
-        );
-        stafflog_add('Added item type ' . $_POST['name']);
+        $save = function () use ($db) {
+            $db->insert(
+                'itemtypes',
+                ['itmtypename' => $_POST['name']],
+            );
+            stafflog_add('Added item type ' . $_POST['name']);
+        };
+        $db->tryFlatTransaction($save);
         echo 'Item Type ' . $_POST['name']
             . ' added.<br />
                 &gt; <a href="staff.php">Go Home</a>';

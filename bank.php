@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
  *
@@ -8,6 +9,7 @@ declare(strict_types=1);
  */
 
 use ParagonIE\EasyDB\EasyPlaceholder;
+
 global $db, $ir, $userid, $h;
 require_once('globals.php');
 echo '<h3>Bank</h3>';
@@ -141,4 +143,5 @@ the banking lady grudgingly hands it over. <br />
 <a href='bank.php'>&gt; Back</a>";
     }
 }
+
 $h->endpage();

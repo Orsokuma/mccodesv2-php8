@@ -1,11 +1,14 @@
 <?php
 declare(strict_types=1);
+
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
  *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
+
+use ParagonIE\EasyDB\EasyStatement;
 
 global $ir, $h;
 require_once('sglobals.php');
@@ -128,35 +131,38 @@ function fed_user_submit(): void
         $h->endpage();
         exit;
     }
-    $updated = $db->update(
-        'users',
-        ['fedjail' => 1],
-        ['userid' => $_POST['user']],
-    );
-    if ($updated > 0) {
+    $save = function () use ($db, $userid) {
+        $updated = $db->update(
+            'users',
+            ['fedjail' => 1],
+            ['userid' => $_POST['user']],
+        );
+        if ($updated > 0) {
+            $db->insert(
+                'fedjail',
+                [
+                    'fed_userid' => $_POST['user'],
+                    'fed_days' => $_POST['days'],
+                    'fed_jailedby' => $userid,
+                    'fed_reason' => $_POST['reason'],
+                ],
+            );
+        }
         $db->insert(
-            'fedjail',
+            'jaillogs',
             [
-                'fed_userid' => $_POST['user'],
-                'fed_days' => $_POST['days'],
-                'fed_jailedby' => $userid,
-                'fed_reason' => $_POST['reason'],
+                'jaJAILER' => $userid,
+                'jaJAILED' => $_POST['user'],
+                'jaDAYS' => $_POST['days'],
+                'jaREASON' => $_POST['reason'],
+                'jaTIME' => time(),
             ],
         );
-    }
-    $db->insert(
-        'jaillogs',
-        [
-            'jaJAILER' => $userid,
-            'jaJAILED' => $_POST['user'],
-            'jaDAYS' => $_POST['days'],
-            'jaREASON' => $_POST['reason'],
-            'jaTIME' => time(),
-        ],
-    );
-    stafflog_add(
-        'Fedded ID ' . $_POST['user'] . ' for ' . $_POST['days']
-        . ', reason: ' . $_POST['reason']);
+        stafflog_add(
+            'Fedded ID ' . $_POST['user'] . ' for ' . $_POST['days']
+            . ', reason: ' . $_POST['reason']);
+    };
+    $db->tryFlatTransaction($save);
     echo 'User jailed.<br />
     &gt; <a href="staff.php">Go Home</a>';
     $h->endpage();
@@ -217,30 +223,33 @@ function fed_edit_submit(): void
         $h->endpage();
         exit;
     }
-    $db->delete(
-        'fedjail',
-        ['fed_userid' => $_POST['user']],
-    );
-    $db->insert(
-        'fedjail',
-        [
-            'fed_userid' => $_POST['user'],
-            'fed_days' => $_POST['days'],
-            'fed_jailedby' => $userid,
-            'fed_reason' => $_POST['reason'],
-        ],
-    );
-    $db->insert(
-        'jaillogs',
-        [
-            'jaJAILER' => $userid,
-            'jaJAILED' => $_POST['user'],
-            'jaDAYS' => $_POST['days'],
-            'jaREASON' => $_POST['reason'],
-            'jaTIME' => time(),
-        ],
-    );
-    stafflog_add('Edited user ID ' . $_POST['user'] . '\'s fedjail sentence');
+    $save = function ($db, $userid) {
+        $db->delete(
+            'fedjail',
+            ['fed_userid' => $_POST['user']],
+        );
+        $db->insert(
+            'fedjail',
+            [
+                'fed_userid' => $_POST['user'],
+                'fed_days' => $_POST['days'],
+                'fed_jailedby' => $userid,
+                'fed_reason' => $_POST['reason'],
+            ],
+        );
+        $db->insert(
+            'jaillogs',
+            [
+                'jaJAILER' => $userid,
+                'jaJAILED' => $_POST['user'],
+                'jaDAYS' => $_POST['days'],
+                'jaREASON' => $_POST['reason'],
+                'jaTIME' => time(),
+            ],
+        );
+        stafflog_add('Edited user ID ' . $_POST['user'] . '\'s fedjail sentence');
+    };
+    $db->tryFlatTransaction($save);
     echo 'User\'s sentence edited.<br />
     &gt; <a href="staff.php">Go Home</a>';
     $h->endpage();
@@ -305,18 +314,21 @@ function mail_user_submit(): void
         $h->endpage();
         exit;
     }
-    $db->update(
-        'users',
-        [
-            'mailban' => $_POST['days'],
-            'mb_reason' => $_POST['reason'],
-        ],
-        ['userid' => $_POST['user']],
-    );
-    event_add($_POST['user'],
-        "You were banned from mail for {$_POST['days']} day(s) for the following reason: {$_POST['reason']}");
-    stafflog_add(
-        "Mail banned User ID {$_POST['user']} for {$_POST['days']} days");
+    $save = function () use ($db) {
+        $db->update(
+            'users',
+            [
+                'mailban' => $_POST['days'],
+                'mb_reason' => $_POST['reason'],
+            ],
+            ['userid' => $_POST['user']],
+        );
+        event_add($_POST['user'],
+            "You were banned from mail for {$_POST['days']} day(s) for the following reason: {$_POST['reason']}");
+        stafflog_add(
+            "Mail banned User ID {$_POST['user']} for {$_POST['days']} days");
+    };
+    $db->tryFlatTransaction($save);
     echo 'User mail banned.<br />
     &gt; <a href="staff.php">Go Home</a>';
     $h->endpage();
@@ -381,19 +393,22 @@ function forum_user_submit(): void
         $h->endpage();
         exit;
     }
-    $db->update(
-        'users',
-        [
-            'forumban' => $_POST['days'],
-            'fb_reason' => $_POST['reason'],
-        ],
-        ['userid' => $_POST['user']],
-    );
-    event_add($_POST['user'],
-        "You were banned from the forums for {$_POST['days']} day(s) for the following reason: {$_POST['reason']}");
-    stafflog_add(
-        'Forum banned User ID ' . $_POST['user'] . ' for '
-        . $_POST['days'] . ' days');
+    $save = function () use ($db) {
+        $db->update(
+            'users',
+            [
+                'forumban' => $_POST['days'],
+                'fb_reason' => $_POST['reason'],
+            ],
+            ['userid' => $_POST['user']],
+        );
+        event_add($_POST['user'],
+            "You were banned from the forums for {$_POST['days']} day(s) for the following reason: {$_POST['reason']}");
+        stafflog_add(
+            'Forum banned User ID ' . $_POST['user'] . ' for '
+            . $_POST['days'] . ' days');
+    };
+    $db->tryFlatTransaction($save);
     echo 'User forum banned.<br />
     &gt; <a href="staff.php">Go Home</a>';
     $h->endpage();
@@ -446,24 +461,27 @@ function unfed_user_submit(): void
         $h->endpage();
         exit;
     }
-    $db->update(
-        'users',
-        ['fedjail' => 0],
-        ['userid' => $_POST['user']],
-    );
-    $db->delete(
-        'fedjail',
-        ['fed_userid' => $_POST['user']],
-    );
-    $db->insert(
-        'unjaillogs',
-        [
-            'ujaJAILER' => $userid,
-            'ujaJAILED' => $_POST['user'],
-            'ujaTIME' => time(),
-        ],
-    );
-    stafflog_add("Unfedded user ID {$_POST['user']}");
+    $save = function () use ($db, $userid) {
+        $db->update(
+            'users',
+            ['fedjail' => 0],
+            ['userid' => $_POST['user']],
+        );
+        $db->delete(
+            'fedjail',
+            ['fed_userid' => $_POST['user']],
+        );
+        $db->insert(
+            'unjaillogs',
+            [
+                'ujaJAILER' => $userid,
+                'ujaJAILED' => $_POST['user'],
+                'ujaTIME' => time(),
+            ],
+        );
+        stafflog_add("Unfedded user ID {$_POST['user']}");
+    };
+    $db->tryFlatTransaction($save);
     echo 'User unjailed.<br />
     &gt; <a href="staff.php">Go Home</a>';
     $h->endpage();
@@ -516,14 +534,17 @@ function unmail_user_submit(): void
         $h->endpage();
         exit;
     }
-    $db->update(
-        'users',
-        ['mailban' => 0],
-        ['userid' => $_POST['user']],
-    );
-    event_add($_POST['user'],
-        'You were unbanned from mail. You can now use it again.');
-    stafflog_add('Un-mailbanned user ID ' . $_POST['user']);
+    $save = function () use ($db) {
+        $db->update(
+            'users',
+            ['mailban' => 0],
+            ['userid' => $_POST['user']],
+        );
+        event_add($_POST['user'],
+            'You were unbanned from mail. You can now use it again.');
+        stafflog_add('Un-mailbanned user ID ' . $_POST['user']);
+    };
+    $db->tryFlatTransaction($save);
     echo 'User un-mailbanned.<br />
     &gt; <a href="staff.php">Go Home</a>';
     $h->endpage();
@@ -577,14 +598,17 @@ function unforum_user_submit(): void
         $h->endpage();
         exit;
     }
-    $db->update(
-        'users',
-        ['forumban' => 0],
-        ['userid' => $_POST['user']],
-    );
-    event_add($_POST['user'],
-        'You were unbanned from the forums. You can now use them again.');
-    stafflog_add("Un-forumbanned user ID {$_POST['user']}");
+    $save = function () use ($db) {
+        $db->update(
+            'users',
+            ['forumban' => 0],
+            ['userid' => $_POST['user']],
+        );
+        event_add($_POST['user'],
+            'You were unbanned from the forums. You can now use them again.');
+        stafflog_add("Un-forumbanned user ID {$_POST['user']}");
+    };
+    $db->tryFlatTransaction($save);
     echo 'User un-forumbanned.<br />
     &gt; <a href="staff.php">Go Home</a>';
     $h->endpage();
@@ -684,7 +708,6 @@ function mass_jail(): void
         $_POST['ids'] = '';
     }
     $ids             = explode(',', $_POST['ids']);
-    $ju              = [];
     $_POST['reason'] =
         (isset($_POST['reason']))
             ? strip_tags(stripslashes($_POST['reason']))
@@ -699,8 +722,12 @@ function mass_jail(): void
         $h->endpage();
         exit;
     }
-    foreach ($ids as $id) {
-        if (is_numeric($id) && abs((int)$id) > 0) {
+    $save = function () use ($db, $userid, $ids) {
+        $ju = [];
+        foreach ($ids as $id) {
+            if (!is_numeric($id) || abs((int)$id) <= 0) {
+                continue;
+            }
             $safe_id = abs((int)$id);
             $db->insert(
                 'fedjail',
@@ -724,18 +751,19 @@ function mass_jail(): void
             echo 'User jailed : ' . $id . '<br />';
             $ju[] = $id;
         }
-    }
-    if (count($ju) > 0) {
-        $statement = \ParagonIE\EasyDB\EasyStatement::open()
-            ->in('userid IN (?*)', $ju);
-        $db->safeQuery(
-            'UPDATE users SET fedjail = 1 WHERE ' . $statement,
-            $statement->values(),
-        );
-        stafflog_add('Mass jailed IDs ' . implode(', ', $ju));
-    } else {
-        echo 'No users jailed...<br />';
-    }
+        if (count($ju) > 0) {
+            $statement = EasyStatement::open()
+                ->in('userid IN (?*)', $ju);
+            $db->safeQuery(
+                'UPDATE users SET fedjail = 1 WHERE ' . $statement,
+                $statement->values(),
+            );
+            stafflog_add('Mass jailed IDs ' . implode(', ', $ju));
+        } else {
+            echo 'No users jailed...<br />';
+        }
+    };
+    $db->tryFlatTransaction($save);
     echo '&gt; <a href="staff.php">Go Home</a>';
     $h->endpage();
     exit;

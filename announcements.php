@@ -9,7 +9,7 @@ declare(strict_types=1);
 global $db, $ir, $userid, $h;
 require_once('globals.php');
 $ac = $ir['new_announcements'];
-$q = $db->run(
+$q  = $db->run(
     'SELECT a_text, a_time FROM announcements ORDER BY a_time DESC',
 );
 echo '
@@ -19,29 +19,24 @@ echo '
 	<th width="70%">Announcement</th>
 		</tr>
    ';
-foreach ($q as $r)
-{
-    if ($ac > 0)
-    {
+foreach ($q as $r) {
+    if ($ac > 0) {
         $ac--;
         $new = '<br /><b>New!</b>';
-    }
-    else
-    {
+    } else {
         $new = '';
     }
     $r['a_text'] = nl2br($r['a_text']);
     echo '
 		<tr>
 	<td valign=top>' . date('F j Y, g:i:s a', (int)$r['a_time']) . $new
-            . '</td>
+        . '</td>
 	<td valign=top>' . $r['a_text'] . '</td>
 		</tr>
    ';
 }
 echo '</table>';
-if ($ir['new_announcements'] > 0)
-{
+if ($ir['new_announcements'] > 0) {
     $db->update(
         'users',
         ['new_announcements' => 0],

@@ -1,11 +1,14 @@
 <?php
 declare(strict_types=1);
+
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
  *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
+
+use ParagonIE\EasyDB\EasyPlaceholder;
 
 global $db, $ir, $userid, $h;
 require_once('globals.php');
@@ -41,28 +44,30 @@ if (!empty($_POST['qty']) && !empty($_GET['ID'])) {
         if ($_POST['qty'] > $r['inv_qty']) {
             echo 'You are trying to sell more than you have!';
         } else {
-            $price = (int)($r['itmsellprice'] * $_POST['qty']);
-            item_remove($userid, $r['itmid'], $_POST['qty']);
-            $db->update(
-                'users',
-                ['money' => new ParagonIE\EasyDB\EasyPlaceholder('money + ?', $price)],
-                ['userid' => $userid],
-            );
+            $price  = (int)($r['itmsellprice'] * $_POST['qty']);
             $priceh = money_formatter($price);
-            echo 'You sold ' . $_POST['qty'] . ' ' . $r['itmname']
-                . '(s) for ' . $priceh;
-            $is_log = $ir['username'] . ' sold ' . $_POST['qty'] . ' ' . $r['itmname'] . '(s) for ' . $priceh;
-            $db->insert(
-                'itemselllogs',
-                [
-                    'isUSER' => $userid,
-                    'isITEM' => $r['itmid'],
-                    'isTOTALPRICE' => $price,
-                    'isQTY' => $_POST['qty'],
-                    'isTIME' => time(),
-                    'isCONTENT' => $is_log,
-                ],
-            );
+            $save   = function () use ($db, $ir, $r, $userid, $price, $priceh) {
+                item_remove($userid, $r['itmid'], $_POST['qty']);
+                $db->update(
+                    'users',
+                    ['money' => new EasyPlaceholder('money + ?', $price)],
+                    ['userid' => $userid],
+                );
+                $is_log = $ir['username'] . ' sold ' . $_POST['qty'] . ' ' . $r['itmname'] . '(s) for ' . $priceh;
+                $db->insert(
+                    'itemselllogs',
+                    [
+                        'isUSER' => $userid,
+                        'isITEM' => $r['itmid'],
+                        'isTOTALPRICE' => $price,
+                        'isQTY' => $_POST['qty'],
+                        'isTIME' => time(),
+                        'isCONTENT' => $is_log,
+                    ],
+                );
+            };
+            $db->tryFlatTransaction($save);
+            echo 'You sold ' . $_POST['qty'] . ' ' . $r['itmname'] . '(s) for ' . $priceh;
         }
     }
 } elseif (!empty($_GET['ID']) && empty($_POST['qty'])) {

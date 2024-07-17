@@ -68,17 +68,20 @@ function addbot(): void
             $h->endpage();
             exit;
         }
-        $db->insert(
-            'challengebots',
-            [
-                'cb_npcid' => $r['userid'],
-                'cb_money' => $_POST['money'],
-            ],
-        );
+        $save = function () use ($db, $r) {
+            $db->insert(
+                'challengebots',
+                [
+                    'cb_npcid' => $r['userid'],
+                    'cb_money' => $_POST['money'],
+                ],
+            );
+            stafflog_add("Added Challenge Bot {$r['username']}.");
+        };
+        $db->tryFlatTransaction($save);
         echo 'Challenge Bot ' . $r['username']
             . ' added.<br />
                 &gt; <a href="staff.php">Goto Main</a>';
-        stafflog_add("Added Challenge Bot {$r['username']}.");
     } else {
         $csrf = request_csrf_html('staff_addbot');
         echo "
@@ -140,14 +143,17 @@ function editbot(): void
                 $h->endpage();
                 exit;
             }
-            $db->update(
-                'challengebots',
-                ['cb_money' => $_POST['money']],
-                ['cb_npcid' => $r['userid']],
-            );
+            $save = function () use ($db, $r) {
+                $db->update(
+                    'challengebots',
+                    ['cb_money' => $_POST['money']],
+                    ['cb_npcid' => $r['userid']],
+                );
+                stafflog_add("Edited Challenge Bot {$r['username']}.");
+            };
+            $db->tryFlatTransaction($save);
             echo 'Challenge Bot ' . $r['username']
                 . ' was updated.<br />&gt; <a href="staff.php">Goto Main</a>';
-            stafflog_add("Edited Challenge Bot {$r['username']}.");
             break;
         case '1':
             $_POST['userid'] =
@@ -247,20 +253,23 @@ function delbot(): void
             $h->endpage();
             exit;
         }
-        $db->delete(
-            'challengebots',
-            ['cb_npcid' => $r['userid']],
-        );
-        if ($_POST['delcb'] == 'Yes') {
+        $save = function () use ($db, $r) {
             $db->delete(
-                'challengesbeaten',
-                ['npcid' => $r['userid']],
+                'challengebots',
+                ['cb_npcid' => $r['userid']],
             );
-        }
+            if ($_POST['delcb'] == 'Yes') {
+                $db->delete(
+                    'challengesbeaten',
+                    ['npcid' => $r['userid']],
+                );
+            }
+            stafflog_add("Removed Challenge Bot {$r['username']}");
+        };
+        $db->tryFlatTransaction($save);
         echo 'Challenge Bot ' . $r['username']
             . ' removed.<br />
               &gt; <a href="staff.php">Goto Main</a>';
-        stafflog_add("Removed Challenge Bot {$r['username']}");
     } else {
         $csrf = request_csrf_html('staff_delbot');
         echo "

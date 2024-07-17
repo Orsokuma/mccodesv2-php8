@@ -114,15 +114,18 @@ function crystal_remove(): void
         $h->endpage();
         exit;
     }
-    $db->update(
-        'users',
-        ['crystals' => new EasyPlaceholder('crystals + ?', $r['cmQTY'])],
-        ['userid' => $userid],
-    );
-    $db->delete(
-        'crystalmarket',
-        ['cmID' => $_GET['ID']],
-    );
+    $save = function () use ($db, $userid, $r) {
+        $db->update(
+            'users',
+            ['crystals' => new EasyPlaceholder('crystals + ?', $r['cmQTY'])],
+            ['userid' => $userid],
+        );
+        $db->delete(
+            'crystalmarket',
+            ['cmID' => $_GET['ID']],
+        );
+    };
+    $db->tryFlatTransaction($save);
     echo "
 	Crystals removed from market!
 	<br />
@@ -180,35 +183,37 @@ function crystal_buy(): void
             $h->endpage();
             exit;
         }
-        $db->update(
-            'users',
-            [
-                'crystals' => new EasyPlaceholder('crystals + ?', $_POST['QTY']),
-                'money' => new EasyPlaceholder('money - ?', $cprice),
-            ],
-            ['userid' => $userid],
-        );
-        if ($_POST['QTY'] < $r['cmQTY']) {
+        $save = function () use ($db, $userid, $cprice, $ir, $r) {
             $db->update(
-                'crystalmarket',
-                ['cmQTY' => new EasyPlaceholder('cmQTY - ?', $_POST['QTY'])],
-                ['cmID' => $_GET['ID']],
+                'users',
+                [
+                    'crystals' => new EasyPlaceholder('crystals + ?', $_POST['QTY']),
+                    'money' => new EasyPlaceholder('money - ?', $cprice),
+                ],
+                ['userid' => $userid],
             );
-        } elseif ($_POST['QTY'] == $r['cmQTY']) {
-            $db->delete(
-                'crystalmarket',
-                ['cmID' => $_GET['ID']],
+            if ($_POST['QTY'] < $r['cmQTY']) {
+                $db->update(
+                    'crystalmarket',
+                    ['cmQTY' => new EasyPlaceholder('cmQTY - ?', $_POST['QTY'])],
+                    ['cmID' => $_GET['ID']],
+                );
+            } elseif ($_POST['QTY'] == $r['cmQTY']) {
+                $db->delete(
+                    'crystalmarket',
+                    ['cmID' => $_GET['ID']],
+                );
+            }
+            $db->update(
+                'users',
+                ['money' => new EasyPlaceholder('money + ?', $cprice)],
+                ['userid' => $r['cmADDER']],
             );
-        }
-        $db->update(
-            'users',
-            ['money' => new EasyPlaceholder('money + ?', $cprice)],
-            ['userid' => $r['cmADDER']],
-        );
-
-        event_add($r['cmADDER'],
-            "<a href='viewuser.php?u=$userid'>{$ir['username']}</a> bought of {$_POST['QTY']} your crystals from the market for "
-            . money_formatter((int)$cprice) . '.');
+            event_add($r['cmADDER'],
+                "<a href='viewuser.php?u=$userid'>{$ir['username']}</a> bought of {$_POST['QTY']} your crystals from the market for "
+                . money_formatter((int)$cprice) . '.');
+        };
+        $db->tryFlatTransaction($save);
 
         echo '
 	You bought the ' . $_POST['QTY'] . ' crystals from the market for $'
@@ -255,33 +260,36 @@ function crystal_add(): void
             exit;
         }
 
-        $gc = $db->row(
+        $gc   = $db->row(
             'SELECT cmID FROM crystalmarket WHERE cmADDER = ? AND cmPRICE = ?',
             $userid,
             $_POST['price'],
         );
-        if (!empty($gc)) {
+        $save = function () use ($db, $gc, $userid) {
+            if (!empty($gc)) {
+                $db->update(
+                    'crystalmarket',
+                    ['cmQTY' => new EasyPlaceholder('cmQTY + ?', $_POST['amnt'])],
+                    ['cmID' => $gc['cmID']]
+                );
+            } else {
+                $tp = $_POST['price'];
+                $db->insert(
+                    'crystalmarket',
+                    [
+                        'cmQTY' => $_POST['amnt'],
+                        'cmADDER' => $userid,
+                        'cmPRICE' => $tp,
+                    ],
+                );
+            }
             $db->update(
-                'crystalmarket',
-                ['cmQTY' => new EasyPlaceholder('cmQTY + ?', $_POST['amnt'])],
-                ['cmID' => $gc['cmID']]
+                'users',
+                ['crystals' => new EasyPlaceholder('crystals - ?', $_POST['amnt'])],
+                ['userid' => $userid],
             );
-        } else {
-            $tp = $_POST['price'];
-            $db->insert(
-                'crystalmarket',
-                [
-                    'cmQTY' => $_POST['amnt'],
-                    'cmADDER' => $userid,
-                    'cmPRICE' => $tp,
-                ],
-            );
-        }
-        $db->update(
-            'users',
-            ['crystals' => new EasyPlaceholder('crystals - ?', $_POST['amnt'])],
-            ['userid' => $userid],
-        );
+        };
+        $db->tryFlatTransaction($save);
         echo '
 	Crystals added to market!
 	<br />

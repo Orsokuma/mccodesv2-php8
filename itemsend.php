@@ -49,24 +49,26 @@ if (!empty($_POST['qty']) && !empty($_POST['user'])) {
         } elseif (empty($rm)) {
             echo 'You are trying to send to an invalid user!';
         } else {
-            item_remove($userid, $r['inv_itemid'], $_POST['qty']);
-            item_add($_POST['user'], $r['inv_itemid'], $_POST['qty']);
-            echo 'You sent ' . $_POST['qty'] . ' ' . $r['itmname'] . '(s) to '
-                . $rm['username'];
-            event_add($_POST['user'],
-                "You received {$_POST['qty']} {$r['itmname']}(s) from <a href='viewuser.php?u=$userid'>{$ir['username']}</a>");
-            $db->insert(
-                'itemxferlogs',
-                [
-                    'ixFROM' => $userid,
-                    'ixTO' => $_POST['user'],
-                    'ixITEM' => $r['itmid'],
-                    'ixQTY' => $_POST['qty'],
-                    'ixTIME' => time(),
-                    'ixFROMIP' => $ir['lastip'],
-                    'ixTOIP' => $rm['lastip'],
-                ],
-            );
+            $save = function () use ($db, $userid, $ir, $r, $rm) {
+                item_remove($userid, $r['inv_itemid'], $_POST['qty']);
+                item_add($_POST['user'], $r['inv_itemid'], $_POST['qty']);
+                event_add($_POST['user'],
+                    "You received {$_POST['qty']} {$r['itmname']}(s) from <a href='viewuser.php?u=$userid'>{$ir['username']}</a>");
+                $db->insert(
+                    'itemxferlogs',
+                    [
+                        'ixFROM' => $userid,
+                        'ixTO' => $_POST['user'],
+                        'ixITEM' => $r['itmid'],
+                        'ixQTY' => $_POST['qty'],
+                        'ixTIME' => time(),
+                        'ixFROMIP' => $ir['lastip'],
+                        'ixTOIP' => $rm['lastip'],
+                    ],
+                );
+            };
+            $db->tryFlatTransaction($save);
+            echo 'You sent ' . $_POST['qty'] . ' ' . $r['itmname'] . '(s) to ' . $rm['username'];
         }
     }
 } elseif (!empty($_GET['ID'])) {

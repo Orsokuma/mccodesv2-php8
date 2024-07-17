@@ -100,33 +100,37 @@ function newjob(): void
         && !empty($_POST['jrPAY']) && !empty($_POST['jrSTRN'])
         && !empty($_POST['jrLABOURN']) && !empty($_POST['jrIQN'])) {
         staff_csrf_stdverify('staff_newjob', 'staff_jobs.php?action=newjob');
-        $i = $db->insert(
-            'jobs',
-            [
-                'jNAME' => $_POST['jNAME'],
-                'jDESC' => $_POST['jDESC'],
-                'jOWNER' => $_POST['jOWNER'],
-            ],
-        );
-        $j = $db->insert(
-            'jobranks',
-            [
-                'jrNAME' => $_POST['jrNAME'],
-                'jrPAY' => $_POST['jrPAY'],
-                'jrSTRN' => $_POST['jrSTRN'],
-                'jrLABOURN' => $_POST['jrLABOURN'],
-                'jrIQN' => $_POST['jrIQN'],
-                'jrSTRG' => $_POST['jrSTRG'],
-                'jrLABOURG' => $_POST['jrLABOURG'],
-                'jrIQG' => $_POST['jrIQG'],
-                'jrJOB' => $i,
-            ],
-        );
-        $db->update(
-            'jobs',
-            ['jFIRST' => $j],
-            ['jID' => $i],
-        );
+        $save = function () use ($db) {
+            $i = $db->insert(
+                'jobs',
+                [
+                    'jNAME' => $_POST['jNAME'],
+                    'jDESC' => $_POST['jDESC'],
+                    'jOWNER' => $_POST['jOWNER'],
+                ],
+            );
+            $j = $db->insert(
+                'jobranks',
+                [
+                    'jrNAME' => $_POST['jrNAME'],
+                    'jrPAY' => $_POST['jrPAY'],
+                    'jrSTRN' => $_POST['jrSTRN'],
+                    'jrLABOURN' => $_POST['jrLABOURN'],
+                    'jrIQN' => $_POST['jrIQN'],
+                    'jrSTRG' => $_POST['jrSTRG'],
+                    'jrLABOURG' => $_POST['jrLABOURG'],
+                    'jrIQG' => $_POST['jrIQG'],
+                    'jrJOB' => $i,
+                ],
+            );
+            $db->update(
+                'jobs',
+                ['jFIRST' => $j],
+                ['jID' => $i],
+            );
+            stafflog_add('Added job ' . $_POST['jNAME']);
+        };
+        $db->tryFlatTransaction($save);
         echo 'Job created!<br />
         &gt; <a href="staff.php">Go Home</a>';
         $h->endpage();
@@ -219,16 +223,20 @@ function jobedit(): void
             $h->endpage();
             exit;
         }
-        $db->update(
-            'jobs',
-            [
-                'jNAME' => $_POST['jNAME'],
-                'jDESC' => $_POST['jDESC'],
-                'jOWNER' => $_POST['jOWNER'],
-                'jFIRST' => $_POST['jFIRST'],
-            ],
-            ['jID' => $_POST['jID']],
-        );
+        $save = function () use ($db) {
+            $db->update(
+                'jobs',
+                [
+                    'jNAME' => $_POST['jNAME'],
+                    'jDESC' => $_POST['jDESC'],
+                    'jOWNER' => $_POST['jOWNER'],
+                    'jFIRST' => $_POST['jFIRST'],
+                ],
+                ['jID' => $_POST['jID']],
+            );
+            stafflog_add('Edited job ' . $_POST['jNAME']);
+        };
+        $db->tryFlatTransaction($save);
         echo 'Job updated!<br />
         &gt; <a href="staff.php">Go Home</a>';
         $h->endpage();
@@ -294,30 +302,34 @@ function newjobrank(): void
         && !empty($_POST['jrLABOURN']) && !empty($_POST['jrIQN'])) {
         staff_csrf_stdverify('staff_newjobrank',
             'staff_jobs.php?action=newjobrank');
-        $job_exists = $db->exists(
-            'SELECT COUNT(jID) FROM jobs WHERE jID = ?',
+        $row = $db->row(
+            'SELECT jNAME FROM jobs WHERE jID = ?',
             $_POST['jrJOB'],
         );
-        if (!$job_exists) {
+        if (empty($row)) {
             echo 'Invalid job.<br />
             &gt; <a href="staff_jobs.php?action=newjobrank">Go Back</a>';
             $h->endpage();
             exit;
         }
-        $db->insert(
-            'jobranks',
-            [
-                'jrNAME' => $_POST['jrNAME'],
-                'jrJOB' => $_POST['jrJOB'],
-                'jrPAY' => $_POST['jrPAY'],
-                'jrSTRN' => $_POST['jrSTRN'],
-                'jrLABOURN' => $_POST['jrLABOURN'],
-                'jrIQN' => $_POST['jrIQN'],
-                'jrSTRG' => $_POST['jrSTRG'],
-                'jrLABOURG' => $_POST['jrLABOURG'],
-                'jrIQG' => $_POST['jrIQG'],
-            ],
-        );
+        $save = function () use ($db, $row) {
+            $db->insert(
+                'jobranks',
+                [
+                    'jrNAME' => $_POST['jrNAME'],
+                    'jrJOB' => $_POST['jrJOB'],
+                    'jrPAY' => $_POST['jrPAY'],
+                    'jrSTRN' => $_POST['jrSTRN'],
+                    'jrLABOURN' => $_POST['jrLABOURN'],
+                    'jrIQN' => $_POST['jrIQN'],
+                    'jrSTRG' => $_POST['jrSTRG'],
+                    'jrLABOURG' => $_POST['jrLABOURG'],
+                    'jrIQG' => $_POST['jrIQG'],
+                ],
+            );
+            stafflog_add('Added job rank ' . $_POST['jrNAME'] . ' to job ' . $row['jNAME']);
+        };
+        $db->tryFlatTransaction($save);
         echo 'Job rank created!<br />
         &gt; <a href="staff_jobs.php?action=newjobrank">Go Back</a>';
         $h->endpage();
@@ -386,21 +398,25 @@ function jobrankedit(): void
             $h->endpage();
             exit;
         }
-        $db->update(
-            'jobranks',
-            [
-                'jrNAME' => $_POST['jrNAME'],
-                'jrJOB' => $_POST['jrJOB'],
-                'jrPAY' => $_POST['jrPAY'],
-                'jrSTRN' => $_POST['jrSTRN'],
-                'jrLABOURN' => $_POST['jrLABOURN'],
-                'jrIQN' => $_POST['jrIQN'],
-                'jrSTRG' => $_POST['jrSTRG'],
-                'jrLABOURG' => $_POST['jrLABOURG'],
-                'jrIQG' => $_POST['jrIQG'],
-            ],
-            ['jrID' => $_POST['jrID']],
-        );
+        $save = function () use ($db) {
+            $db->update(
+                'jobranks',
+                [
+                    'jrNAME' => $_POST['jrNAME'],
+                    'jrJOB' => $_POST['jrJOB'],
+                    'jrPAY' => $_POST['jrPAY'],
+                    'jrSTRN' => $_POST['jrSTRN'],
+                    'jrLABOURN' => $_POST['jrLABOURN'],
+                    'jrIQN' => $_POST['jrIQN'],
+                    'jrSTRG' => $_POST['jrSTRG'],
+                    'jrLABOURG' => $_POST['jrLABOURG'],
+                    'jrIQG' => $_POST['jrIQG'],
+                ],
+                ['jrID' => $_POST['jrID']],
+            );
+            stafflog_add('Edited job rank ' . $_POST['jrNAME']);
+        };
+        $db->tryFlatTransaction($save);
         echo 'Job rank updated!<br />
         &gt; <a href="staff.php">Go Home</a>';
     } elseif (!empty($_POST['jrID'])) {
@@ -477,39 +493,46 @@ function jobrankdele(): void
             $h->endpage();
             exit;
         }
-        $db->delete(
-            'jobranks',
-            ['jrID' => $_POST['jrID']],
-        );
-        echo 'Job rank successfully deleted!';
-        $jname = $db->cell(
-            "SELECT jNAME FROM jobs WHERE jFIRST = ?",
-            $_POST['jrID'],
-        );
-        if (!empty($jname)) {
-            echo "<br />
-            <b>Warning!</b> The Job {$jname} now has no first rank!
-            	Please go edit it and include a first rank.<br />
-            Users who were in the rank you deleted will have to
-            	reapply for their job.";
-            $db->update(
-                'users',
-                [
-                    'job' => 0,
-                    'jobrank' => 0,
-                ],
-                ['jobrank' => $_POST['jrID']],
+        $save = function () use ($db, $aff_job) {
+            $names = $db->row(
+                'SELECT * FROM (
+                    (SELECT jNAME FROM jobs WHERE jFIRST = ?) AS a,
+                    (SELECT jrNAME FROM jobranks WHERE jrID = ?) AS b
+                    )',
+                $_POST['jrID'],
+                $_POST['jrID'],
             );
-        } else {
-            $db->safeQuery(
-                'UPDATE users AS u
-                INNER JOIN jobs AS j ON u.job = j.jID
-                SET u.jobrank = j.jFIRST
-                WHERE u.job = ? AND u.jobrank = ?',
-                [$aff_job, $_POST['jrID']],
+            $db->delete(
+                'jobranks',
+                ['jrID' => $_POST['jrID']],
             );
-        }
-        echo '<br />&gt; <a href="staff.php">Go Home</a>';
+            if (!empty($names)) {
+                echo "<br />
+                <b>Warning!</b> The Job {$names['jNAME']} now has no first rank!
+                Please go edit it and include a first rank.<br />
+                Users who were in the rank you deleted will have to
+                reapply for their job.";
+                $db->update(
+                    'users',
+                    [
+                        'job' => 0,
+                        'jobrank' => 0,
+                    ],
+                    ['jobrank' => $_POST['jrID']],
+                );
+            } else {
+                $db->safeQuery(
+                    'UPDATE users AS u
+                    INNER JOIN jobs AS j ON u.job = j.jID
+                    SET u.jobrank = j.jFIRST
+                    WHERE u.job = ? AND u.jobrank = ?',
+                    [$aff_job, $_POST['jrID']],
+                );
+            }
+            stafflog_add('Deleted job rank ' . $names['jrNAME'] . ' from job ' . $names['jNAME']);
+        };
+        $db->tryFlatTransaction($save);
+        echo 'Job rank successfully deleted!<br />&gt; <a href="staff.php">Go Home</a>';
     } else {
         $csrf = request_csrf_html('staff_deljobrank');
         echo "
@@ -536,35 +559,38 @@ function jobdele(): void
             ? abs(intval($_POST['jID'])) : '';
     if (!empty($_POST['jID'])) {
         staff_csrf_stdverify('staff_deljob', 'staff_jobs.php?action=jobdele');
-        $job_exists = $db->exists(
-            'SELECT COUNT(jID) FROM jobs WHERE jID = ?',
+        $name = $db->cell(
+            'SELECT jNAME FROM jobs WHERE jID = ?',
             $_POST['jID'],
         );
-        if (!$job_exists) {
+        if (empty($name)) {
             echo 'Invalid job.<br />
             &gt; <a href="staff_jobs.php?action=jobdele">Go Back</a>';
             $h->endpage();
             exit;
         }
-        $db->delete(
-            'jobs',
-            ['jID' => $_POST['jID']],
-        );
-        echo 'Job successfully deleted!<br />';
-        $deleted = $db->delete(
-            'jobranks',
-            ['jrJOB' => $_POST['jID']],
-        );
-        echo $deleted . ' job ranks deleted.<br />';
-        $db->update(
-            'users',
-            [
-                'job' => 0,
-                'jobrank' => 0,
-            ],
-            ['job' => $_POST['jID']],
-        );
-        echo '&gt; <a href="staff.php">Go Home</a>';
+        $deleted = 0;
+        $save    = function () use ($db, &$deleted, $name) {
+            $db->delete(
+                'jobs',
+                ['jID' => $_POST['jID']],
+            );
+            $deleted = $db->delete(
+                'jobranks',
+                ['jrJOB' => $_POST['jID']],
+            );
+            $db->update(
+                'users',
+                [
+                    'job' => 0,
+                    'jobrank' => 0,
+                ],
+                ['job' => $_POST['jID']],
+            );
+            stafflog_add('Deleted job ' . $name . ' and all associated job ranks');
+        };
+        $db->tryFlatTransaction($save);
+        echo 'Job successfully deleted!<br />' . $deleted . ' job ranks deleted.<br />&gt; <a href="staff.php">Go Home</a>';
     } else {
         $csrf = request_csrf_html('staff_deljob');
         echo "

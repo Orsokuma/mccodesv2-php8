@@ -9,44 +9,39 @@ declare(strict_types=1);
 
 global $db, $h;
 require_once('globals.php');
-$non_don = '';
-$is_don = '';
-$all_us = '';
-$filters =
-        ['nodon' => 'AND donatordays = 0',
-                'don' => 'AND donatordays > 0', 'all' => ''];
-$hofheads =
-        ['level', 'money', 'crystals', 'respect', 'total', 'strength',
-                'agility', 'guard', 'labour', 'iq'];
+$non_don        = '';
+$is_don         = '';
+$all_us         = '';
+$filters        =
+    ['nodon' => 'AND donatordays = 0',
+        'don' => 'AND donatordays > 0', 'all' => ''];
+$hofheads       =
+    ['level', 'money', 'crystals', 'respect', 'total', 'strength',
+        'agility', 'guard', 'labour', 'iq'];
 $_GET['action'] =
-        (isset($_GET['action']) && in_array($_GET['action'], $hofheads))
-                ? $_GET['action'] : 'level';
-$filter =
-        (isset($_GET['filter']) && isset($filters[$_GET['filter']]))
-                ? $_GET['filter'] : 'all';
-$myf = $filters[$filter];
-$hofqone = ['level', 'money', 'crystals'];
-if (in_array($_GET['action'], $hofqone))
-{
+    (isset($_GET['action']) && in_array($_GET['action'], $hofheads))
+        ? $_GET['action'] : 'level';
+$filter         =
+    (isset($_GET['filter']) && isset($filters[$_GET['filter']]))
+        ? $_GET['filter'] : 'all';
+$myf            = $filters[$filter];
+$hofqone        = ['level', 'money', 'crystals'];
+if (in_array($_GET['action'], $hofqone)) {
     $q = $db->run(
         'SELECT userid, laston, gender, donatordays, username, level, money, crystals, gangPREF
         FROM users AS u
         LEFT JOIN gangs AS g ON g.gangID = u.gang
         WHERE u.user_level != 0
-        ' .$myf. '
-        ORDER BY '.$_GET['action'].' DESC, userid
+        ' . $myf . '
+        ORDER BY ' . $_GET['action'] . ' DESC, userid
         LIMIT 20',
     );
 }
 $hofqtwo = ['total', 'strength', 'agility', 'guard', 'labour', 'iq'];
-if (in_array($_GET['action'], $hofqtwo))
-{
-    if ($_GET['action'] == 'total')
-    {
+if (in_array($_GET['action'], $hofqtwo)) {
+    if ($_GET['action'] == 'total') {
         $us = '(strength + agility + guard + labour + IQ)';
-    }
-    else
-    {
+    } else {
         $us = $_GET['action'];
     }
     $q = $db->run(
@@ -55,28 +50,27 @@ if (in_array($_GET['action'], $hofqtwo))
         INNER JOIN userstats AS us ON u.userid = us.userid
         LEFT JOIN gangs AS g ON g.gangID = u.gang
         WHERE u.user_level != 0
-        ' .$myf. '
-        ORDER BY ' .$us. ' DESC, u.userid ASC
+        ' . $myf . '
+        ORDER BY ' . $us . ' DESC, u.userid ASC
         LIMIT 20'
     );
 }
-if ($_GET['action'] != 'respect')
-{
+if ($_GET['action'] != 'respect') {
     $non_don =
-            (($filter == 'nodon') ? '<b>' : '')
-                    . '<a href="halloffame.php?action=' . $_GET['action']
-                    . '&filter=nodon">Non-Donators</a>'
-                    . (($filter == 'nodon') ? '</b>' : '');
-    $is_don =
-            (($filter == 'don') ? '<b>' : '')
-                    . '<a href="halloffame.php?action=' . $_GET['action']
-                    . '&filter=don">Donators</a>'
-                    . (($filter == 'don') ? '</b>' : '');
-    $all_us =
-            (($filter == 'all') ? '<b>' : '')
-                    . '<a href="halloffame.php?action=' . $_GET['action']
-                    . '&filter=all">All Users</a>'
-                    . (($filter == 'all') ? '</b>' : '');
+        (($filter == 'nodon') ? '<b>' : '')
+        . '<a href="halloffame.php?action=' . $_GET['action']
+        . '&filter=nodon">Non-Donators</a>'
+        . (($filter == 'nodon') ? '</b>' : '');
+    $is_don  =
+        (($filter == 'don') ? '<b>' : '')
+        . '<a href="halloffame.php?action=' . $_GET['action']
+        . '&filter=don">Donators</a>'
+        . (($filter == 'don') ? '</b>' : '');
+    $all_us  =
+        (($filter == 'all') ? '<b>' : '')
+        . '<a href="halloffame.php?action=' . $_GET['action']
+        . '&filter=all">All Users</a>'
+        . (($filter == 'all') ? '</b>' : '');
 }
 echo '<h3>Hall Of Fame</h3>'
     . (($_GET['action'] != 'respect')
@@ -101,38 +95,37 @@ echo '<h3>Hall Of Fame</h3>'
 		</tr>
 </table>
    ";
-switch ($_GET['action'])
-{
-case 'level':
-    hof_level();
-    break;
-case 'money':
-    hof_money();
-    break;
-case 'crystals':
-    hof_crystals();
-    break;
-case 'respect':
-    hof_respect();
-    break;
-case 'total':
-    hof_total();
-    break;
-case 'strength':
-    hof_strength();
-    break;
-case 'agility':
-    hof_agility();
-    break;
-case 'guard':
-    hof_guard();
-    break;
-case 'labour':
-    hof_labour();
-    break;
-case 'iq':
-    hof_iq();
-    break;
+switch ($_GET['action']) {
+    case 'level':
+        hof_level();
+        break;
+    case 'money':
+        hof_money();
+        break;
+    case 'crystals':
+        hof_crystals();
+        break;
+    case 'respect':
+        hof_respect();
+        break;
+    case 'total':
+        hof_total();
+        break;
+    case 'strength':
+        hof_strength();
+        break;
+    case 'agility':
+        hof_agility();
+        break;
+    case 'guard':
+        hof_guard();
+        break;
+    case 'labour':
+        hof_labour();
+        break;
+    case 'iq':
+        hof_iq();
+        break;
 }
 
 /**
@@ -153,16 +146,15 @@ Showing the 20 users with the highest levels
    ";
 
     $p = 0;
-    foreach ($q as $r)
-    {
+    foreach ($q as $r) {
         $p++;
         $bold_hof =
-                ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
+            ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
         echo '
 		<tr ' . $bold_hof . '>
 	<td>' . $p . '</td>
 	<td>' . $r['gangPREF'] . ' ' . $r['username'] . ' [' . $r['userid']
-                . ']</td>
+            . ']</td>
 	<td>' . $r['level'] . '</td>
 		</tr>
    ';
@@ -188,16 +180,15 @@ Showing the 20 users with the highest amount of money
    ";
 
     $p = 0;
-    foreach ($q as $r)
-    {
+    foreach ($q as $r) {
         $p++;
         $bold_hof =
-                ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
+            ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
         echo '
 		<tr ' . $bold_hof . '>
 	<td>' . $p . '</td>
 	<td>' . $r['gangPREF'] . ' ' . $r['username'] . ' [' . $r['userid']
-                . ']</td>
+            . ']</td>
 	<td>' . money_formatter((int)$r['money']) . '</td>
 		</tr>
    ';
@@ -223,16 +214,15 @@ Showing the 20 users with the highest amount of crystals
    ";
 
     $p = 0;
-    foreach ($q as $r)
-    {
+    foreach ($q as $r) {
         $p++;
         $bold_hof =
-                ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
+            ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
         echo '
 		<tr ' . $bold_hof . '>
 	<td>' . $p . '</td>
 	<td>' . $r['gangPREF'] . ' ' . $r['username'] . ' [' . $r['userid']
-                . ']</td>
+            . ']</td>
 	<td>' . money_formatter((int)$r['crystals'], '') . '</td>
 		</tr>
    ';
@@ -260,12 +250,11 @@ Showing the 20 gangs with the highest amount of respect
         'SELECT gangID, gangNAME, gangRESPECT FROM gangs ORDER BY gangRESPECT DESC, gangID LIMIT 20'
     );
     $p = 0;
-    foreach ($q as $r)
-    {
+    foreach ($q as $r) {
         $p++;
         $bold_hof =
-                ($r['gangID'] == $ir['gang']) ? ' style="font-weight: bold;"'
-                        : '';
+            ($r['gangID'] == $ir['gang']) ? ' style="font-weight: bold;"'
+                : '';
         echo '
 		<tr ' . $bold_hof . '>
 	<td>' . $p . '</td>
@@ -294,16 +283,15 @@ Showing the 20 users with the highest total stats
    ";
 
     $p = 0;
-    foreach ($q as $r)
-    {
+    foreach ($q as $r) {
         $p++;
         $bold_hof =
-                ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
+            ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
         echo '
 		<tr ' . $bold_hof . '>
 	<td>' . $p . '</td>
 	<td>' . $r['gangPREF'] . ' ' . $r['username'] . ' [' . $r['userid']
-                . ']</td>
+            . ']</td>
 		</tr>
    ';
     }
@@ -327,16 +315,15 @@ Showing the 20 users with the highest strength
    ";
 
     $p = 0;
-    foreach ($q as $r)
-    {
+    foreach ($q as $r) {
         $p++;
         $bold_hof =
-                ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
+            ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
         echo '
 		<tr ' . $bold_hof . '>
 	<td>' . $p . '</td>
 	<td>' . $r['gangPREF'] . ' ' . $r['username'] . ' [' . $r['userid']
-                . ']</td>
+            . ']</td>
 		</tr>
    ';
     }
@@ -360,16 +347,15 @@ Showing the 20 users with the highest agility
    ";
 
     $p = 0;
-    foreach ($q as $r)
-    {
+    foreach ($q as $r) {
         $p++;
         $bold_hof =
-                ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
+            ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
         echo '
 		<tr ' . $bold_hof . '>
 	<td>' . $p . '</td>
 	<td>' . $r['gangPREF'] . ' ' . $r['username'] . ' [' . $r['userid']
-                . ']</td>
+            . ']</td>
 		</tr>
    ';
     }
@@ -393,16 +379,15 @@ Showing the 20 users with the highest guard
    ";
 
     $p = 0;
-    foreach ($q as $r)
-    {
+    foreach ($q as $r) {
         $p++;
         $bold_hof =
-                ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
+            ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
         echo '
 		<tr ' . $bold_hof . '>
 	<td>' . $p . '</td>
 	<td>' . $r['gangPREF'] . ' ' . $r['username'] . ' [' . $r['userid']
-                . ']</td>
+            . ']</td>
 		</tr>
    ';
     }
@@ -426,16 +411,15 @@ Showing the 20 users with the highest labour
    ";
 
     $p = 0;
-    foreach ($q as $r)
-    {
+    foreach ($q as $r) {
         $p++;
         $bold_hof =
-                ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
+            ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
         echo '
 		<tr ' . $bold_hof . '>
 	<td>' . $p . '</td>
 	<td>' . $r['gangPREF'] . ' ' . $r['username'] . ' [' . $r['userid']
-                . ']</td>
+            . ']</td>
 		</tr>
    ';
     }
@@ -459,19 +443,19 @@ Showing the 20 users with the highest IQ
    ";
 
     $p = 0;
-    foreach ($q as $r)
-    {
+    foreach ($q as $r) {
         $p++;
         $bold_hof =
-                ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
+            ($r['userid'] == $userid) ? ' style="font-weight: bold;"' : '';
         echo '
 		<tr ' . $bold_hof . '>
 	<td>' . $p . '</td>
 	<td>' . $r['gangPREF'] . ' ' . $r['username'] . ' [' . $r['userid']
-                . ']</td>
+            . ']</td>
 		</tr>
    ';
     }
     echo '</table>';
 }
+
 $h->endpage();

@@ -1,11 +1,14 @@
 <?php
 declare(strict_types=1);
+
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
  *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
+
+use ParagonIE\EasyDB\EasyPlaceholder;
 
 global $db, $ir, $userid, $h;
 require_once('globals.php');
@@ -56,37 +59,40 @@ if ($_POST['price'] && $_POST['QTY'] && $_GET['ID']) {
             $userid,
             $_POST['currency']
         );
-        if (!empty($cqty)) {
-            $db->update(
-                'itemmarket',
-                ['imQTY' => new \ParagonIE\EasyDB\EasyPlaceholder('imQTY + ?', $_POST['QTY'])],
-                ['imID' => $cqty['imID']]
-            );
-        } else {
+        $save = function () use ($db, $ir, $r, $userid, $cqty) {
+            if (!empty($cqty)) {
+                $db->update(
+                    'itemmarket',
+                    ['imQTY' => new EasyPlaceholder('imQTY + ?', $_POST['QTY'])],
+                    ['imID' => $cqty['imID']]
+                );
+            } else {
+                $db->insert(
+                    'itemmarket',
+                    [
+                        'imITEM' => $r['inv_itemid'],
+                        'imADDER' => $userid,
+                        'imPRICE' => $_POST['price'],
+                        'imCURRENCY' => $_POST['currency'],
+                        'imQTY' => $_POST['QTY'],
+                    ],
+                );
+            }
+            item_remove($userid, $r['inv_itemid'], $_POST['QTY']);
+            $imadd_log = "{$ir['username']} added {$r['itmname']} x{$_POST['QTY']} to the item market for {$_POST['price']} {$_POST['currency']}";
             $db->insert(
-                'itemmarket',
+                'imarketaddlogs',
                 [
-                    'imITEM' => $r['inv_itemid'],
-                    'imADDER' => $userid,
-                    'imPRICE' => $_POST['price'],
-                    'imCURRENCY' => $_POST['currency'],
-                    'imQTY' => $_POST['QTY'],
+                    'imaITEM' => $r['inv_itemid'],
+                    'imaPRICE' => $_POST['price'],
+                    'imaINVID' => $r['inv_id'],
+                    'imaADDER' => $userid,
+                    'imaTIME' => time(),
+                    'imaCONTENT' => $imadd_log,
                 ],
             );
-        }
-        item_remove($userid, $r['inv_itemid'], $_POST['QTY']);
-        $imadd_log = "{$ir['username']} added {$r['itmname']} x{$_POST['QTY']} to the item market for {$_POST['price']} {$_POST['currency']}";
-        $db->insert(
-            'imarketaddlogs',
-            [
-                'imaITEM' => $r['inv_itemid'],
-                'imaPRICE' => $_POST['price'],
-                'imaINVID' => $r['inv_id'],
-                'imaADDER' => $userid,
-                'imaTIME' => time(),
-                'imaCONTENT' => $imadd_log,
-            ],
-        );
+        };
+        $db->tryFlatTransaction($save);
         echo 'Item added to market.';
     }
 } else {

@@ -163,23 +163,26 @@ function gang_applysubmit(): void
         exit;
     }
     if (!$ir['gang']) {
-        $db->insert(
-            'applications',
-            [
-                'appUSER' => $userid,
-                'appGANG' => $_GET['ID'],
-                'appTEXT' => $application,
-            ],
-        );
-        $gev = "<a href='viewuser.php?u={$userid}'>{$ir['username']}</a>" . ' sent an application to join this gang.';
-        $db->insert(
-            'gangevents',
-            [
-                'gevGANG' => $_GET['ID'],
-                'gevTIME' => time(),
-                'gevTEXT' => $gev,
-            ],
-        );
+        $save = function () use ($db, $ir, $userid, $application) {
+            $db->insert(
+                'applications',
+                [
+                    'appUSER' => $userid,
+                    'appGANG' => $_GET['ID'],
+                    'appTEXT' => $application,
+                ],
+            );
+            $gev = "<a href='viewuser.php?u={$userid}'>{$ir['username']}</a>" . ' sent an application to join this gang.';
+            $db->insert(
+                'gangevents',
+                [
+                    'gevGANG' => $_GET['ID'],
+                    'gevTIME' => time(),
+                    'gevTEXT' => $gev,
+                ],
+            );
+        };
+        $db->tryFlatTransaction($save);
         echo "You sent your application to the {$gangdata['gangNAME']} gang.";
     } else {
         echo 'You cannot apply for a gang when you are already in one.';

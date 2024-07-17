@@ -134,71 +134,74 @@ if (!empty($username)) {
                 register_footer();
             }
         }
-        $salt   = generate_pass_salt();
-        $encpsw = encode_password($base_pw, $salt);
-        $i      = $db->insert(
-            'users',
-            [
-                'username' => $username,
-                'login_name' => $username,
-                'userpass' => $encpsw,
-                'pass_salt' => $salt,
-                'email' => $e_email,
-                'gender' => $e_gender,
-                'lastip' => $IP,
-                'lastip_signup' => $IP,
-                'signedup' => time(),
-                'level' => 1,
-                'money' => $sm,
-                'user_level' => 1,
-                'energy' => 12,
-                'maxenergy' => 12,
-                'brave' => 5,
-                'maxbrave' => 5,
-                'will' => 100,
-                'maxwill' => 100,
-                'hp' => 100,
-                'maxhp' => 100,
-                'bankmoney' => -1,
-                'cybermoney' => -1,
-                'location' => 1,
-                'display_pic' => '',
-                'staffnotes' => '',
-                'voted' => '',
-                'user_notepad' => '',
-            ],
-        );
-        $db->insert(
-            'userstats',
-            [
-                'userid' => $i,
-                'strength' => 10,
-                'agility' => 10,
-                'guard' => 10,
-                'labour' => 10,
-                'IQ' => 10,
-            ],
-        );
-
-        if ($_POST['ref']) {
-            $db->update(
+        $save = function () use ($db, $base_pw, $username, $e_email, $e_gender, $IP, $sm, $rem_IP) {
+            $salt   = generate_pass_salt();
+            $encpsw = encode_password($base_pw, $salt);
+            $i      = $db->insert(
                 'users',
-                ['crystals' => new EasyPlaceholder('crystals + 2')],
-                ['userid' => $_POST['ref']],
-            );
-            event_add($_POST['ref'],
-                "For referring $username to the game, you have earned 2 valuable crystals!");
-            $db->insert(
-                'referals',
                 [
-                    'refREFER' => $_POST['ref'],
-                    'refREFED' => $i,
-                    'refTIME' => time(),
-                    'refREFERIP' => $rem_IP,
-                    'refREFEDIP' => $IP,
+                    'username' => $username,
+                    'login_name' => $username,
+                    'userpass' => $encpsw,
+                    'pass_salt' => $salt,
+                    'email' => $e_email,
+                    'gender' => $e_gender,
+                    'lastip' => $IP,
+                    'lastip_signup' => $IP,
+                    'signedup' => time(),
+                    'level' => 1,
+                    'money' => $sm,
+                    'user_level' => 1,
+                    'energy' => 12,
+                    'maxenergy' => 12,
+                    'brave' => 5,
+                    'maxbrave' => 5,
+                    'will' => 100,
+                    'maxwill' => 100,
+                    'hp' => 100,
+                    'maxhp' => 100,
+                    'bankmoney' => -1,
+                    'cybermoney' => -1,
+                    'location' => 1,
+                    'display_pic' => '',
+                    'staffnotes' => '',
+                    'voted' => '',
+                    'user_notepad' => '',
                 ],
             );
-        }
+            $db->insert(
+                'userstats',
+                [
+                    'userid' => $i,
+                    'strength' => 10,
+                    'agility' => 10,
+                    'guard' => 10,
+                    'labour' => 10,
+                    'IQ' => 10,
+                ],
+            );
+
+            if ($_POST['ref']) {
+                $db->update(
+                    'users',
+                    ['crystals' => new EasyPlaceholder('crystals + 2')],
+                    ['userid' => $_POST['ref']],
+                );
+                event_add($_POST['ref'],
+                    "For referring $username to the game, you have earned 2 valuable crystals!");
+                $db->insert(
+                    'referals',
+                    [
+                        'refREFER' => $_POST['ref'],
+                        'refREFED' => $i,
+                        'refTIME' => time(),
+                        'refREFERIP' => $rem_IP,
+                        'refREFEDIP' => $IP,
+                    ],
+                );
+            }
+        };
+        $db->tryFlatTransaction($save);
         echo "You have signed up, enjoy the game.<br />
 		&gt; <a href='login.php'>Login</a>";
     }

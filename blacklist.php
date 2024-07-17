@@ -143,19 +143,22 @@ function add_enemy(): void
         } elseif (empty($r)) {
             echo "Oh no, you're trying to add a ghost.";
         } else {
-            $db->insert(
-                'blacklist',
-                [
-                    'bl_ADDER' => $userid,
-                    'bl_ADDED' => $_POST['ID'],
-                    'bl_COMMENT' => $_POST['comment'],
-                ]
-            );
-            $db->update(
-                'users',
-                ['enemy_count' => new EasyPlaceholder('enemy_count + 1')],
-                ['userid' => $r['userid']],
-            );
+            $save = function () use ($db, $userid, $r) {
+                $db->insert(
+                    'blacklist',
+                    [
+                        'bl_ADDER' => $userid,
+                        'bl_ADDED' => $_POST['ID'],
+                        'bl_COMMENT' => $_POST['comment'],
+                    ]
+                );
+                $db->update(
+                    'users',
+                    ['enemy_count' => new EasyPlaceholder('enemy_count + 1')],
+                    ['userid' => $r['userid']],
+                );
+            };
+            $db->tryFlatTransaction($save);
             echo "{$r['username']} was added to your black list.<br />
 <a href='blacklist.php'>&gt; Back</a>";
         }
@@ -204,18 +207,21 @@ You didn\'t select a real enemy.<br />
         $h->endpage();
         exit;
     }
-    $db->delete(
-        'blacklist',
-        [
-            'bl_ID' => $_GET['b'],
-            'bl_ADDER' => $userid,
-        ]
-    );
-    $db->update(
-        'users',
-        ['enemy_count' => new EasyPlaceholder('enemy_count - 1')],
-        ['userid' => $r['bl_ADDED']],
-    );
+    $save = function () use ($db, $userid, $r) {
+        $db->delete(
+            'blacklist',
+            [
+                'bl_ID' => $_GET['b'],
+                'bl_ADDER' => $userid,
+            ]
+        );
+        $db->update(
+            'users',
+            ['enemy_count' => new EasyPlaceholder('enemy_count - 1')],
+            ['userid' => $r['bl_ADDED']],
+        );
+    };
+    $db->tryFlatTransaction($save);
     echo "
 Black list entry removed!<br />
 <a href='blacklist.php'>&gt; Back</a>

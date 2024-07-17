@@ -98,27 +98,29 @@ if ($fp) {
             $buyer = abs((int)$packr[3]);
             $for   = $buyer;
             // all seems to be in order, credit it.
-            if ($pack == 1) {
-                item_add($for, $set['willp_item'], 1);
+            $save = function () use ($db, $pack, $buyer, $for, $txn_id, $set, $payment_amount) {
+                if ($pack == 1) {
+                    item_add($for, $set['willp_item'], 1);
 
-            } elseif ($pack == 5) {
-                item_add($for, $set['willp_item'], 5);
+                } elseif ($pack == 5) {
+                    item_add($for, $set['willp_item'], 5);
+                }
+                // process payment
 
-            }
-            // process payment
-
-            event_add($for,
-                "Your \${$payment_amount} worth of Will Potions ($pack) has been successfully credited.");
-            $db->insert(
-                'willps_accepted',
-                [
-                    'dpBUYER' => $buyer,
-                    'dpFOR' => $for,
-                    'dpAMNT' => $pack,
-                    'dpTIME' => time(),
-                    'dpTXN' => $txn_id,
-                ]
-            );
+                event_add($for,
+                    "Your \${$payment_amount} worth of Will Potions ($pack) has been successfully credited.");
+                $db->insert(
+                    'willps_accepted',
+                    [
+                        'dpBUYER' => $buyer,
+                        'dpFOR' => $for,
+                        'dpAMNT' => $pack,
+                        'dpTIME' => time(),
+                        'dpTXN' => $txn_id,
+                    ]
+                );
+            };
+            $db->tryFlatTransaction($save);
         }
     }
     fclose($fp);

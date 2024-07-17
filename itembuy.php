@@ -1,11 +1,14 @@
 <?php
 declare(strict_types=1);
+
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
  *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
+
+use ParagonIE\EasyDB\EasyPlaceholder;
 
 global $db, $ir, $userid, $h;
 require_once('globals.php');
@@ -52,24 +55,27 @@ if (empty($_GET['ID']) or empty($_POST['qty'])) {
         }
 
         $price = (int)($itemd['itmbuyprice'] * $_POST['qty']);
-        item_add($userid, $itemd['itmid'], $_POST['qty']);
-        $db->update(
-            'users',
-            ['money' => new \ParagonIE\EasyDB\EasyPlaceholder('money - ?', $price)],
-            ['userid' => $userid],
-        );
-        $ib_log = "{$ir['username']} bought {$_POST['qty']} {$itemd['itmname']}(s) for {$price}";
-        $db->insert(
-            'itembuylogs',
-            [
-                'ibUSER' => $userid,
-                'ibITEM' => $itemd['itmid'],
-                'ibTOTALPRICE' => $price,
-                'ibQTY' => $_POST['qty'],
-                'ibTIME' => time(),
-                'ibCONTENT' => $ib_log,
-            ],
-        );
+        $save  = function () use ($db, $price, $ir, $userid, $itemd) {
+            item_add($userid, $itemd['itmid'], $_POST['qty']);
+            $db->update(
+                'users',
+                ['money' => new EasyPlaceholder('money - ?', $price)],
+                ['userid' => $userid],
+            );
+            $ib_log = "{$ir['username']} bought {$_POST['qty']} {$itemd['itmname']}(s) for {$price}";
+            $db->insert(
+                'itembuylogs',
+                [
+                    'ibUSER' => $userid,
+                    'ibITEM' => $itemd['itmid'],
+                    'ibTOTALPRICE' => $price,
+                    'ibQTY' => $_POST['qty'],
+                    'ibTIME' => time(),
+                    'ibCONTENT' => $ib_log,
+                ],
+            );
+        };
+        $db->tryFlatTransaction($save);
         echo 'You bought ' . $_POST['qty'] . ' ' . $itemd['itmname'] . ' '
             . (($_POST['qty'] > 1) ? 's' : '') . ' for '
             . money_formatter($price)

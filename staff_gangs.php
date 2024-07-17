@@ -174,19 +174,22 @@ function admin_gang_credit(): void
         }
         staff_csrf_stdverify('staff_gangs_credit2',
             'staff_gangs.php?action=gcredit');
-        $db->update(
-            'gangs',
-            [
-                'gangMONEY' => new EasyPlaceholder('gangMONEY + ?', $money),
-                'gangCRYSTALS' => new EasyPlaceholder('gangCRYSTALS + ?', $money),
-            ],
-            ['gangID' => $gang],
-        );
-        echo "The gang {$gangname} was successfully credited.";
-        stafflog_add(
-            "{$ir['username']} credited {$gangname} (gang ID {$gang})
+        $save = function () use ($db, $ir, $gangname, $money, $crystals, $gang, $reason) {
+            $db->update(
+                'gangs',
+                [
+                    'gangMONEY' => new EasyPlaceholder('gangMONEY + ?', $money),
+                    'gangCRYSTALS' => new EasyPlaceholder('gangCRYSTALS + ?', $crystals),
+                ],
+                ['gangID' => $gang],
+            );
+            stafflog_add(
+                "{$ir['username']} credited {$gangname} (gang ID {$gang})
                  with {$money} money and/or {$crystals} crystals
                  with the reason {$reason}");
+        };
+        $db->tryFlatTransaction($save);
+        echo "The gang {$gangname} was successfully credited.";
     } elseif ($gang && ($money != 0 || $crystals != 0)) {
         staff_csrf_stdverify('staff_gangs_credit1',
             'staff_gangs.php?action=gcredit');
@@ -320,19 +323,22 @@ function admin_gang_wardelete(): void
         $h->endpage();
         exit;
     }
-    $db->delete(
-        'gangwars',
-        ['warID' => $_GET['war']],
-    );
-    echo 'War cleared.<br />
-    &gt; <a href="staff_gangs.php?action=gwar">Go Back</a>';
-    stafflog_add(
-        "{$ir['username']} deleted war ID {$_GET['war']}
+    $save = function () use ($db, $ir, $r) {
+        $db->delete(
+            'gangwars',
+            ['warID' => $_GET['war']],
+        );
+        stafflog_add(
+            "{$ir['username']} deleted war ID {$_GET['war']}
              (<a href='gangs.php?action=view&amp;ID={$r['warDECLARER']}'>{$r['declarer']}</a>
              	[{$r['drespect']} respect]
              	vs.
               <a href='gangs.php?action=view&amp;ID={$r['warDECLARED']}'>{$r['defender']}</a>
               	[{$r['frespect']} respect])");
+    };
+    $db->tryFlatTransaction($save);
+    echo 'War cleared.<br />
+    &gt; <a href="staff_gangs.php?action=gwar">Go Back</a>';
 }
 
 /**
@@ -438,17 +444,20 @@ function admin_gang_edit_name(): void
     if ($gang && $_POST['gangNAME'] && $_POST['gangDESC']) {
         staff_csrf_stdverify('staff_gangs_edit_name',
             "staff_gangs.php?action=gedit_name&amp;gang={$gang}");
-        $db->update(
-            'gangs',
-            [
-                'gangNAME' => $_POST['gangNAME'],
-                'gangDESC' => $_POST['gangDESC'],
-            ],
-            ['gangID' => $gang],
-        );
+        $save = function () use ($db, $gang, $ir) {
+            $db->update(
+                'gangs',
+                [
+                    'gangNAME' => $_POST['gangNAME'],
+                    'gangDESC' => $_POST['gangDESC'],
+                ],
+                ['gangID' => $gang],
+            );
+            stafflog_add("{$ir['username']} edited gang ID $gang's name and/or description");
+        };
+        $db->tryFlatTransaction($save);
         echo 'Gang has been successfully modified.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
-        stafflog_add("{$ir['username']} edited gang ID $gang's name and/or description");
         $h->endpage();
         exit;
     } else {
@@ -509,14 +518,17 @@ function admin_gang_edit_prefix(): void
     if ($gang && $_POST['gangPREF']) {
         staff_csrf_stdverify('staff_gangs_edit_prefix',
             "staff_gangs.php?action=gedit_prefix&amp;gang={$gang}");
-        $db->update(
-            'gangs',
-            ['gangPREF' => $_POST['gangPREF']],
-            ['gangID' => $gang],
-        );
+        $save = function () use ($db, $gang, $ir) {
+            $db->update(
+                'gangs',
+                ['gangPREF' => $_POST['gangPREF']],
+                ['gangID' => $gang],
+            );
+            stafflog_add("{$ir['username']} edited gang ID $gang's prefix");
+        };
+        $db->tryFlatTransaction($save);
         echo 'Gang has been successfully modified.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
-        stafflog_add("{$ir['username']} edited gang ID $gang's prefix");
         $h->endpage();
         exit;
     } else {
@@ -582,19 +594,22 @@ function admin_gang_edit_finances(): void
     if ($gang && $reason) {
         staff_csrf_stdverify('staff_gangs_edit_finances',
             "staff_gangs.php?action=gedit_finances&amp;gang={$gang}");
-        $db->update(
-            'gangs',
-            [
-                'gangMONEY' => $money,
-                'gangCRYSTALS' => $crystals,
-                'gangRESPECT' => $reason,
-            ],
-            ['gangID' => $gang],
-        );
+        $save = function () use ($db, $money, $crystals, $reason, $gang, $ir) {
+            $db->update(
+                'gangs',
+                [
+                    'gangMONEY' => $money,
+                    'gangCRYSTALS' => $crystals,
+                    'gangRESPECT' => $reason,
+                ],
+                ['gangID' => $gang],
+            );
+            stafflog_add(
+                "{$ir['username']} edited gang ID $gang's finances with the reason $reason");
+        };
+        $db->tryFlatTransaction($save);
         echo 'Gang has been successfully modified.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
-        stafflog_add(
-            "{$ir['username']} edited gang ID $gang's finances with the reason $reason");
         $h->endpage();
         exit;
     } else {
@@ -675,18 +690,21 @@ function admin_gang_edit_staff(): void
     if ($gang && $reason && $president && $vicepres) {
         staff_csrf_stdverify('staff_gangs_edit_staff',
             "staff_gangs.php?action=gedit_staff&amp;gang={$gang}");
-        $db->update(
-            'gangs',
-            [
-                'gangPRESIDENT' => $president,
-                'gangVICEPRESIDENT' => $vicepres,
-            ],
-            ['gangID' => $gang],
-        );
+        $save = function () use ($db, $president, $vicepres, $gang, $ir, $reason) {
+            $db->update(
+                'gangs',
+                [
+                    'gangPRESIDENT' => $president,
+                    'gangVICEPRESIDENT' => $vicepres,
+                ],
+                ['gangID' => $gang],
+            );
+            stafflog_add(
+                "{$ir['username']} edited gang ID $gang's staff with the reason $reason");
+        };
+        $db->tryFlatTransaction($save);
         echo 'Gang has been successfully modified.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
-        stafflog_add(
-            "{$ir['username']} edited gang ID $gang's staff with the reason $reason");
         $h->endpage();
         exit;
     } else {
@@ -758,15 +776,18 @@ function admin_gang_edit_capacity(): void
     if ($gang && $reason && $capacity) {
         staff_csrf_stdverify('staff_gangs_edit_capacity',
             "staff_gangs.php?action=gedit_capacity&amp;gang={$gang}");
-        $db->update(
-            'gangs',
-            ['gangCAPACITY' => $capacity],
-            ['gangID' => $gang],
-        );
+        $save = function () use ($db, $capacity, $reason, $gang, $ir) {
+            $db->update(
+                'gangs',
+                ['gangCAPACITY' => $capacity],
+                ['gangID' => $gang],
+            );
+            stafflog_add(
+                "{$ir['username']} edited gang ID $gang's capacity with the reason $reason");
+        };
+        $db->tryFlatTransaction($save);
         echo 'Gang has been successfully modified.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
-        stafflog_add(
-            "{$ir['username']} edited gang ID $gang's capacity with the reason $reason");
         $h->endpage();
         exit;
     } else {
@@ -835,18 +856,21 @@ function admin_gang_edit_crime(): void
     if ($gang && $reason && $crime && $chours) {
         staff_csrf_stdverify('staff_gangs_edit_crime',
             "staff_gangs.php?action=gedit_crime&amp;gang={$gang}");
-        $db->update(
-            'gangs',
-            [
-                'gangCRIME' => $crime,
-                'gangCHOURS' => $chours,
-            ],
-            ['gangID' => $gang],
-        );
+        $save = function () use ($db, $crime, $chours, $gang, $reason, $ir) {
+            $db->update(
+                'gangs',
+                [
+                    'gangCRIME' => $crime,
+                    'gangCHOURS' => $chours,
+                ],
+                ['gangID' => $gang],
+            );
+            stafflog_add(
+                "{$ir['username']} edited gang ID $gang's organised crime with the reason $reason");
+        };
+        $db->tryFlatTransaction($save);
         echo 'Gang has been successfully modified.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
-        stafflog_add(
-            "{$ir['username']} edited gang ID $gang's organised crime with the reason $reason");
         $h->endpage();
         exit;
     } else {
@@ -911,14 +935,17 @@ function admin_gang_edit_ament(): void
     if ($gang && $_POST['gangAMENT']) {
         staff_csrf_stdverify('staff_gangs_edit_ament',
             "staff_gangs.php?action=gedit_ament&amp;gang={$gang}");
-        $db->update(
-            'gangs',
-            ['gangAMENT' => $_POST['gangAMENT']],
-            ['gangID' => $gang],
-        );
+        $save = function () use ($db, $gang, $ir) {
+            $db->update(
+                'gangs',
+                ['gangAMENT' => $_POST['gangAMENT']],
+                ['gangID' => $gang],
+            );
+            stafflog_add("{$ir['username']} edited gang ID $gang's announcement");
+        };
+        $db->tryFlatTransaction($save);
         echo 'Gang has been successfully modified.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
-        stafflog_add("{$ir['username']} edited gang ID $gang's announcement");
         $h->endpage();
         exit;
     } else {

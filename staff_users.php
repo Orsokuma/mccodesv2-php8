@@ -225,50 +225,53 @@ function new_user_submit(): void
     $energy = 10 + $level * 2;
     $brave  = 3 + $level * 2;
     $hp     = 50 + $level * 50;
-    $salt   = generate_pass_salt();
-    $encpsw = encode_password($_POST['userpass'], $salt);
-    $i      = $db->insert(
-        'users',
-        [
-            'username' => $_POST['username'],
-            'login_name' => $_POST['login_name'],
-            'userpass' => $encpsw,
-            'pass_salt' => $salt,
-            'email' => $_POST['email'],
-            'gender' => $_POST['gender'],
-            'signedup' => time(),
-            'level' => $level,
-            'money' => $money,
-            'user_level' => $ulevel,
-            'energy' => $energy,
-            'maxenergy' => $energy,
-            'brave' => $brave,
-            'maxbrave' => $brave,
-            'will' => 100,
-            'maxwill' => 100,
-            'hp' => $hp,
-            'maxhp' => $hp,
-            'bankmoney' => -1,
-            'cybermoney' => -1,
-            'location' => 1,
-            'display_pic' => '',
-            'staffnotes' => '',
-            'voted' => '',
-            'user_notepad' => '',
-        ],
-    );
-    $db->insert(
-        'userstats',
-        [
-            'userid' => $i,
-            'strength' => $strength,
-            'agility' => $agility,
-            'guard' => $guard,
-            'labour' => $labour,
-            'IQ' => $iq,
-        ],
-    );
-    stafflog_add('Created user ' . $_POST['username'] . ' [' . $i . ']');
+    $save   = function () use ($db, $level, $money, $ulevel, $energy, $brave, $hp, $strength, $agility, $guard, $labour, $iq) {
+        $salt   = generate_pass_salt();
+        $encpsw = encode_password($_POST['userpass'], $salt);
+        $i      = $db->insert(
+            'users',
+            [
+                'username' => $_POST['username'],
+                'login_name' => $_POST['login_name'],
+                'userpass' => $encpsw,
+                'pass_salt' => $salt,
+                'email' => $_POST['email'],
+                'gender' => $_POST['gender'],
+                'signedup' => time(),
+                'level' => $level,
+                'money' => $money,
+                'user_level' => $ulevel,
+                'energy' => $energy,
+                'maxenergy' => $energy,
+                'brave' => $brave,
+                'maxbrave' => $brave,
+                'will' => 100,
+                'maxwill' => 100,
+                'hp' => $hp,
+                'maxhp' => $hp,
+                'bankmoney' => -1,
+                'cybermoney' => -1,
+                'location' => 1,
+                'display_pic' => '',
+                'staffnotes' => '',
+                'voted' => '',
+                'user_notepad' => '',
+            ],
+        );
+        $db->insert(
+            'userstats',
+            [
+                'userid' => $i,
+                'strength' => $strength,
+                'agility' => $agility,
+                'guard' => $guard,
+                'labour' => $labour,
+                'IQ' => $iq,
+            ],
+        );
+        stafflog_add('Created user ' . $_POST['username'] . ' [' . $i . ']');
+    };
+    $db->tryFlatTransaction($save);
     echo '
     User (' . $_POST['username']
         . ') created.<br />
@@ -576,49 +579,52 @@ function edit_user_sub(): void
     $energy = 10 + $_POST['level'] * 2;
     $nerve  = 3 + $_POST['level'] * 2;
     $hp     = 50 + $_POST['level'] * 50;
-    $db->update(
-        'users',
-        [
-            'username' => $_POST['username'],
-            'level' => $_POST['level'],
-            'money' => $_POST['money'],
-            'crystals' => $_POST['crystals'],
-            'energy' => $energy,
-            'brave' => $nerve,
-            'maxbrave' => $nerve,
-            'maxenergy' => $energy,
-            'hp' => $hp,
-            'maxhp' => $hp,
-            'hospital' => $_POST['hospital'],
-            'jail' => $_POST['jail'],
-            'duties' => $_POST['duties'],
-            'staffnotes' => $_POST['staffnotes'],
-            'mailban' => $_POST['mailban'],
-            'mb_reason' => $_POST['mb_reason'],
-            'forumban' => $_POST['forumban'],
-            'fb_reason' => $_POST['fb_reason'],
-            'hospreason' => $_POST['hospreason'],
-            'jail_reason' => $_POST['jail_reason'],
-            'login_name' => $_POST['login_name'],
-            'will' => $will,
-            'maxwill' => $maxwill,
-        ],
-        ['userid' => $_POST['userid']],
-    );
-    $db->update(
-        'userstats',
-        [
-            'strength' => $_POST['strength'],
-            'agility' => $_POST['agility'],
-            'guard' => $_POST['guard'],
-            'labour' => $_POST['labour'],
-            'IQ' => $_POST['IQ'],
-        ],
-        ['userid' => $_POST['userid']],
-    );
-    stafflog_add(
-        'Edited user ' . $_POST['username'] . ' [' . $_POST['userid']
-        . ']');
+    $save   = function () use ($db, $energy, $nerve, $hp, $will, $maxwill) {
+        $db->update(
+            'users',
+            [
+                'username' => $_POST['username'],
+                'level' => $_POST['level'],
+                'money' => $_POST['money'],
+                'crystals' => $_POST['crystals'],
+                'energy' => $energy,
+                'brave' => $nerve,
+                'maxbrave' => $nerve,
+                'maxenergy' => $energy,
+                'hp' => $hp,
+                'maxhp' => $hp,
+                'hospital' => $_POST['hospital'],
+                'jail' => $_POST['jail'],
+                'duties' => $_POST['duties'],
+                'staffnotes' => $_POST['staffnotes'],
+                'mailban' => $_POST['mailban'],
+                'mb_reason' => $_POST['mb_reason'],
+                'forumban' => $_POST['forumban'],
+                'fb_reason' => $_POST['fb_reason'],
+                'hospreason' => $_POST['hospreason'],
+                'jail_reason' => $_POST['jail_reason'],
+                'login_name' => $_POST['login_name'],
+                'will' => $will,
+                'maxwill' => $maxwill,
+            ],
+            ['userid' => $_POST['userid']],
+        );
+        $db->update(
+            'userstats',
+            [
+                'strength' => $_POST['strength'],
+                'agility' => $_POST['agility'],
+                'guard' => $_POST['guard'],
+                'labour' => $_POST['labour'],
+                'IQ' => $_POST['IQ'],
+            ],
+            ['userid' => $_POST['userid']],
+        );
+        stafflog_add(
+            'Edited user ' . $_POST['username'] . ' [' . $_POST['userid']
+            . ']');
+    };
+    $db->tryFlatTransaction($save);
     echo '
     User edited.
     <br />
@@ -751,20 +757,23 @@ function deluser(): void
                 exit;
             }
             $username = htmlentities($username, ENT_QUOTES, 'ISO-8859-1');
-            $map      = [
-                'users' => 'userid',
-                'userstats' => 'userid',
-                'inventory' => 'inv_userid',
-                'fedjail' => 'fed_userid',
-            ];
-            foreach ($map as $table => $column) {
-                $db->delete(
-                    $table,
-                    [$column => $_POST['userid']],
-                );
-            }
-            stafflog_add(
-                'Deleted User ' . $username . ' [' . $_POST['userid'] . ']');
+            $save     = function () use ($db, $username) {
+                $map = [
+                    'users' => 'userid',
+                    'userstats' => 'userid',
+                    'inventory' => 'inv_userid',
+                    'fedjail' => 'fed_userid',
+                ];
+                foreach ($map as $table => $column) {
+                    $db->delete(
+                        $table,
+                        [$column => $_POST['userid']],
+                    );
+                }
+                stafflog_add(
+                    'Deleted User ' . $username . ' [' . $_POST['userid'] . ']');
+            };
+            $db->tryFlatTransaction($save);
             echo 'User ' . $username
                 . ' Deleted.
 		<br />
@@ -917,11 +926,14 @@ function inv_delete(): void
         $h->endpage();
         exit;
     }
-    $db->delete(
-        'inventory',
-        ['inv_id' => $_POST['ID']],
-    );
-    stafflog_add('Deleted inventory ID ' . $_POST['ID']);
+    $save = function () use ($db) {
+        $db->delete(
+            'inventory',
+            ['inv_id' => $_POST['ID']],
+        );
+        stafflog_add('Deleted inventory ID ' . $_POST['ID']);
+    };
+    $db->tryFlatTransaction($save);
     echo '
 	Item deleted from inventory.
 	<br />
@@ -1005,19 +1017,22 @@ function credit_user_submit(): void
         $h->endpage();
         exit;
     }
-    $db->update(
-        'users',
-        [
-            'money' => new EasyPlaceholder('money + ?', $_POST['money']),
-            'crystals' => new EasyPlaceholder('crystals + ?', $_POST['crystals']),
-        ],
-        ['userid' => $_POST['user']],
-    );
-    $un = htmlentities($un, ENT_QUOTES, 'ISO-8859-1');
-    stafflog_add(
-        'Credited ' . $un . ' [' . $_POST['user'] . '] '
-        . money_formatter($_POST['money']) . ' and/or '
-        . number_format($_POST['crystals']) . ' crystals.');
+    $un   = htmlentities($un, ENT_QUOTES, 'ISO-8859-1');
+    $save = function () use ($db, $un) {
+        $db->update(
+            'users',
+            [
+                'money' => new EasyPlaceholder('money + ?', $_POST['money']),
+                'crystals' => new EasyPlaceholder('crystals + ?', $_POST['crystals']),
+            ],
+            ['userid' => $_POST['user']],
+        );
+        stafflog_add(
+            'Credited ' . $un . ' [' . $_POST['user'] . '] '
+            . money_formatter($_POST['money']) . ' and/or '
+            . number_format($_POST['crystals']) . ' crystals.');
+    };
+    $db->tryFlatTransaction($save);
     echo $un . ' [' . $_POST['user'] . '] was credited with '
         . money_formatter($_POST['money']) . ' and/or '
         . number_format($_POST['crystals'])
@@ -1082,17 +1097,20 @@ function mcredit_user_submit(): void
         $h->endpage();
         exit;
     }
-    $db->safeQuery(
-        'UPDATE users SET money = money + ?, crystals = crystals + ?',
-        [
-            $_POST['money'],
-            $_POST['crystals'],
-        ],
-    );
-    stafflog_add(
-        'Credited all users ' . money_formatter($_POST['money'])
-        . ' and/or ' . number_format($_POST['crystals'])
-        . ' crystals.');
+    $save = function () use ($db) {
+        $db->safeQuery(
+            'UPDATE users SET money = money + ?, crystals = crystals + ?',
+            [
+                $_POST['money'],
+                $_POST['crystals'],
+            ],
+        );
+        stafflog_add(
+            'Credited all users ' . money_formatter($_POST['money'])
+            . ' and/or ' . number_format($_POST['crystals'])
+            . ' crystals.');
+    };
+    $db->tryFlatTransaction($save);
     echo "
 	All Users credited.
 	Click <a href='staff.php?action=announce'>here to add an announcement</a> or
@@ -1190,12 +1208,15 @@ function forcelogout(): void
             $h->endpage();
             exit;
         }
-        $db->update(
-            'users',
-            ['force_logout' => 1],
-            ['userid' => $_POST['userid']],
-        );
-        stafflog_add('Forced User ID ' . $_POST['userid'] . ' to logout');
+        $save = function () use ($db) {
+            $db->update(
+                'users',
+                ['force_logout' => 1],
+                ['userid' => $_POST['userid']],
+            );
+            stafflog_add('Forced User ID ' . $_POST['userid'] . ' to logout');
+        };
+        $db->tryFlatTransaction($save);
         echo '
         User ID ' . $_POST['userid']
             . ' successfully forced to logout.
@@ -1258,11 +1279,14 @@ function report_clear(): void
         $h->endpage();
         exit;
     }
-    $db->delete(
-        'preports',
-        ['prID' => $_POST['ID']],
-    );
-    stafflog_add('Cleared player report ID ' . $_POST['ID']);
+    $save = function () use ($db) {
+        $db->delete(
+            'preports',
+            ['prID' => $_POST['ID']],
+        );
+        stafflog_add('Cleared player report ID ' . $_POST['ID']);
+    };
+    $db->tryFlatTransaction($save);
     echo '
 	Report deleted.
 	<br />

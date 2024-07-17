@@ -81,20 +81,24 @@ function addcourse(): void
         && $_POST['str'] > -1 && $_POST['agil'] > -1 && $_POST['gua'] > -1 && $_POST['lab'] > -1 && $_POST['iq'] > -1) {
         staff_csrf_stdverify('staff_addcourse',
             'staff_courses.php?action=addcourse');
-        $db->insert(
-            'courses',
-            [
-                'crNAME' => $_POST['name'],
-                'crDESC' => $_POST['desc'],
-                'crCOST' => $_POST['cost'],
-                'crENERGY' => $_POST['energy'],
-                'crSTR' => $_POST['str'],
-                'crAGIL' => $_POST['agil'],
-                'crGUARD' => $_POST['gua'],
-                'crLABOUR' => $_POST['lab'],
-                'crIQ' => $_POST['iq'],
-            ],
-        );
+        $save = function () use ($db) {
+            $db->insert(
+                'courses',
+                [
+                    'crNAME' => $_POST['name'],
+                    'crDESC' => $_POST['desc'],
+                    'crCOST' => $_POST['cost'],
+                    'crENERGY' => $_POST['energy'],
+                    'crSTR' => $_POST['str'],
+                    'crAGIL' => $_POST['agil'],
+                    'crGUARD' => $_POST['gua'],
+                    'crLABOUR' => $_POST['lab'],
+                    'crIQ' => $_POST['iq'],
+                ],
+            );
+            stafflog_add('Added Course ' . $_POST['name']);
+        };
+        $db->tryFlatTransaction($save);
         echo 'Course ' . $_POST['name'] . ' added.<br />&gt; <a href="staff.php">Goto Main</a>';
         $h->endpage();
         exit;
@@ -153,25 +157,28 @@ function editcourse(): void
             }
             staff_csrf_stdverify('staff_editcourse2',
                 'staff_courses.php?action=editcourse');
-            $db->update(
-                'courses',
-                [
-                    'crNAME' => $_POST['name'],
-                    'crDESC' => $_POST['desc'],
-                    'crCOST' => $_POST['cost'],
-                    'crENERGY' => $_POST['energy'],
-                    'crSTR' => $_POST['str'],
-                    'crAGIL' => $_POST['agil'],
-                    'crGUARD' => $_POST['gua'],
-                    'crLABOUR' => $_POST['lab'],
-                    'crIQ' => $_POST['iq'],
-                ],
-                ['crID' => $_POST['id']],
-            );
+            $save = function () use ($db) {
+                $db->update(
+                    'courses',
+                    [
+                        'crNAME' => $_POST['name'],
+                        'crDESC' => $_POST['desc'],
+                        'crCOST' => $_POST['cost'],
+                        'crENERGY' => $_POST['energy'],
+                        'crSTR' => $_POST['str'],
+                        'crAGIL' => $_POST['agil'],
+                        'crGUARD' => $_POST['gua'],
+                        'crLABOUR' => $_POST['lab'],
+                        'crIQ' => $_POST['iq'],
+                    ],
+                    ['crID' => $_POST['id']],
+                );
+                stafflog_add("Edited course {$_POST['name']}");
+            };
+            $db->tryFlatTransaction($save);
             echo 'Course ' . $_POST['name']
                 . ' was edited successfully.<br />
                 &gt; <a href="staff.php">Goto Main</a>';
-            stafflog_add("Edited course {$_POST['name']}");
             $h->endpage();
             exit;
         case '1':
@@ -262,22 +269,25 @@ function delcourse(): void
             $h->endpage();
             exit;
         }
-        $db->update(
-            'users',
-            [
-                'course' => 0,
-                'cdays' => 0,
-            ],
-            ['course' => $_POST['course']],
-        );
-        $db->delete(
-            'courses',
-            ['crID' => $_POST['course']],
-        );
+        $save = function () use ($db, $old) {
+            $db->update(
+                'users',
+                [
+                    'course' => 0,
+                    'cdays' => 0,
+                ],
+                ['course' => $_POST['course']],
+            );
+            $db->delete(
+                'courses',
+                ['crID' => $_POST['course']],
+            );
+            stafflog_add("Deleted course {$old['crNAME']}");
+        };
+        $db->tryFlatTransaction($save);
         echo 'Course ' . $old['crNAME']
             . ' deleted.<br />
                 &gt; <a href="staff.php">Goto Main</a>';
-        stafflog_add("Deleted course {$old['crNAME']}");
         $h->endpage();
         exit;
     } else {

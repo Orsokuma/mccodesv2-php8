@@ -160,24 +160,27 @@ function itemm_remove(): void
         $h->endpage();
         exit;
     }
-    $i = item_add($userid, $r['imITEM'], $r['imQTY']);
-    $db->delete(
-        'itemmarket',
-        ['imID' => $_GET['ID']],
-    );
-    $imr_log = "{$ir['username']} removed {$r['itmname']} x {$r['imQTY']} from the item market.";
-    $db->insert(
-        'imremovelogs',
-        [
-            'imrITEM' => $r['imITEM'],
-            'imrADDER' => $r['imADDER'],
-            'imrREMOVER' => $userid,
-            'imrIMID' => $r['imID'],
-            'imrINVID' => $i,
-            'imrTIME' => time(),
-            'imrCONTENT' => $imr_log,
-        ],
-    );
+    $save = function () use ($db, $ir, $r, $userid) {
+        $i = item_add($userid, $r['imITEM'], $r['imQTY']);
+        $db->delete(
+            'itemmarket',
+            ['imID' => $_GET['ID']],
+        );
+        $imr_log = "{$ir['username']} removed {$r['itmname']} x {$r['imQTY']} from the item market.";
+        $db->insert(
+            'imremovelogs',
+            [
+                'imrITEM' => $r['imITEM'],
+                'imrADDER' => $r['imADDER'],
+                'imrREMOVER' => $userid,
+                'imrIMID' => $r['imID'],
+                'imrINVID' => $i,
+                'imrTIME' => time(),
+                'imrCONTENT' => $imr_log,
+            ],
+        );
+    };
+    $db->tryFlatTransaction($save);
     echo '
 	Item removed from market!
 <br />
@@ -285,36 +288,37 @@ function item_buy(): void
             $h->endpage();
             exit;
         }
-        $i = item_add($userid, $r['imITEM'], $_POST['QTY']);
-        if ($_POST['QTY'] == $r['imQTY']) {
-            $db->delete(
-                'itemmarket',
-                ['imID' => $_GET['ID']],
-            );
-        } elseif ($_POST['QTY'] < $r['imQTY']) {
+        $formatted_price = $curr === 'money' ? money_formatter($final_price) : number_format($final_price) . ' crystals';
+        $save            = function () use ($db, $ir, $r, $userid, $final_price, $formatted_price, $curr) {
+            $i = item_add($userid, $r['imITEM'], $_POST['QTY']);
+            if ($_POST['QTY'] == $r['imQTY']) {
+                $db->delete(
+                    'itemmarket',
+                    ['imID' => $_GET['ID']],
+                );
+            } elseif ($_POST['QTY'] < $r['imQTY']) {
+                $db->update(
+                    'itemmarket',
+                    ['imQTY' => new EasyPlaceholder('imQTY - ?', $_POST['QTY'])],
+                    ['imID' => $_GET['ID']],
+                );
+            }
             $db->update(
-                'itemmarket',
-                ['imQTY' => new EasyPlaceholder('imQTY - ?', $_POST['QTY'])],
-                ['imID' => $_GET['ID']],
+                'users',
+                [$curr => new EasyPlaceholder($curr . ' - ?', $final_price)],
+                ['userid' => $userid],
             );
-        }
-        $db->update(
-            'users',
-            [$curr => new EasyPlaceholder($curr . ' - ?', $final_price)],
-            ['userid' => $userid],
-        );
-        $db->update(
-            'users',
-            [$curr => new EasyPlaceholder($curr . ' + ?', $final_price)],
-            ['userid' => $r['imADDER']],
-        );
-        if ($curr == 'money') {
+            $db->update(
+                'users',
+                [$curr => new EasyPlaceholder($curr . ' + ?', $final_price)],
+                ['userid' => $r['imADDER']],
+            );
             event_add($r['imADDER'],
                 "<a href='viewuser.php?u=$userid'>{$ir['username']}</a>"
                 . " bought your {$r['itmname']} item "
                 . ' from the market for '
-                . money_formatter($final_price) . '.');
-            $imb_log = $ir['username'] . ' bought ' . $r['itmname'] . ' x' . $r['imQTY'] . ' from the item market for ' . money_formatter($final_price) . ' from user ID ' . $r['imADDER'];
+                . $formatted_price . '.');
+            $imb_log = $ir['username'] . ' bought ' . $r['itmname'] . ' x' . $r['imQTY'] . ' from the item market for ' . $formatted_price . ' from user ID ' . $r['imADDER'];
             $db->insert(
                 'imbuylogs',
                 [
@@ -328,33 +332,11 @@ function item_buy(): void
                     'imbCONTENT' => $imb_log,
                 ],
             );
-            echo "
-			You bought the {$r['itmname']} x{$_POST['QTY']} from the market for "
-                . money_formatter($final_price) . '.';
-        } else {
-            event_add($r['imADDER'],
-                "<a href='viewuser.php?u=$userid'>{$ir['username']}</a>"
-                . " bought your {$r['itmname']} item "
-                . ' from the market for '
-                . number_format($final_price) . ' crystals.');
-            $imb_log = $ir['username'] . ' bought ' . $r['itmname'] . ' x' . $r['imQTY'] . ' from the item market for ' . number_format($final_price) . ' crystals from user ID ' . $r['imADDER'];
-            $db->insert(
-                'imbuylogs',
-                [
-                    'imbITEM' => $r['imITEM'],
-                    'imbADDER' => $r['imADDER'],
-                    'imbBUYER' => $userid,
-                    'imbPRICE' => $final_price,
-                    'imbIMID' => $r['imID'],
-                    'imbINVID' => $i,
-                    'imbTIME' => time(),
-                    'imbCONTENT' => $imb_log,
-                ]
-            );
-            echo "
-			You bought the {$r['itmname']} x{$_POST['QTY']} from the market for "
-                . number_format($final_price) . ' crystals.';
-        }
+        };
+        $db->tryFlatTransaction($save);
+        echo "
+        You bought the {$r['itmname']} x{$_POST['QTY']} from the market for "
+            . $formatted_price . '.';
     }
 
 }
@@ -525,51 +507,54 @@ function item_gift2(): void
 function send_gift(array $data, string $currency, int $final_price): void
 {
     global $db, $ir, $userid;
-    $i = item_add($_POST['user'], $data['imITEM'], $_POST['QTY']);
-    if ($_POST['QTY'] == $data['imQTY']) {
-        $db->delete(
-            'itemmarket',
-            ['imID' => $_POST['ID']],
-        );
-    } elseif ($_POST['QTY'] < $data['imQTY']) {
-        $db->update(
-            'itemmarket',
-            ['imQTY' => new EasyPlaceholder('imQTY - ?', $_POST['QTY'])],
-            ['imID' => $_POST['ID']],
-        );
-    }
-    $db->update(
-        'users',
-        [$currency => new EasyPlaceholder($currency . ' - ?', $final_price)],
-        ['userid' => $userid],
-    );
-    $db->update(
-        'users',
-        [$currency => new EasyPlaceholder($currency . ' + ?', $final_price)],
-        ['userid' => $data['imADDER']],
-    );
-    $my_name = '<a href="viewuser.php?u=' . $userid . '">' . $ir['username'] . '</a>';
-    $cost    = $currency === 'money' ? money_formatter($final_price) : number_format($final_price);
-    event_add($data['imADDER'], $my_name . " bought your {$data['itmname']} x{$_POST['QTY']} item(s) from the market for " . $cost . '.');
-    event_add($_POST['user'], $my_name . " bought you {$data['itmname']} x{$_POST['QTY']} from the item market as a gift.");
-    $uname   = $db->cell(
+    $uname = $db->cell(
         'SELECT username FROM users WHERE userid = ?',
         $_POST['user'],
     );
-    $img_log = $ir['username'] . ' bought ' . $data['itmname'] . ' x' . $data['imQTY'] . ' from the item market for ' . $cost . ' from user ID ' . $data['imADDER'] . ' as a gift for ' . $uname . ' [' . $_POST['user'] . ']';
-    $db->insert(
-        'imbuylogs',
-        [
-            'imbITEM' => $data['imITEM'],
-            'imbADDER' => $data['imADDER'],
-            'imbBUYER' => $userid,
-            'imbPRICE' => $final_price,
-            'imbIMID' => $data['imID'],
-            'imbINVID' => $i,
-            'imbTIME' => time(),
-            'imbCONTENT' => $img_log,
-        ],
-    );
+    $cost  = $currency === 'money' ? money_formatter($final_price) : number_format($final_price);
+    $save  = function () use ($db, $data, $currency, $final_price, $uname, $userid, $ir, $cost) {
+        $i = item_add($_POST['user'], $data['imITEM'], $_POST['QTY']);
+        if ($_POST['QTY'] == $data['imQTY']) {
+            $db->delete(
+                'itemmarket',
+                ['imID' => $_POST['ID']],
+            );
+        } elseif ($_POST['QTY'] < $data['imQTY']) {
+            $db->update(
+                'itemmarket',
+                ['imQTY' => new EasyPlaceholder('imQTY - ?', $_POST['QTY'])],
+                ['imID' => $_POST['ID']],
+            );
+        }
+        $db->update(
+            'users',
+            [$currency => new EasyPlaceholder($currency . ' - ?', $final_price)],
+            ['userid' => $userid],
+        );
+        $db->update(
+            'users',
+            [$currency => new EasyPlaceholder($currency . ' + ?', $final_price)],
+            ['userid' => $data['imADDER']],
+        );
+        $my_name = '<a href="viewuser.php?u=' . $userid . '">' . $ir['username'] . '</a>';
+        event_add($data['imADDER'], $my_name . " bought your {$data['itmname']} x{$_POST['QTY']} item(s) from the market for " . $cost . '.');
+        event_add($_POST['user'], $my_name . " bought you {$data['itmname']} x{$_POST['QTY']} from the item market as a gift.");
+        $img_log = $ir['username'] . ' bought ' . $data['itmname'] . ' x' . $data['imQTY'] . ' from the item market for ' . $cost . ' from user ID ' . $data['imADDER'] . ' as a gift for ' . $uname . ' [' . $_POST['user'] . ']';
+        $db->insert(
+            'imbuylogs',
+            [
+                'imbITEM' => $data['imITEM'],
+                'imbADDER' => $data['imADDER'],
+                'imbBUYER' => $userid,
+                'imbPRICE' => $final_price,
+                'imbIMID' => $data['imID'],
+                'imbINVID' => $i,
+                'imbTIME' => time(),
+                'imbCONTENT' => $img_log,
+            ],
+        );
+    };
+    $db->tryFlatTransaction($save);
     echo "You bought the {$data['itmname']} from the market for " . $cost . " and sent the gift to $uname.";
 }
 

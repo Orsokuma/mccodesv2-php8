@@ -54,33 +54,33 @@ if (!((int)$_GET['ID'])) {
         } elseif ($_POST['xfer'] > $ir['bankmoney']) {
             echo 'Not enough money to send.';
         } else {
-            $db->update(
-                'users',
-                ['bankmoney' => new EasyPlaceholder('bankmoney - ?', $_POST['xfer'])],
-                ['userid' => $userid],
-            );
-            $db->update(
-                'users',
-                ['bankmoney' => new EasyPlaceholder('bankmoney + ?', $_POST['xfer'])],
-                ['userid' => $_GET['ID']],
-            );
-            echo 'You Bank Transferred ' . money_formatter($_POST['xfer'])
-                . " to {$er['username']} (ID {$_GET['ID']}).";
-            event_add($_GET['ID'],
-                'You received ' . money_formatter($_POST['xfer'])
-                . " into your bank account from {$ir['username']}.");
-            $db->insert(
-                'bankxferlogs',
-                [
-                    'cxFROM' => $userid,
-                    'cxTO' => $_GET['ID'],
-                    'cxAMOUNT' => $_POST['xfer'],
-                    'cxTIME' => time(),
-                    'cxFROMIP' => $ir['lastip'],
-                    'cxTOIP' => $er['lastip'],
-                    'cxBANK' => 'bank',
-                ],
-            );
+            $save = function () use ($db, $userid, $ir, $er) {
+                $db->update(
+                    'users',
+                    ['bankmoney' => new EasyPlaceholder('bankmoney - ?', $_POST['xfer'])],
+                    ['userid' => $userid],
+                );
+                $db->update(
+                    'users',
+                    ['bankmoney' => new EasyPlaceholder('bankmoney + ?', $_POST['xfer'])],
+                    ['userid' => $_GET['ID']],
+                );
+                event_add($_GET['ID'], 'You received ' . money_formatter($_POST['xfer']) . ' into your bank account from ' . $ir['username'] . '.');
+                $db->insert(
+                    'bankxferlogs',
+                    [
+                        'cxFROM' => $userid,
+                        'cxTO' => $_GET['ID'],
+                        'cxAMOUNT' => $_POST['xfer'],
+                        'cxTIME' => time(),
+                        'cxFROMIP' => $ir['lastip'],
+                        'cxTOIP' => $er['lastip'],
+                        'cxBANK' => 'bank',
+                    ],
+                );
+            };
+            $db->tryFlatTransaction($save);
+            echo 'You Bank Transferred ' . money_formatter($_POST['xfer']) . " to {$er['username']} (ID {$_GET['ID']}).";
         }
     } else {
         $code = request_csrf_code("sendbank_{$_GET['ID']}");

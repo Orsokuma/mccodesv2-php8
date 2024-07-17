@@ -39,30 +39,33 @@ if (!empty($_POST['user']) && !empty($_POST['reason'])
         $h->endpage();
         exit;
     }
-    $db->update(
-        'users',
-        ['fedjail' => 1],
-        ['userid' => $_POST['user']],
-    );
-    $db->insert(
-        'fedjail',
-        [
-            'fed_userid' => $_POST['user'],
-            'fed_days' => $_POST['days'],
-            'fed_jailedby' => $userid,
-            'fed_reason' => $_POST['reason'],
-        ],
-    );
-    $db->insert(
-        'jaillogs',
-        [
-            'jaJAILER' => $userid,
-            'jaJAILED' => $_POST['user'],
-            'jaDAYS' => $_POST['days'],
-            'jaREASON' => $_POST['reason'],
-            'jaTIME' => time(),
-        ],
-    );
+    $save = function () use ($db, $userid) {
+        $db->update(
+            'users',
+            ['fedjail' => 1],
+            ['userid' => $_POST['user']],
+        );
+        $db->insert(
+            'fedjail',
+            [
+                'fed_userid' => $_POST['user'],
+                'fed_days' => $_POST['days'],
+                'fed_jailedby' => $userid,
+                'fed_reason' => $_POST['reason'],
+            ],
+        );
+        $db->insert(
+            'jaillogs',
+            [
+                'jaJAILER' => $userid,
+                'jaJAILED' => $_POST['user'],
+                'jaDAYS' => $_POST['days'],
+                'jaREASON' => $_POST['reason'],
+                'jaTIME' => time(),
+            ],
+        );
+    };
+    $db->tryFlatTransaction($save);
     echo 'User was fedded.<br />
     &gt; <a href="index.php">Go Home</a>';
 } else {

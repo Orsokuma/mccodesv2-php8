@@ -84,16 +84,19 @@ Money - " . money_formatter($set['ct_moneypercrys'])
 			      <a href='crystaltemple.php?spend=IQ'>Back</a>";
     } else {
         $iqgain = (int)($_POST['crystals'] * $set['ct_iqpercrys']);
-        $db->update(
-            'users',
-            ['crystals' => new EasyPlaceholder('crystals - ?', $_POST['crystals'])],
-            ['userid' => $userid],
-        );
-        $db->update(
-            'userstats',
-            ['IQ' => new EasyPlaceholder('IQ + ?', $iqgain)],
-            ['userid' => $userid],
-        );
+        $save   = function () use ($db, $userid, $iqgain) {
+            $db->update(
+                'users',
+                ['crystals' => new EasyPlaceholder('crystals - ?', $_POST['crystals'])],
+                ['userid' => $userid],
+            );
+            $db->update(
+                'userstats',
+                ['IQ' => new EasyPlaceholder('IQ + ?', $iqgain)],
+                ['userid' => $userid],
+            );
+        };
+        $db->tryFlatTransaction($save);
         echo "You traded {$_POST['crystals']} crystals for $iqgain IQ.";
     }
 } elseif ($_GET['spend'] == 'money') {

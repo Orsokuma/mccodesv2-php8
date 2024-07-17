@@ -38,15 +38,18 @@ if (isset($_POST['type'])) {
         $h->endpage();
         exit;
     }
-    if ($ir[$_POST['type']] > 0) {
-        item_add($userid, $ir[$_POST['type']], 1);
-    }
-    item_remove($userid, $r['itmid'], 1);
-    $db->update(
-        'users',
-        [$_POST['type'] => $r['itmid']],
-        ['userid' => $userid],
-    );
+    $save = function () use ($db, $userid, $ir, $r) {
+        if ($ir[$_POST['type']] > 0) {
+            item_add($userid, $ir[$_POST['type']], 1);
+        }
+        item_remove($userid, $r['itmid'], 1);
+        $db->update(
+            'users',
+            [$_POST['type'] => $r['itmid']],
+            ['userid' => $userid],
+        );
+    };
+    $db->tryFlatTransaction($save);
     echo "Item {$r['itmname']} equipped successfully.";
 } else {
     echo "<h3>Equip Weapon</h3><hr />

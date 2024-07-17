@@ -43,21 +43,24 @@ if ($_POST['choice'] && $_POST['poll']) {
         exit;
     }
     $ir['voted'][$_POST['poll']] = $_POST['choice'];
-    $ser                         = serialize($ir['voted']);
-    $db->update(
-        'users',
-        ['voted' => $ser],
-        ['userid' => $userid],
-    );
-    $vote_col = 'voted' . $_POST['choice'];
-    $db->update(
-        'polls',
-        [$vote_col => new EasyPlaceholder($vote_col . ' + 1')],
-        [
-            'active' => '1',
-            'id' => $_POST['poll'],
-        ],
-    );
+    $save                        = function () use ($db, $ir, $userid) {
+        $ser = serialize($ir['voted']);
+        $db->update(
+            'users',
+            ['voted' => $ser],
+            ['userid' => $userid],
+        );
+        $vote_col = 'voted' . $_POST['choice'];
+        $db->update(
+            'polls',
+            [$vote_col => new EasyPlaceholder($vote_col . ' + 1')],
+            [
+                'active' => '1',
+                'id' => $_POST['poll'],
+            ],
+        );
+    };
+    $db->tryFlatTransaction($save);
     echo "Your vote has been cast.<br />
 	&gt; <a href='polling.php'>Back To Polling Booth</a>";
 } else {

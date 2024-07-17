@@ -44,17 +44,19 @@ if (!empty($_POST['user']) && !empty($_POST['reason'])
         $h->endpage();
         exit;
     }
-    $e_reason = $_POST['reason'];
-    $db->update(
-        'users',
-        [
-            'mailban' => $_POST['days'],
-            'mb_reason' => $_POST['reason'],
-        ],
-        ['userid' => $_POST['user']],
-    );
-    event_add($_POST['user'],
-        "You were banned from mail for {$_POST['days']} day(s) for the following reason: {$_POST['reason']}");
+    $save = function () use ($db) {
+        $db->update(
+            'users',
+            [
+                'mailban' => $_POST['days'],
+                'mb_reason' => $_POST['reason'],
+            ],
+            ['userid' => $_POST['user']],
+        );
+        event_add($_POST['user'],
+            "You were banned from mail for {$_POST['days']} day(s) for the following reason: {$_POST['reason']}");
+    };
+    $db->tryFlatTransaction($save);
     echo 'User was mail banned.<br />
     &gt; <a href="index.php">Go Home</a>';
 } else {

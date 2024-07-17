@@ -31,41 +31,12 @@ if (!empty($r)) {
         echo 'What a cheater u are.';
     } else {
         echo "You beat {$r['username']} ";
-        $qe      = $r['level'] * $r['level'] * $r['level'];
-        $expgain = rand($qe / 2, $qe);
-        $expperc = (int)($expgain / $ir['exp_needed'] * 100);
-        echo "and gained $expperc% EXP!<br />
-You hide your weapons and drop {$r['username']} off outside the hospital entrance. Feeling satisfied, you walk home.";
-        $hosptime = rand(10, 20);
-        $db->update(
-            'users',
-            ['exp' => new EasyPlaceholder('exp + ?', $expgain)],
-            ['userid' => $userid],
-        );
-        $hospreason = "Left by <a href='viewuser.php?u={$userid}'>{$ir['username']}</a>";
-        $db->update(
-            'users',
-            [
-                'hp' => 1,
-                'hospital' => $hosptime,
-                'hospreason' => $hospreason,
-            ],
-            ['userid' => $r['userid']],
-        );
-        event_add($r['userid'],
-            "<a href='viewuser.php?u=$userid'>{$ir['username']}</a> attacked you and left you lying outside the hospital.");
-        $db->insert(
-            'attacklog',
-            [
-                'attacker' => $userid,
-                'attacked' => $r['userid'],
-                'result' => 'won',
-                'time' => time(),
-                'stole' => -2,
-                'attacklog' => $_SESSION['attacklog'],
-            ]
-        );
         $_SESSION['attackwon'] = 0;
+        $qe                    = $r['level'] * $r['level'] * $r['level'];
+        $expgain               = rand($qe / 2, $qe);
+        $expperc               = (int)($expgain / $ir['exp_needed'] * 100);
+        $ga                    = null;
+        $warq                  = 0;
         if ($ir['gang'] > 0 && $r['gang'] > 0) {
             $ga = $db->row(
                 'SELECT gangID, gangRESPECT FROM gangs WHERE gangID = ? LIMIT 1',
@@ -81,23 +52,58 @@ You hide your weapons and drop {$r['username']} off outside the hospital entranc
                     $ir['gang'],
                     $r['gang'],
                 );
-                if ($warq > 0) {
-                    attack_update_gang_respect($ir['gang'], $r['gang'], 1);
-                    $ga['gangRESPECT'] -= 1;
-                    echo '<br />You earned 1 respect for your gang!';
-
-                }
-                //Gang Kill
-                if ($ga['gangRESPECT'] <= 0 && $r['gang']) {
-                    destroy_gang_and_end_wars($r['gang']);
-                }
             }
         }
+        echo "and gained $expperc% EXP!<br />
+You hide your weapons and drop {$r['username']} off outside the hospital entrance. Feeling satisfied, you walk home.";
+        $save = function () use ($db, $userid, $ir, $r, $expgain, $ga, $warq) {
+            $hosptime = rand(10, 20);
+            $db->update(
+                'users',
+                ['exp' => new EasyPlaceholder('exp + ?', $expgain)],
+                ['userid' => $userid],
+            );
+            $hospreason = "Left by <a href='viewuser.php?u={$userid}'>{$ir['username']}</a>";
+            $db->update(
+                'users',
+                [
+                    'hp' => 1,
+                    'hospital' => $hosptime,
+                    'hospreason' => $hospreason,
+                ],
+                ['userid' => $r['userid']],
+            );
+            event_add($r['userid'], "<a href='viewuser.php?u=$userid'>{$ir['username']}</a> attacked you and left you lying outside the hospital.");
+            $db->insert(
+                'attacklog',
+                [
+                    'attacker' => $userid,
+                    'attacked' => $r['userid'],
+                    'result' => 'won',
+                    'time' => time(),
+                    'stole' => -2,
+                    'attacklog' => $_SESSION['attacklog'],
+                ]
+            );
+            if ($ir['gang'] > 0 && $r['gang'] > 0) {
+                if (!empty($ga)) {
+                    if ($warq > 0) {
+                        attack_update_gang_respect($ir['gang'], $r['gang'], 1);
+                        $ga['gangRESPECT'] -= 1;
+                        echo '<br />You earned 1 respect for your gang!';
 
-        if ($r['user_level'] == 0) {
-            check_challenge_beaten($r);
-        }
-
+                    }
+                    // Gang Kill
+                    if ($ga['gangRESPECT'] <= 0 && $r['gang']) {
+                        destroy_gang_and_end_wars($r['gang']);
+                    }
+                }
+            }
+            if ($r['user_level'] == 0) {
+                check_challenge_beaten($r);
+            }
+        };
+        $db->tryFlatTransaction($save);
     }
 } else {
     echo 'You beat Mr. non-existent!';

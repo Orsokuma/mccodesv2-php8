@@ -36,54 +36,56 @@ if ($_GET['c'] <= 0) {
     if ($ir['brave'] < $r['crimeBRAVE']) {
         echo 'You do not have enough Brave to perform this crime.';
     } else {
-        $ec =
-            '$sucrate='
-            . str_replace(
-                ['LEVEL', 'CRIMEXP', 'EXP', 'WILL', 'IQ'],
-                [$ir['level'], $ir['crimexp'],
-                    $ir['exp'], $ir['will'], $ir['IQ']],
-                $r['crimePERCFORM']) . ';';
-        eval($ec);
         print $r['crimeITEXT'];
         $ir['brave'] -= $r['crimeBRAVE'];
-        $db->update(
-            'users',
-            ['brave' => $ir['brave']],
-            ['userid' => $userid],
-        );
-        if (rand(1, 100) <= $sucrate) {
-            print
-                str_replace('{money}', $r['crimeSUCCESSMUNY'],
-                    $r['crimeSTEXT']);
-            $ir['money']    += $r['crimeSUCCESSMUNY'];
-            $ir['crystals'] += $r['crimeSUCCESSCRYS'];
-            $ir['exp']      += (int)($r['crimeSUCCESSMUNY'] / 8);
+        $save        = function () use ($db, $ir, $r, $userid) {
+            $sucrate = 1;
+            $ec      = '$sucrate=' . strtr($r['crimePERCFORM'], [
+                    'LEVEL' => $ir['level'],
+                    'CRIMEXP' => $ir['crimexp'],
+                    'EXP' => $ir['exp'],
+                    'WILL' => $ir['will'],
+                    'IQ' => $ir['IQ'],
+                ]) . ';';
+            eval($ec);
             $db->update(
                 'users',
-                [
-                    'money' => $ir['money'],
-                    'crystals' => $ir['crystals'],
-                    'exp' => $ir['exp'],
-                    'crimexp' => new EasyPlaceholder('crimexp + ?', $r['crimeXP']),
-                ],
+                ['brave' => $ir['brave']],
                 ['userid' => $userid],
             );
-            if ($r['crimeSUCCESSITEM']) {
-                item_add($userid, $r['crimeSUCCESSITEM'], 1);
+            if (rand(1, 100) <= $sucrate) {
+                print str_replace('{money}', $r['crimeSUCCESSMUNY'], $r['crimeSTEXT']);
+                $ir['money']    += $r['crimeSUCCESSMUNY'];
+                $ir['crystals'] += $r['crimeSUCCESSCRYS'];
+                $ir['exp']      += (int)($r['crimeSUCCESSMUNY'] / 8);
+                $db->update(
+                    'users',
+                    [
+                        'money' => $ir['money'],
+                        'crystals' => $ir['crystals'],
+                        'exp' => $ir['exp'],
+                        'crimexp' => new EasyPlaceholder('crimexp + ?', $r['crimeXP']),
+                    ],
+                    ['userid' => $userid],
+                );
+                if ($r['crimeSUCCESSITEM']) {
+                    item_add($userid, $r['crimeSUCCESSITEM'], 1);
+                }
+            } elseif (rand(1, 2) == 1) {
+                print $r['crimeFTEXT'];
+            } else {
+                print $r['crimeJTEXT'];
+                $db->update(
+                    'users',
+                    [
+                        'jail' => $r['crimeJAILTIME'],
+                        'jail_reason' => $r['crimeJREASON'],
+                    ],
+                    ['userid' => $userid],
+                );
             }
-        } elseif (rand(1, 2) == 1) {
-            print $r['crimeFTEXT'];
-        } else {
-            print $r['crimeJTEXT'];
-            $db->update(
-                'users',
-                [
-                    'jail' => $r['crimeJAILTIME'],
-                    'jail_reason' => $r['crimeJREASON'],
-                ],
-                ['userid' => $userid],
-            );
-        }
+        };
+        $db->tryFlatTransaction($save);
 
         echo "<br /><a href='docrime.php?c={$_GET['c']}'>Try Again</a><br />
 <a href='criminal.php'>Crimes</a>";
