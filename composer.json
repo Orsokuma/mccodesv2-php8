@@ -1,5 +1,7 @@
 {
   "require": {
-    "paragonie/easydb": "^3.0"
+    "paragonie/easydb": "^3.0",
+    "ext-ctype": "*",
+    "ext-gd": "*"
   }
 }
