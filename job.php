@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
@@ -11,48 +11,36 @@ $jobquery = 1;
 global $db, $ir, $userid, $h;
 require_once('globals.php');
 $_GET['interview'] =
-        (isset($_GET['interview']) && is_numeric($_GET['interview']))
-                ? abs(intval($_GET['interview'])) : '';
-if (!$ir['job'])
-{
-    if (!$_GET['interview'])
-    {
+    (isset($_GET['interview']) && is_numeric($_GET['interview']))
+        ? abs(intval($_GET['interview'])) : '';
+if (!$ir['job']) {
+    if (!$_GET['interview']) {
         echo '
 		You do not yet have a job. A list of jobs is available below.
 		<br />
    		';
-        $q =
-                $db->query(
-                    'SELECT `jID`,`jDESC`,`jNAME`
-        				 FROM `jobs`');
-        while ($r = $db->fetch_row($q))
-        {
+        $q = $db->run(
+            'SELECT jID, jDESC, jNAME FROM jobs'
+        );
+        foreach ($q as $r) {
             echo "
 			&gt; {$r['jNAME']} - {$r['jDESC']} - <a href='job.php?interview={$r['jID']}'>Go to interview</a>
 			<br />
    			";
         }
-        $db->free_result($q);
-    }
-    else
-    {
-        $q =
-                $db->query(
-                        "SELECT `jOWNER`, `jrID`, `jrIQN`, `jrLABOURN`,
-                         `jrSTRN`
-                         FROM `jobs` AS `j`
-                         INNER JOIN `jobranks` AS `jr`
-                         ON `j`.`jFIRST` = `jr`.`jrID`
-                         WHERE `j`.`jID` = {$_GET['interview']}");
-        if ($db->num_rows($q) == 0)
-        {
-            $db->free_result($q);
+    } else {
+        $r = $db->row(
+            'SELECT jOWNER, jrID, jrIQN, jrLABOURN, jrSTRN
+            FROM jobs AS j
+            INNER JOIN jobranks AS jr ON j.jFIRST = jr.jrID
+            WHERE j.jID = ?',
+            $_GET['interview'],
+        );
+        if (empty($r)) {
             print 'Invalid job specified.';
             $h->endpage();
             exit;
         }
-        $r = $db->fetch_row($q);
-        $db->free_result($q);
         echo "
         {$r['jOWNER']}: So {$ir['username']}, you were looking for a job with us?
 		<br />
@@ -60,13 +48,16 @@ if (!$ir['job'])
 		<br />
    		";
         if ($ir['strength'] >= $r['jrSTRN']
-                && $ir['labour'] >= $r['jrLABOURN']
-                && $ir['IQ'] >= $r['jrIQN'])
-        {
-            $db->query(
-                    "UPDATE `users`
-                     SET `job` = {$_GET['interview']}, `jobrank` = {$r['jrID']}
-                     WHERE `userid` = $userid");
+            && $ir['labour'] >= $r['jrLABOURN']
+            && $ir['IQ'] >= $r['jrIQN']) {
+            $db->update(
+                'users',
+                [
+                    'job' => $_GET['interview'],
+                    'jobrank' => $r['jrID'],
+                ],
+                ['userid' => $userid],
+            );
             echo "
             {$r['jOWNER']}: Okay {$ir['username']}, we're good to go, see you tomorrow.
 			<br />
@@ -74,24 +65,19 @@ if (!$ir['job'])
 			<br />
 			&gt; <a href='index.php'>Go Home</a>
      		";
-        }
-        else
-        {
+        } else {
             echo "
             {$r['jOWNER']}: Sorry {$ir['username']}, you're not far enough in the game to work in this job. You'll need:
    			";
-            if ($ir['strength'] < $r['jrSTRN'])
-            {
+            if ($ir['strength'] < $r['jrSTRN']) {
                 $s = $r['jrSTRN'] - $ir['strength'];
                 echo " $s more strength, ";
             }
-            if ($ir['labour'] < $r['jrLABOURN'])
-            {
+            if ($ir['labour'] < $r['jrLABOURN']) {
                 $s = $r['jrLABOURN'] - $ir['labour'];
                 echo " $s more labour, ";
             }
-            if ($ir['IQ'] < $r['jrIQN'])
-            {
+            if ($ir['IQ'] < $r['jrIQN']) {
                 $s = $r['jrIQN'] - $ir['IQ'];
                 echo " $s more IQ, ";
             }
@@ -102,24 +88,20 @@ if (!$ir['job'])
    			";
         }
     }
-}
-else
-{
-    if (!isset($_GET['action']))
-    {
+} else {
+    if (!isset($_GET['action'])) {
         $_GET['action'] = '';
     }
-    switch ($_GET['action'])
-    {
-    case 'quit':
-        quit_job();
-        break;
-    case 'promote':
-        job_promote();
-        break;
-    default:
-        job_index();
-        break;
+    switch ($_GET['action']) {
+        case 'quit':
+            quit_job();
+            break;
+        case 'promote':
+            job_promote();
+            break;
+        default:
+            job_index();
+            break;
     }
 }
 
@@ -132,8 +114,8 @@ function job_index(): void
     echo "
     <h3>Your Job</h3>
     You currently work in the {$ir['jNAME']}! You receive "
-            . money_formatter($ir['jrPAY'])
-            . " each day at 5pm!
+        . money_formatter($ir['jrPAY'])
+        . " each day at 5pm!
     <br />
     You also receive {$ir['jrIQG']} IQ, {$ir['jrSTRG']} strength, and {$ir['jrLABOURG']} labour!
     <br />
@@ -158,26 +140,22 @@ function job_index(): void
 			<th>Labour Reqd</th>
 		</tr>
    	";
-    $q =
-            $db->query(
-                    "SELECT `jrNAME`, `jrPAY`, `jrSTRN`, `jrIQN`, `jrLABOURN`
-                     FROM `jobranks`
-                     WHERE `jrJOB` = {$ir['job']}
-                     ORDER BY `jrPAY` ASC");
-    while ($r = $db->fetch_row($q))
-    {
+    $q = $db->run(
+        'SELECT jrNAME, jrPAY, jrSTRN, jrIQN, jrLABOURN FROM jobranks WHERE jrJOB = ? ORDER BY jrPAY',
+        $ir['job'],
+    );
+    foreach ($q as $r) {
         echo "
 		<tr>
 			<td>{$r['jrNAME']}</td>
 			<td>" . money_formatter($r['jrPAY'])
-                . "</td>
+            . "</td>
 			<td>{$r['jrSTRN']}</td>
 			<td>{$r['jrIQN']}</td>
 			<td>{$r['jrLABOURN']}</td>
 		</tr>
    		";
     }
-    $db->free_result($q);
     echo "
 	</table>
 	<br />
@@ -193,38 +171,40 @@ function job_index(): void
 function job_promote(): void
 {
     global $db, $ir, $userid;
-    $q =
-            $db->query(
-                    "SELECT `jrID`,`jrNAME`
-                     FROM `jobranks`
-                     WHERE `jrPAY` > {$ir['jrPAY']}
-                     AND `jrSTRN` <= {$ir['strength']}
-                     AND `jrLABOURN` <= {$ir['labour']}
-                     AND `jrIQN` <= {$ir['IQ']} AND `jrJOB` = {$ir['job']}
-                     ORDER BY `jrPAY` DESC
-                     LIMIT 1");
-    if ($db->num_rows($q) == 0)
-    {
+    $r = $db->row(
+        'SELECT jrID, jrNAME
+        FROM jobranks
+        WHERE jrPAY > ?
+          AND jrSTRN <= ?
+          AND jrLABOURN <= ?
+          AND jrIQN <= ?
+          AND jrJOB = ?
+        ORDER BY jrPAY DESC
+        LIMIT 1',
+        $ir['jrPAY'],
+        $ir['strength'],
+        $ir['labour'],
+        $ir['IQ'],
+        $ir['job'],
+    );
+    if (empty($r)) {
         echo "
 		Sorry, you cannot be promoted at this time.
 		<br />
 		&gt; <a href='job.php'>Go Back</a>
    		";
-    }
-    else
-    {
-        $r = $db->fetch_row($q);
-        $db->query(
-                "UPDATE `users`
-                 SET `jobrank` = {$r['jrID']}
-                 WHERE `userid` = $userid");
+    } else {
+        $db->update(
+            'users',
+            ['jobrank' => $r['jrID']],
+            ['userid' => $userid],
+        );
         echo "
 		Congrats, you have been promoted to {$r['jrNAME']}.
 		<br />
 		&gt; <a href='job.php'>Go Back</a>
    		";
     }
-    $db->free_result($q);
 }
 
 /**
@@ -233,14 +213,19 @@ function job_promote(): void
 function quit_job(): void
 {
     global $db, $userid;
-    $db->query(
-            "UPDATE `users`
-             SET `job` = 0, `jobrank` = 0
-             WHERE `userid` = $userid");
+    $db->update(
+        'users',
+        [
+            'job' => 0,
+            'jobrank' => 0,
+        ],
+        ['userid' => $userid],
+    );
     echo "
 	You have quit your job!
 	<br />
 	&gt; <a href='job.php'>Go Back</a>
    	";
 }
+
 $h->endpage();

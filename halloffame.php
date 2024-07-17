@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
@@ -13,8 +13,8 @@ $non_don = '';
 $is_don = '';
 $all_us = '';
 $filters =
-        ['nodon' => 'AND `donatordays` = 0',
-                'don' => 'AND `donatordays` > 0', 'all' => ''];
+        ['nodon' => 'AND donatordays = 0',
+                'don' => 'AND donatordays > 0', 'all' => ''];
 $hofheads =
         ['level', 'money', 'crystals', 'respect', 'total', 'strength',
                 'agility', 'guard', 'labour', 'iq'];
@@ -28,43 +28,37 @@ $myf = $filters[$filter];
 $hofqone = ['level', 'money', 'crystals'];
 if (in_array($_GET['action'], $hofqone))
 {
-    $q =
-            $db->query(
-                    "SELECT `userid`, `laston`, `gender`, `donatordays`,
-                     `username`, `level`, `money`, `crystals`, `gangPREF`
-                     FROM `users` AS `u`
-                     LEFT JOIN `gangs` AS `g`
-                     ON `g`.`gangID` = `u`.`gang`
-                     WHERE `u`.`user_level` != 0
-                     $myf
-                     ORDER BY `{$_GET['action']}` DESC, `userid` ASC
-                     LIMIT 20");
+    $q = $db->run(
+        'SELECT userid, laston, gender, donatordays, username, level, money, crystals, gangPREF
+        FROM users AS u
+        LEFT JOIN gangs AS g ON g.gangID = u.gang
+        WHERE u.user_level != 0
+        ' .$myf. '
+        ORDER BY '.$_GET['action'].' DESC, userid
+        LIMIT 20',
+    );
 }
 $hofqtwo = ['total', 'strength', 'agility', 'guard', 'labour', 'iq'];
 if (in_array($_GET['action'], $hofqtwo))
 {
     if ($_GET['action'] == 'total')
     {
-        $us = '(`strength` + `agility` + `guard` + `labour` + `IQ`)';
+        $us = '(strength + agility + guard + labour + IQ)';
     }
     else
     {
-        $us = '`' . $_GET['action'] . '`';
+        $us = $_GET['action'];
     }
-    $q =
-            $db->query(
-                    "SELECT u.`userid`, `laston`, `gender`, `donatordays`,
-                     `level`, `money`, `crystals`, `username`, `gangPREF`,
-                     `strength`, `agility`, `guard`, `labour`, `IQ`
-                     FROM `users` AS `u`
-                     INNER JOIN `userstats` AS `us`
-                     ON `u`.`userid` = `us`.`userid`
-                     LEFT JOIN `gangs` AS `g`
-                     ON `g`.`gangID` = `u`.`gang`
-                     WHERE `u`.`user_level` != 0
-                     $myf
-                     ORDER BY {$us} DESC, `u`.`userid` ASC
-                     LIMIT 20");
+    $q = $db->run(
+        'SELECT u.userid, laston, gender, donatordays, level, money, crystals, username, gangPREF, strength, agility, guard, labour, IQ
+        FROM users AS u
+        INNER JOIN userstats AS us ON u.userid = us.userid
+        LEFT JOIN gangs AS g ON g.gangID = u.gang
+        WHERE u.user_level != 0
+        ' .$myf. '
+        ORDER BY ' .$us. ' DESC, u.userid ASC
+        LIMIT 20'
+    );
 }
 if ($_GET['action'] != 'respect')
 {
@@ -84,13 +78,11 @@ if ($_GET['action'] != 'respect')
                     . '&filter=all">All Users</a>'
                     . (($filter == 'all') ? '</b>' : '');
 }
-echo '
-<h3>Hall Of Fame</h3>
-'
-        . (($_GET['action'] != 'respect')
-                ? '<hr />Filter: [' . $non_don . ' | ' . $is_don . ' | '
-                        . $all_us . ']<hr />' : '')
-        . "
+echo '<h3>Hall Of Fame</h3>'
+    . (($_GET['action'] != 'respect')
+        ? '<hr />Filter: [' . $non_don . ' | ' . $is_don . ' | '
+        . $all_us . ']<hr />' : '')
+    . "
 
 <table width='75%' cellpadding='1' cellspacing='1' class='table'>
 		<tr>
@@ -148,7 +140,7 @@ case 'iq':
  */
 function hof_level(): void
 {
-    global $db, $userid, $q;
+    global $userid, $q;
     echo "
 Showing the 20 users with the highest levels
 <br />
@@ -161,7 +153,7 @@ Showing the 20 users with the highest levels
    ";
 
     $p = 0;
-    while ($r = $db->fetch_row($q))
+    foreach ($q as $r)
     {
         $p++;
         $bold_hof =
@@ -175,7 +167,6 @@ Showing the 20 users with the highest levels
 		</tr>
    ';
     }
-    $db->free_result($q);
     echo '</table>';
 }
 
@@ -184,7 +175,7 @@ Showing the 20 users with the highest levels
  */
 function hof_money(): void
 {
-    global $db, $userid, $q;
+    global $userid, $q;
     echo "
 Showing the 20 users with the highest amount of money
 <br />
@@ -197,7 +188,7 @@ Showing the 20 users with the highest amount of money
    ";
 
     $p = 0;
-    while ($r = $db->fetch_row($q))
+    foreach ($q as $r)
     {
         $p++;
         $bold_hof =
@@ -211,7 +202,6 @@ Showing the 20 users with the highest amount of money
 		</tr>
    ';
     }
-    $db->free_result($q);
     echo '</table>';
 }
 
@@ -220,7 +210,7 @@ Showing the 20 users with the highest amount of money
  */
 function hof_crystals(): void
 {
-    global $db, $userid, $q;
+    global $userid, $q;
     echo "
 Showing the 20 users with the highest amount of crystals
 <br />
@@ -233,7 +223,7 @@ Showing the 20 users with the highest amount of crystals
    ";
 
     $p = 0;
-    while ($r = $db->fetch_row($q))
+    foreach ($q as $r)
     {
         $p++;
         $bold_hof =
@@ -247,7 +237,6 @@ Showing the 20 users with the highest amount of crystals
 		</tr>
    ';
     }
-    $db->free_result($q);
     echo '</table>';
 }
 
@@ -267,14 +256,11 @@ Showing the 20 gangs with the highest amount of respect
 			<th>Respect</th>
 		</tr>
    ";
-    $q =
-            $db->query(
-                'SELECT `gangID`, `gangNAME`, `gangRESPECT`
-                     FROM `gangs`
-                     ORDER BY `gangRESPECT` DESC, `gangID` ASC
-                     LIMIT 20');
+    $q = $db->run(
+        'SELECT gangID, gangNAME, gangRESPECT FROM gangs ORDER BY gangRESPECT DESC, gangID LIMIT 20'
+    );
     $p = 0;
-    while ($r = $db->fetch_row($q))
+    foreach ($q as $r)
     {
         $p++;
         $bold_hof =
@@ -288,7 +274,6 @@ Showing the 20 gangs with the highest amount of respect
 		</tr>
    ';
     }
-    $db->free_result($q);
     echo '</table>';
 }
 
@@ -297,7 +282,7 @@ Showing the 20 gangs with the highest amount of respect
  */
 function hof_total(): void
 {
-    global $db, $userid, $q;
+    global $userid, $q;
     echo "
 Showing the 20 users with the highest total stats
 <br />
@@ -309,7 +294,7 @@ Showing the 20 users with the highest total stats
    ";
 
     $p = 0;
-    while ($r = $db->fetch_row($q))
+    foreach ($q as $r)
     {
         $p++;
         $bold_hof =
@@ -322,7 +307,6 @@ Showing the 20 users with the highest total stats
 		</tr>
    ';
     }
-    $db->free_result($q);
     echo '</table>';
 }
 
@@ -331,7 +315,7 @@ Showing the 20 users with the highest total stats
  */
 function hof_strength(): void
 {
-    global $db, $userid, $q;
+    global $userid, $q;
     echo "
 Showing the 20 users with the highest strength
 <br />
@@ -343,7 +327,7 @@ Showing the 20 users with the highest strength
    ";
 
     $p = 0;
-    while ($r = $db->fetch_row($q))
+    foreach ($q as $r)
     {
         $p++;
         $bold_hof =
@@ -356,7 +340,6 @@ Showing the 20 users with the highest strength
 		</tr>
    ';
     }
-    $db->free_result($q);
     echo '</table>';
 }
 
@@ -365,7 +348,7 @@ Showing the 20 users with the highest strength
  */
 function hof_agility(): void
 {
-    global $db, $userid, $q;
+    global $userid, $q;
     echo "
 Showing the 20 users with the highest agility
 <br />
@@ -377,7 +360,7 @@ Showing the 20 users with the highest agility
    ";
 
     $p = 0;
-    while ($r = $db->fetch_row($q))
+    foreach ($q as $r)
     {
         $p++;
         $bold_hof =
@@ -390,7 +373,6 @@ Showing the 20 users with the highest agility
 		</tr>
    ';
     }
-    $db->free_result($q);
     echo '</table>';
 }
 
@@ -399,7 +381,7 @@ Showing the 20 users with the highest agility
  */
 function hof_guard(): void
 {
-    global $db, $userid, $q;
+    global $userid, $q;
     echo "
 Showing the 20 users with the highest guard
 <br />
@@ -411,7 +393,7 @@ Showing the 20 users with the highest guard
    ";
 
     $p = 0;
-    while ($r = $db->fetch_row($q))
+    foreach ($q as $r)
     {
         $p++;
         $bold_hof =
@@ -424,7 +406,6 @@ Showing the 20 users with the highest guard
 		</tr>
    ';
     }
-    $db->free_result($q);
     echo '</table>';
 }
 
@@ -433,7 +414,7 @@ Showing the 20 users with the highest guard
  */
 function hof_labour(): void
 {
-    global $db, $userid, $q;
+    global $userid, $q;
     echo "
 Showing the 20 users with the highest labour
 <br />
@@ -445,7 +426,7 @@ Showing the 20 users with the highest labour
    ";
 
     $p = 0;
-    while ($r = $db->fetch_row($q))
+    foreach ($q as $r)
     {
         $p++;
         $bold_hof =
@@ -458,7 +439,6 @@ Showing the 20 users with the highest labour
 		</tr>
    ';
     }
-    $db->free_result($q);
     echo '</table>';
 }
 
@@ -467,7 +447,7 @@ Showing the 20 users with the highest labour
  */
 function hof_iq(): void
 {
-    global $db, $userid, $q;
+    global $userid, $q;
     echo "
 Showing the 20 users with the highest IQ
 <br />
@@ -479,7 +459,7 @@ Showing the 20 users with the highest IQ
    ";
 
     $p = 0;
-    while ($r = $db->fetch_row($q))
+    foreach ($q as $r)
     {
         $p++;
         $bold_hof =
@@ -492,7 +472,6 @@ Showing the 20 users with the highest IQ
 		</tr>
    ';
     }
-    $db->free_result($q);
     echo '</table>';
 }
 $h->endpage();

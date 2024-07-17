@@ -1,49 +1,50 @@
 <?php
 declare(strict_types=1);
+
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
+
+use ParagonIE\EasyDB\EasyDB;
 
 global $db, $ir, $h;
 require_once('sglobals.php');
 check_access('view_logs');
 //This contains log stuffs
-if (!isset($_GET['action']))
-{
+if (!isset($_GET['action'])) {
     $_GET['action'] = '';
 }
-switch ($_GET['action'])
-{
-case 'atklogs':
-    view_attack_logs();
-    break;
-case 'itmlogs':
-    view_itm_logs();
-    break;
-case 'cashlogs':
-    view_cash_logs();
-    break;
-case 'cryslogs':
-    view_crys_logs();
-    break;
-case 'banklogs':
-    view_bank_logs();
-    break;
-case 'maillogs':
-    view_mail_logs();
-    break;
-case 'stafflogs':
-    view_staff_logs();
-    break;
+switch ($_GET['action']) {
+    case 'atklogs':
+        view_attack_logs();
+        break;
+    case 'itmlogs':
+        view_itm_logs();
+        break;
+    case 'cashlogs':
+        view_cash_logs();
+        break;
+    case 'cryslogs':
+        view_crys_logs();
+        break;
+    case 'banklogs':
+        view_bank_logs();
+        break;
+    case 'maillogs':
+        view_mail_logs();
+        break;
+    case 'stafflogs':
+        view_staff_logs();
+        break;
     case 'cron-fails':
         view_cron_fail_logs($db);
         break;
-default:
-    echo 'Error: This script requires an action.';
-    break;
+    default:
+        echo 'Error: This script requires an action.';
+        break;
 }
 
 /**
@@ -56,29 +57,25 @@ function view_attack_logs(): void
 	<h3>Attack Logs</h3>
 	<hr />
  	  ';
-    if (!isset($_GET['st']))
-    {
+    if (!isset($_GET['st'])) {
         $_GET['st'] = 0;
     }
-    $st = abs(intval($_GET['st']));
-    $app = 100;
-    $q = $db->query('SELECT COUNT(`attacker`)
-    				 FROM `attacklogs`');
-    $attacks = $db->fetch_single($q);
-    $db->free_result($q);
-    if ($attacks == 0)
-    {
+    $st      = abs(intval($_GET['st']));
+    $app     = 100;
+    $attacks = $db->cell(
+        'SELECT COUNT(attacker) FROM attacklogs',
+    );
+    if (!$attacks) {
         echo 'There have been no attacks yet.';
         return;
     }
     $pages = ceil($attacks / $app);
     echo 'Pages:&nbsp;';
-    for ($i = 1; $i <= $pages; $i++)
-    {
+    for ($i = 1; $i <= $pages; $i++) {
         $s = ($i - 1) * $app;
         echo ($s == $st) ? '<b>' . $i . '</b>&nbsp;'
-                : '<a href="staff_logs.php?action=atklogs&st=' . $s . '">'
-                        . $i . '</a>&nbsp;';
+            : '<a href="staff_logs.php?action=atklogs&st=' . $s . '">'
+            . $i . '</a>&nbsp;';
         echo ($i % 25 == 0) ? '<br />' : '';
     }
     echo "
@@ -92,51 +89,40 @@ function view_attack_logs(): void
     			<th>What Happened</th>
     		</tr>
        ";
-    $q =
-            $db->query(
-                    "SELECT `stole`, `result`, `attacked`, `attacker`, `time`,
-                     `u1`.`username` AS `un_attacker`,
-                     `u2`.`username` AS `un_attacked`
-                     FROM `attacklogs` AS `a`
-                     INNER JOIN `users` AS `u1`
-                     ON `a`.`attacker` = `u1`.`userid`
-                     INNER JOIN `users` AS `u2`
-                     ON `a`.`attacked` = `u2`.`userid`
-                     ORDER BY `a`.`time` DESC
-                     LIMIT $st, $app");
-    while ($r = $db->fetch_row($q))
-    {
+    $q = $db->run(
+        'SELECT stole, result, attacked, attacker, time, u1.username AS un_attacker, u2.username AS un_attacked
+        FROM attacklogs AS a
+        INNER JOIN users AS u1 ON a.attacker = u1.userid
+        INNER JOIN users AS u2 ON a.attacked = u2.userid
+        ORDER BY a.time DESC
+        LIMIT ?, ?',
+        $st,
+        $app,
+    );
+    foreach ($q as $r) {
         echo '
 		<tr>
         	<td>' . date('F j, Y, g:i:s a', (int)$r['time'])
-                . "</td>
+            . "</td>
         	<td>{$r['un_attacker']} [{$r['attacker']}]</td>
         	<td>{$r['un_attacked']} [{$r['attacked']}]</td>
            ";
-        if ($r['result'] == 'won')
-        {
+        if ($r['result'] == 'won') {
             echo "
 			<td>{$r['un_attacker']}</td>
 			<td>
    			";
-            if ($r['stole'] == -1)
-            {
+            if ($r['stole'] == -1) {
                 echo "{$r['un_attacker']} hospitalized {$r['un_attacked']}";
-            }
-            elseif ($r['stole'] == -2)
-            {
+            } elseif ($r['stole'] == -2) {
                 echo "{$r['un_attacker']} attacked {$r['un_attacked']} and left them";
-            }
-            else
-            {
+            } else {
                 echo "{$r['un_attacker']} mugged "
-                        . money_formatter((int)$r['stole'])
-                        . " from {$r['un_attacked']}";
+                    . money_formatter((int)$r['stole'])
+                    . " from {$r['un_attacked']}";
             }
             echo '</td>';
-        }
-        else
-        {
+        } else {
             echo "
 			<td>{$r['un_attacked']}</td>
 			<td>Nothing</td>
@@ -144,18 +130,16 @@ function view_attack_logs(): void
         }
         echo '</tr>';
     }
-    $db->free_result($q);
     echo '
     </table>
     <br />
     Pages:&nbsp;
        ';
-    for ($i = 1; $i <= $pages; $i++)
-    {
+    for ($i = 1; $i <= $pages; $i++) {
         $s = ($i - 1) * $app;
         echo ($s == $st) ? '<b>' . $i . '</b>&nbsp;'
-                : '<a href="staff_logs.php?action=atklogs&st=' . $s . '">'
-                        . $i . '</a>&nbsp;';
+            : '<a href="staff_logs.php?action=atklogs&st=' . $s . '">'
+            . $i . '</a>&nbsp;';
         echo ($i % 25 == 0) ? '<br />' : '';
     }
     $mypage = floor($_GET['st'] / 100) + 1;
@@ -169,29 +153,25 @@ function view_itm_logs(): void
 {
     global $db;
     echo '<h3>Item Xfer Logs</h3><hr />';
-    if (!isset($_GET['st']))
-    {
+    if (!isset($_GET['st'])) {
         $_GET['st'] = 0;
     }
-    $st = abs(intval($_GET['st']));
-    $app = 100;
-    $q = $db->query('SELECT COUNT(`ixFROM`)
-    				 FROM `itemxferlogs`');
-    $attacks = $db->fetch_single($q);
-    $db->free_result($q);
-    if ($attacks == 0)
-    {
+    $st      = abs(intval($_GET['st']));
+    $app     = 100;
+    $attacks = $db->cell(
+        'SELECT COUNT(ixFROM) FROM itemxferlogs'
+    );
+    if (!$attacks) {
         echo 'There have been no item transfers yet.';
         return;
     }
     $pages = ceil($attacks / $app);
     echo 'Pages:&nbsp;';
-    for ($i = 1; $i <= $pages; $i++)
-    {
+    for ($i = 1; $i <= $pages; $i++) {
         $s = ($i - 1) * $app;
         echo ($s == $st) ? '<b>' . $i . '</b>&nbsp;'
-                : '<a href="staff_logs.php?action=atklogs&st=' . $s . '">'
-                        . $i . '</a>&nbsp;';
+            : '<a href="staff_logs.php?action=atklogs&st=' . $s . '">'
+            . $i . '</a>&nbsp;';
         echo ($i % 25 == 0) ? '<br />' : '';
     }
     echo "
@@ -207,30 +187,26 @@ function view_itm_logs(): void
     			<th>Item</th>
     		</tr>
        ";
-    $q =
-            $db->query(
-                    "SELECT `ixTO`, `ixFROM`, `ixQTY`, `ixTIME`, `ixTOIP`,
-                     `ixFROMIP`, `u1`.`username` AS `sender`,
-                     `u2`.`username` AS `sent`, `i`.`itmname` AS `item`
-                     FROM `itemxferlogs` AS `ix`
-                     INNER JOIN `users` AS `u1`
-                     ON `ix`.`ixFROM` = `u1`.`userid`
-                     INNER JOIN `users` AS `u2`
-                     ON `ix`.`ixTO` = `u2`.`userid`
-                     INNER JOIN `items` AS `i`
-                     ON `i`.`itmid` = `ix`.`ixITEM`
-                     ORDER BY `ix`.`ixTIME` DESC
-                     LIMIT $st, $app");
-    while ($r = $db->fetch_row($q))
-    {
+    $q = $db->run(
+        'SELECT ixTO, ixFROM, ixQTY, ixTIME, ixTOIP, ixFROMIP, u1.username AS sender, u2.username AS sent, i.itmname AS item
+        FROM itemxferlogs AS ix
+        INNER JOIN users AS u1 ON ix.ixFROM = u1.userid
+        INNER JOIN users AS u2 ON ix.ixTO = u2.userid
+        INNER JOIN items AS i ON i.itmid = ix.ixITEM
+        ORDER BY ix.ixTIME DESC
+        LIMIT ?, ?',
+        $st,
+        $app,
+    );
+    foreach ($q as $r) {
         $same =
-                ($r['ixFROMIP'] == $r['ixTOIP'])
-                        ? '<span style="color: red;">Yes</span>'
-                        : '<span style="color: green;">No</span>';
+            ($r['ixFROMIP'] == $r['ixTOIP'])
+                ? '<span style="color: red;">Yes</span>'
+                : '<span style="color: green;">No</span>';
         echo '
 		<tr>
         	<td>' . date('F j Y, g:i:s a', (int)$r['ixTIME'])
-                . "</td>
+            . "</td>
         	<td>{$r['sender']} [{$r['ixFROM']}]</td>
         	<td>{$r['sent']} [{$r['ixTO']}]</td>
         	<td>{$r['ixFROMIP']}</td>
@@ -240,18 +216,16 @@ function view_itm_logs(): void
         </tr>
            ";
     }
-    $db->free_result($q);
     echo '
     </table>
     <br />
     Pages:&nbsp;
        ';
-    for ($i = 1; $i <= $pages; $i++)
-    {
+    for ($i = 1; $i <= $pages; $i++) {
         $s = ($i - 1) * $app;
         echo ($s == $st) ? '<b>' . $i . '</b>&nbsp;'
-                : '<a href="staff_logs.php?action=itmlogs&st=' . $s . '">'
-                        . $i . '</a>&nbsp;';
+            : '<a href="staff_logs.php?action=itmlogs&st=' . $s . '">'
+            . $i . '</a>&nbsp;';
         echo ($i % 25 == 0) ? '<br />' : '';
     }
     $mypage = floor($_GET['st'] / 100) + 1;
@@ -265,29 +239,25 @@ function view_cash_logs(): void
 {
     global $db;
     echo '<h3>Cash Xfer Logs</h3>';
-    if (!isset($_GET['st']))
-    {
+    if (!isset($_GET['st'])) {
         $_GET['st'] = 0;
     }
-    $st = abs(intval($_GET['st']));
-    $app = 100;
-    $q = $db->query('SELECT COUNT(`cxFROM`)
-    				 FROM `cashxferlogs`');
-    $attacks = $db->fetch_single($q);
-    $db->free_result($q);
-    if ($attacks == 0)
-    {
+    $st      = abs(intval($_GET['st']));
+    $app     = 100;
+    $attacks = $db->cell(
+        'SELECT COUNT(cxFROM) FROM cashxferlogs'
+    );
+    if (!$attacks) {
         echo 'There have been no cash transfers yet.';
         return;
     }
     $pages = ceil($attacks / $app);
     echo 'Pages:&nbsp;';
-    for ($i = 1; $i <= $pages; $i++)
-    {
+    for ($i = 1; $i <= $pages; $i++) {
         $s = ($i - 1) * $app;
         echo ($s == $st) ? '<b>' . $i . '</b>&nbsp;'
-                : '<a href="staff_logs.php?action=cashlogs&st=' . $s . '">'
-                        . $i . '</a>&nbsp;';
+            : '<a href="staff_logs.php?action=cashlogs&st=' . $s . '">'
+            . $i . '</a>&nbsp;';
         echo ($i % 25 == 0) ? '<br />' : '';
     }
     echo "
@@ -303,29 +273,26 @@ function view_cash_logs(): void
     			<th>&nbsp;</th>
     		</tr>
        ";
-    $q =
-            $db->query(
-                    "SELECT `cxAMOUNT`, `cxTO`, `cxFROM`, `cxTIME`, `cxID`,
-                     `cxTOIP`, `cxFROMIP`, `u1`.`username` AS `sender`,
-                     `u2`.`username` AS `sent`
-                     FROM `cashxferlogs` AS `cx`
-                     INNER JOIN `users` AS `u1`
-                     ON `cx`.`cxFROM` = `u1`.`userid`
-                     INNER JOIN `users` AS `u2`
-                     ON `cx`.`cxTO` = `u2`.`userid`
-                     ORDER BY `cx`.`cxTIME` DESC
-                     LIMIT $st, $app");
-    while ($r = $db->fetch_row($q))
-    {
+    $q = $db->run(
+        'SELECT cxAMOUNT, cxTO, cxFROM, cxTIME, cxID, cxTOIP, cxFROMIP, u1.username AS sender, u2.username AS sent
+        FROM cashxferlogs AS cx
+        INNER JOIN users AS u1 ON cx.cxFROM = u1.userid
+        INNER JOIN users AS u2 ON cx.cxTO = u2.userid
+        ORDER BY cx.cxTIME DESC
+        LIMIT ?, ?',
+        $st,
+        $app,
+    );
+    foreach ($q as $r) {
         $m =
-                ($r['cxFROMIP'] == $r['cxTOIP'])
-                        ? '<span style="color: red; font-weight: bold;">MULTI</span>'
-                        : '';
+            ($r['cxFROMIP'] == $r['cxTOIP'])
+                ? '<span style="color: red; font-weight: bold;">MULTI</span>'
+                : '';
         echo "
 		<tr>
         	<td>{$r['cxID']}</td>
         	<td>" . date('F j, Y, g:i:s a', (int)$r['cxTIME'])
-                . "</td>
+            . "</td>
         	<td>
         		<a href='viewuser.php?u={$r['cxFROM']}'>{$r['sender']}</a>
         		[{$r['cxFROM']}] (IP: {$r['cxFROMIP']})
@@ -336,7 +303,7 @@ function view_cash_logs(): void
         	</td>
         	<td>$m</td>
         	<td> " . money_formatter((int)$r['cxAMOUNT'])
-                . "</td>
+            . "</td>
         	<td>
         		[<a href='staff_punit.php?action=fedform&amp;XID={$r['cxFROM']}'>Jail Sender</a>]
         		[<a href='staff_punit.php?action=fedform&amp;XID={$r['cxTO']}'>Jail Receiver</a>]
@@ -344,18 +311,16 @@ function view_cash_logs(): void
         </tr>
            ";
     }
-    $db->free_result($q);
     echo '
     </table>
     <br />
     Pages:&nbsp;
        ';
-    for ($i = 1; $i <= $pages; $i++)
-    {
+    for ($i = 1; $i <= $pages; $i++) {
         $s = ($i - 1) * $app;
         echo ($s == $st) ? '<b>' . $i . '</b>&nbsp;'
-                : '<a href="staff_logs.php?action=atklogs&st=' . $s . '">'
-                        . $i . '</a>&nbsp;';
+            : '<a href="staff_logs.php?action=atklogs&st=' . $s . '">'
+            . $i . '</a>&nbsp;';
         echo ($i % 25 == 0) ? '<br />' : '';
     }
     $mypage = floor($_GET['st'] / 100) + 1;
@@ -369,29 +334,25 @@ function view_bank_logs(): void
 {
     global $db;
     echo '<h3>Bank Xfer Logs</h3>';
-    if (!isset($_GET['st']))
-    {
+    if (!isset($_GET['st'])) {
         $_GET['st'] = 0;
     }
-    $st = abs(intval($_GET['st']));
-    $app = 100;
-    $q = $db->query('SELECT COUNT(`cxFROM`)
-    				 FROM `bankxferlogs`');
-    $attacks = $db->fetch_single($q);
-    $db->free_result($q);
-    if ($attacks == 0)
-    {
+    $st      = abs(intval($_GET['st']));
+    $app     = 100;
+    $attacks = $db->cell(
+        'SELECT COUNT(cxFROM) FROM bankxferlogs',
+    );
+    if (!$attacks) {
         echo 'There have been no bank transfers yet.';
         return;
     }
     $pages = ceil($attacks / $app);
     echo 'Pages:&nbsp;';
-    for ($i = 1; $i <= $pages; $i++)
-    {
+    for ($i = 1; $i <= $pages; $i++) {
         $s = ($i - 1) * $app;
         echo ($s == $st) ? '<b>' . $i . '</b>&nbsp;'
-                : '<a href="staff_logs.php?action=banklogs&st=' . $s . '">'
-                        . $i . '</a>&nbsp;';
+            : '<a href="staff_logs.php?action=banklogs&st=' . $s . '">'
+            . $i . '</a>&nbsp;';
         echo ($i % 25 == 0) ? '<br />' : '';
     }
     echo "
@@ -407,31 +368,28 @@ function view_bank_logs(): void
     			<th>&nbsp;</th>
     		</tr>
        ";
-    $q =
-            $db->query(
-                    "SELECT `cxAMOUNT`, `cxTO`, `cxFROM`, `cxTIME`, `cxID`,
-                     `cxTOIP`, `cxFROMIP`, `cxBANK`,
-                     `u1`.`username` AS `sender`, `u2`.`username` AS `sent`
-                     FROM `bankxferlogs` AS `cx`
-                     INNER JOIN `users` AS `u1`
-                     ON `cx`.`cxFROM` = `u1`.`userid`
-                     INNER JOIN `users` AS `u2`
-                     ON `cx`.`cxTO` = `u2`.`userid`
-                     ORDER BY `cx`.`cxTIME` DESC
-                     LIMIT $st, $app");
+    $q     = $db->run(
+        'SELECT cxAMOUNT, cxTO, cxFROM, cxTIME, cxID, cxTOIP, cxFROMIP, cxBANK, u1.username AS sender, u2.username AS sent
+        FROM bankxferlogs AS cx
+        INNER JOIN users AS u1 ON cx.cxFROM = u1.userid
+        INNER JOIN users AS u2 ON cx.cxTO = u2.userid
+        ORDER BY cx.cxTIME DESC
+        LIMIT ?, ?',
+        $st,
+        $app,
+    );
     $banks = ['bank' => 'City Bank', 'cyber' => 'Cyber Bank'];
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $mb = $banks[$r['cxBANK']];
-        $m =
-                ($r['cxFROMIP'] == $r['cxTOIP'])
-                        ? '<span style="color: red; font-weight: bold;">MULTI</span>'
-                        : '';
+        $m  =
+            ($r['cxFROMIP'] == $r['cxTOIP'])
+                ? '<span style="color: red; font-weight: bold;">MULTI</span>'
+                : '';
         echo "
 		<tr>
         	<td>{$r['cxID']}</td>
         	<td>" . date('F j, Y, g:i:s a', (int)$r['cxTIME'])
-                . "</td>
+            . "</td>
         	<td>
         		<a href='viewuser.php?u={$r['cxFROM']}'>{$r['sender']}</a>
         		[{$r['cxFROM']}] (IP: {$r['cxFROMIP']})
@@ -442,7 +400,7 @@ function view_bank_logs(): void
         	</td>
         	<td>$m</td>
         	<td> " . money_formatter((int)$r['cxAMOUNT'])
-                . "</td>
+            . "</td>
             <td>$mb</td>
             <td>
             	[<a href='staff_punit.php?action=fedform&amp;XID={$r['cxFROM']}'>Jail Sender</a>]
@@ -451,18 +409,16 @@ function view_bank_logs(): void
         </tr>
            ";
     }
-    $db->free_result($q);
     echo '
     </table>
     <br />
     Pages:&nbsp;
        ';
-    for ($i = 1; $i <= $pages; $i++)
-    {
+    for ($i = 1; $i <= $pages; $i++) {
         $s = ($i - 1) * $app;
         echo ($s == $st) ? '<b>' . $i . '</b>&nbsp;'
-                : '<a href="staff_logs.php?action=banklogs&st=' . $s . '">'
-                        . $i . '</a>&nbsp;';
+            : '<a href="staff_logs.php?action=banklogs&st=' . $s . '">'
+            . $i . '</a>&nbsp;';
         echo ($i % 25 == 0) ? '<br />' : '';
     }
     $mypage = floor($_GET['st'] / 100) + 1;
@@ -476,31 +432,25 @@ function view_crys_logs(): void
 {
     global $db;
     echo '<h3>Crystal Xfer Logs</h3>';
-    if (!isset($_GET['st']))
-    {
+    if (!isset($_GET['st'])) {
         $_GET['st'] = 0;
     }
-    $st = abs(intval($_GET['st']));
-    $app = 100;
-    $q =
-            $db->query(
-                'SELECT COUNT(`cxFROM`)
-    				 FROM `crystalxferlogs`');
-    $attacks = $db->fetch_single($q);
-    $db->free_result($q);
-    if ($attacks == 0)
-    {
+    $st      = abs(intval($_GET['st']));
+    $app     = 100;
+    $attacks = $db->cell(
+        'SELECT COUNT(cxFROM) FROM crystalxferlogs',
+    );
+    if (!$attacks) {
         echo 'There have been no crystal transfers yet.';
         return;
     }
     $pages = ceil($attacks / $app);
     echo 'Pages:&nbsp;';
-    for ($i = 1; $i <= $pages; $i++)
-    {
+    for ($i = 1; $i <= $pages; $i++) {
         $s = ($i - 1) * $app;
         echo ($s == $st) ? '<b>' . $i . '</b>&nbsp;'
-                : '<a href="staff_logs.php?action=cryslogs&st=' . $s . '">'
-                        . $i . '</a>&nbsp;';
+            : '<a href="staff_logs.php?action=cryslogs&st=' . $s . '">'
+            . $i . '</a>&nbsp;';
         echo ($i % 25 == 0) ? '<br />' : '';
     }
     echo "
@@ -515,29 +465,26 @@ function view_crys_logs(): void
     			<th>&nbsp;</th>
     		</tr>
        ";
-    $q =
-            $db->query(
-                    "SELECT `cxAMOUNT`, `cxTO`, `cxFROM`, `cxTIME`, `cxID`,
-                     `cxTOIP`, `cxFROMIP`, `u1`.`username` AS `sender`,
-                     `u2`.`username` AS `sent`
-                     FROM `crystalxferlogs` AS `cx`
-                     INNER JOIN `users` AS `u1`
-                     ON `cx`.`cxFROM` = `u1`.`userid`
-                     INNER JOIN `users` AS `u2`
-                     ON `cx`.`cxTO` = `u2`.`userid`
-                     ORDER BY `cx`.`cxTIME` DESC
-                     LIMIT $st, $app");
-    while ($r = $db->fetch_row($q))
-    {
+    $q = $db->run(
+        'SELECT cxAMOUNT, cxTO, cxFROM, cxTIME, cxID, cxTOIP, cxFROMIP, u1.username AS sender, u2.username AS sent
+        FROM crystalxferlogs AS cx
+        INNER JOIN users AS u1 ON cx.cxFROM = u1.userid
+        INNER JOIN users AS u2 ON cx.cxTO = u2.userid
+        ORDER BY cx.cxTIME DESC
+        LIMIT ?, ?',
+        $st,
+        $app,
+    );
+    foreach ($q as $r) {
         $m =
-                ($r['cxFROMIP'] == $r['cxTOIP'])
-                        ? '<span style="color: red; font-weight: bold;">MULTI</span>'
-                        : '';
+            ($r['cxFROMIP'] == $r['cxTOIP'])
+                ? '<span style="color: red; font-weight: bold;">MULTI</span>'
+                : '';
         echo "
 		<tr>
         	<td>{$r['cxID']}</td>
         	<td>" . date('F j, Y, g:i:s a', (int)$r['cxTIME'])
-                . "</td>
+            . "</td>
         	<td>
         		<a href='viewuser.php?u={$r['cxFROM']}'>{$r['sender']}</a>
         		[{$r['cxFROM']}] (IP: {$r['cxFROMIP']})
@@ -555,18 +502,16 @@ function view_crys_logs(): void
         </tr>
            ";
     }
-    $db->free_result($q);
     echo '
     </table>
     <br />
     Pages:&nbsp;
        ';
-    for ($i = 1; $i <= $pages; $i++)
-    {
+    for ($i = 1; $i <= $pages; $i++) {
         $s = ($i - 1) * $app;
         echo ($s == $st) ? '<b>' . $i . '</b>&nbsp;'
-                : '<a href="staff_logs.php?action=cryslogs&st=' . $s . '">'
-                        . $i . '</a>&nbsp;';
+            : '<a href="staff_logs.php?action=cryslogs&st=' . $s . '">'
+            . $i . '</a>&nbsp;';
         echo ($i % 25 == 0) ? '<br />' : '';
     }
     $mypage = floor($_GET['st'] / 100) + 1;
@@ -580,28 +525,25 @@ function view_mail_logs(): void
 {
     global $db;
     echo '<h3>Mail Logs</h3>';
-    if (!isset($_GET['st']))
-    {
+    if (!isset($_GET['st'])) {
         $_GET['st'] = 0;
     }
-    $st = abs(intval($_GET['st']));
-    $app = 100;
-    $q = $db->query('SELECT COUNT(`mail_from`)
-    				 FROM `mail`');
-    $attacks = $db->fetch_single($q);
-    if ($attacks == 0)
-    {
+    $st      = abs(intval($_GET['st']));
+    $app     = 100;
+    $attacks = $db->cell(
+        'SELECT COUNT(mail_from) FROM mail',
+    );
+    if (!$attacks) {
         echo 'There have been no mails sent yet.';
         return;
     }
     $pages = ceil($attacks / $app);
     echo 'Pages:&nbsp;';
-    for ($i = 1; $i <= $pages; $i++)
-    {
+    for ($i = 1; $i <= $pages; $i++) {
         $s = ($i - 1) * $app;
         echo ($s == $st) ? '<b>' . $i . '</b>&nbsp;'
-                : '<a href="staff_logs.php?action=maillogs&st=' . $s . '">'
-                        . $i . '</a>&nbsp;';
+            : '<a href="staff_logs.php?action=maillogs&st=' . $s . '">'
+            . $i . '</a>&nbsp;';
         echo ($i % 25 == 0) ? '<br />' : '';
     }
     echo "
@@ -616,31 +558,28 @@ function view_mail_logs(): void
     			<th>&nbsp;</th>
     		</tr>
     ";
-    $q =
-            $db->query(
-                    "SELECT `mail_text`, `mail_subject`, `mail_to`,
-                     `mail_from`, `mail_time`, `mail_id`,
-                     `u1`.`username` AS `sender`, `u2`.`username` AS `sent`
-                     FROM `mail` AS `m`
-                     INNER JOIN `users` AS `u1`
-                     ON `m`.`mail_from` = `u1`.`userid`
-                     INNER JOIN `users` AS `u2`
-                     ON `m`.`mail_to` = `u2`.`userid`
-                     WHERE `m`.`mail_from` != 0
-                     ORDER BY `m`.`mail_time`  DESC
-                     LIMIT $st, $app");
-    while ($r = $db->fetch_row($q))
-    {
+    $q = $db->run(
+        'SELECT mail_text, mail_subject, mail_to, mail_from, mail_time, mail_id, u1.username AS sender, u2.username AS sent
+        FROM mail AS m
+        INNER JOIN users AS u1 ON m.mail_from = u1.userid
+        INNER JOIN users AS u2 ON m.mail_to = u2.userid
+        WHERE m.mail_from != 0
+        ORDER BY m.mail_time DESC
+        LIMIT ?, ?',
+        $st,
+        $app,
+    );
+    foreach ($q as $r) {
         echo "
 		<tr>
         	<td>{$r['mail_id']}</td>
         	<td>" . date('F j, Y, g:i:s a', (int)$r['mail_time'])
-                . "</td>
+            . "</td>
         	<td>{$r['sender']} [{$r['mail_from']}]</td>
         	<td>{$r['sent']} [{$r['mail_to']}]</td>
         	<td>{$r['mail_subject']}</td>
         	<td>" . strip_tags($r['mail_text'])
-                . "</td>
+            . "</td>
         	<td>
         		[<a href='staff_punit.php?action=mailform&amp;XID={$r['mail_from']}'>MailBan Sender</a>]
         		[<a href='staff_punit.php?action=mailform&amp;XID={$r['mail_to']}'>MailBan Receiver</a>]
@@ -648,18 +587,16 @@ function view_mail_logs(): void
         </tr>
            ";
     }
-    $db->free_result($q);
     echo '
     </table>
     <br />
     Pages:&nbsp;
        ';
-    for ($i = 1; $i <= $pages; $i++)
-    {
+    for ($i = 1; $i <= $pages; $i++) {
         $s = ($i - 1) * $app;
         echo ($s == $st) ? '<b>' . $i . '</b>&nbsp;'
-                : '<a href="staff_logs.php?action=maillogs&st=' . $s . '">'
-                        . $i . '</a>&nbsp;';
+            : '<a href="staff_logs.php?action=maillogs&st=' . $s . '">'
+            . $i . '</a>&nbsp;';
         echo ($i % 25 == 0) ? '<br />' : '';
     }
 
@@ -674,28 +611,25 @@ function view_staff_logs(): void
 {
     global $db, $ir, $h;
     echo '<h3>Staff Logs</h3>';
-    if (!isset($_GET['st']))
-    {
+    if (!isset($_GET['st'])) {
         $_GET['st'] = 0;
     }
-    $st = abs(intval($_GET['st']));
-    $app = 100;
-    $q = $db->query('SELECT COUNT(`user`)
-    				 FROM `stafflog`');
-    $attacks = $db->fetch_single($q);
-    if ($attacks == 0)
-    {
+    $st      = abs(intval($_GET['st']));
+    $app     = 100;
+    $attacks = $db->cell(
+        'SELECT COUNT(user) FROM stafflog',
+    );
+    if (!$attacks) {
         echo 'There have been no staff actions yet.';
         return;
     }
     $pages = ceil($attacks / $app);
     echo 'Pages:&nbsp;';
-    for ($i = 1; $i <= $pages; $i++)
-    {
+    for ($i = 1; $i <= $pages; $i++) {
         $s = ($i - 1) * $app;
         echo ($s == $st) ? '<b>' . $i . '</b>&nbsp;'
-                : '<a href="staff_logs.php?action=stafflogs&st=' . $s . '">'
-                        . $i . '</a>&nbsp;';
+            : '<a href="staff_logs.php?action=stafflogs&st=' . $s . '">'
+            . $i . '</a>&nbsp;';
         echo ($i % 25 == 0) ? '<br />' : '';
     }
     echo "
@@ -707,38 +641,36 @@ function view_staff_logs(): void
     			<th>IP</th>
     		</tr>
        ";
-    $q =
-            $db->query(
-                    "SELECT `ip`, `time`, `action`, `user`, `u`.`username`
-                     FROM `stafflog` AS `s`
-                     INNER JOIN `users` AS `u`
-                     ON `s`.`user` = u.`userid`
-                     ORDER BY `s`.`time` DESC
-                     LIMIT $st, $app");
-    while ($r = $db->fetch_row($q))
-    {
+    $q = $db->run(
+        'SELECT ip, time, action, user, u.username
+        FROM stafflog AS s
+        INNER JOIN users AS u ON s.user = u.userid
+        ORDER BY s.time DESC
+        LIMIT ?, ?',
+        $st,
+        $app,
+    );
+    foreach ($q as $r) {
         echo "
 		<tr>
         	<td>{$r['username']} [{$r['user']}]</td>
         	<td>{$r['action']}</td>
         	<td>" . date('F j Y g:i:s a', (int)$r['time'])
-                . "</td>
+            . "</td>
         	<td>{$r['ip']}</td>
         </tr>
            ";
     }
-    $db->free_result($q);
     echo '
     </table>
     <br />
     Pages:&nbsp;
        ';
-    for ($i = 1; $i <= $pages; $i++)
-    {
+    for ($i = 1; $i <= $pages; $i++) {
         $s = ($i - 1) * $app;
         echo ($s == $st) ? '<b>' . $i . '</b>&nbsp;'
-                : '<a href="staff_logs.php?action=stafflogs&st=' . $s . '">'
-                        . $i . '</a>&nbsp;';
+            : '<a href="staff_logs.php?action=stafflogs&st=' . $s . '">'
+            . $i . '</a>&nbsp;';
         echo ($i % 25 == 0) ? '<br />' : '';
     }
 }
@@ -749,21 +681,22 @@ function view_staff_logs(): void
  * @param int $items_per_page
  * @return array
  */
-function paginate(database $db, int $count, int $items_per_page = 25): array
+function paginate(EasyDB $db, int $count, int $items_per_page = 25): array
 {
     $current_page = $_GET['page'] ?? 1;
     $page_count   = ceil($count / $items_per_page);
     $limit        = $current_page * $items_per_page;
-    $get_data     = $db->query(
-        'SELECT * FROM logs_cron_fails ORDER BY handled, time_logged LIMIT ' . $limit . ' , 25'
+    $get_data     = $db->run(
+        'SELECT * FROM logs_cron_fails ORDER BY handled, time_logged LIMIT ?, 25',
+        $limit,
     );
     $data         = [];
     $ret          = '<div class="pagination" style="margin-top: 1em;">[Pages: ';
-    while ($row = $db->fetch_row($get_data)) {
+    foreach ($get_data as $row) {
         $data[] = $row;
     }
     for ($i = 1; $i < $page_count; ++$i) {
-        $ret .= '<a href="staff_logs.php?action=cron-fails&page=' . $i . '"' . ($current_page == $i ? ' style="font-weight:700;"' : '') . '>' . ($current_page == $i ? '('.$i.')' : $i) . '</a>&nbsp;';
+        $ret .= '<a href="staff_logs.php?action=cron-fails&page=' . $i . '"' . ($current_page == $i ? ' style="font-weight:700;"' : '') . '>' . ($current_page == $i ? '(' . $i . ')' : $i) . '</a>&nbsp;';
     }
     $ret = substr($ret, 0, -6) . ']</div>';
     return [$ret, $data];
@@ -777,14 +710,15 @@ function paginate(database $db, int $count, int $items_per_page = 25): array
 function view_cron_fail_logs(database $db): void
 {
     if (!empty($_GET['id']) && isset($_GET['handled'])) {
-        $db->query(
-            'UPDATE logs_cron_fails SET handled = 1 WHERE id = ' . $_GET['id'],
+        $db->update(
+            'logs_cron_fails',
+            ['handled' => 1],
+            ['id' => $_GET['id']],
         );
     }
-    $get_count = $db->query(
+    $count = $db->cell(
         'SELECT COUNT(*) FROM logs_cron_fails',
     );
-    $count     = (int)$db->fetch_single($get_count);
     [$pages, $data] = paginate($db, $count);
     echo $pages . '<br>';
     echo '
@@ -821,4 +755,5 @@ function view_cron_fail_logs(database $db): void
     ';
     echo $pages;
 }
+
 $h->endpage();

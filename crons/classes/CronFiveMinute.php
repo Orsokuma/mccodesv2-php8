@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use ParagonIE\EasyDB\EasyDB;
+
 if (!defined('CRON_FILE_INC') || CRON_FILE_INC !== true) {
     exit;
 }
@@ -13,10 +15,10 @@ final class CronFiveMinute extends CronHandler
     private static ?self $instance = null;
 
     /**
-     * @param database|null $db
+     * @param EasyDB|null $db
      * @return self|null
      */
-    public static function getInstance(?database $db): ?self
+    public static function getInstance(?EasyDB $db): ?self
     {
         parent::getInstance($db);
         if (self::$instance === null) {
@@ -50,18 +52,19 @@ final class CronFiveMinute extends CronHandler
      */
     public function updateUserStatBars(): void
     {
-        $this->db->query(
+        $params = [];
+        $params = array_pad($params, 8, $this->pendingIncrements);
+        $this->basicQueryWrap(
             'UPDATE users SET
-            brave = LEAST(brave + (((maxbrave / 10) + 0.5) * ' . $this->pendingIncrements . '), maxbrave),
-            hp = LEAST(hp + ((maxhp / 3) * ' . $this->pendingIncrements . '), maxhp),
-            will = LEAST(will + (10 * ' . $this->pendingIncrements . '), maxwill),
+            brave = LEAST(brave + (((maxbrave / 10) + 0.5) * ?), maxbrave),
+            hp = LEAST(hp + ((maxhp / 3) * ?), maxhp),
+            will = LEAST(will + (10 * ?), maxwill),
             energy = IF(donatordays > 0,
-                LEAST(energy + ((maxenergy / 6) * ' . $this->pendingIncrements . '), maxenergy),
-                LEAST(energy + ((maxenergy / 12.5) * ' . $this->pendingIncrements . '), maxenergy)
+                LEAST(energy + ((maxenergy / 6) * ?), maxenergy),
+                LEAST(energy + ((maxenergy / 12.5) * ?), maxenergy)
             ),
-            verified = 0'
+            verified = 0',
+            ...$params,
         );
-
-        $this->updateAffectedRowCnt();
     }
 }

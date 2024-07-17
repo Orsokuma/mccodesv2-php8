@@ -2,14 +2,13 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
 
 /** @noinspection SpellCheckingInspection */
-if (!defined('JDSF45TJI'))
-{
+if (!defined('JDSF45TJI')) {
     echo 'This file cannot be accessed directly.';
     die;
 }
@@ -41,12 +40,10 @@ if (check_access(['manage_roles', 'manage_staff'], false)) {
         ";
     }
 }
-if (check_access(['manage_users', 'view_user_inventory', 'credit_user', 'manage_player_reports', 'credit_all_users', 'manage_items', 'credit_item'], false))
-{
+if (check_access(['manage_users', 'view_user_inventory', 'credit_user', 'manage_player_reports', 'credit_all_users', 'manage_items', 'credit_item'], false)) {
     echo ' <hr />
 	<b>Users</b><br />';
-    if (check_access(['manage_users'], false))
-    {
+    if (check_access(['manage_users'], false)) {
         echo "&gt; <a href='staff_users.php?action=newuser'>Create New User</a><br />
 		&gt; <a href='staff_users.php?action=edituser'>Edit User</a><br />
 		&gt; <a href='staff_users.php?action=deluser'>Delete User</a><br />";
@@ -91,8 +88,7 @@ if (check_access('view_logs', false)) {
     &gt; <a href='staff_logs.php?action=cron-fails'>Cron Fail Logs</a><br />
     ";
 }
-if (check_access('manage_gangs', false))
-{
+if (check_access('manage_gangs', false)) {
     echo " <hr />
     <b>Gangs</b><br />
     &gt; <a href='staff_gangs.php?action=grecord'>Gang Record</a><br />
@@ -188,8 +184,7 @@ if (check_access(['edit_newspaper', 'mass_mail', 'manage_staff', 'manage_donator
 }
 echo '<hr /><b>Staff Online:</b><br />';
 $online_staff = get_online_staff();
-foreach ($online_staff as $r)
-{
+foreach ($online_staff as $r) {
     echo '<a href="viewuser.php?u=' . $r['userid'] . '">' . $r['username']
         . '</a> (' . datetime_parse($r['laston']) . ')<br />';
 }

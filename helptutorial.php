@@ -2,14 +2,14 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
 global $h, $set;
 require_once('globals.php');
 print
-        <<<EOF
+    <<<EOF
 <h1>{$set['game_name']} Tutorial</h1>
 <br />
 <br />

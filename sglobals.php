@@ -1,8 +1,9 @@
 <?php
 declare(strict_types=1);
+require __DIR__ . '/vendor/autoload.php';
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
@@ -28,20 +29,18 @@ function staff_csrf_error($goBackTo): void
 function staff_csrf_stdverify(string $formid, $goBackTo): bool
 {
     if (!isset($_POST['verf'])
-            || !verify_csrf_code($formid, stripslashes($_POST['verf'])))
-    {
+        || !verify_csrf_code($formid, stripslashes($_POST['verf']))) {
         staff_csrf_error($goBackTo);
     }
     return true;
 }
-if (str_contains($_SERVER['PHP_SELF'], 'sglobals.php'))
-{
+
+if (str_contains($_SERVER['PHP_SELF'], 'sglobals.php')) {
     exit;
 }
 session_name('MCCSID');
 session_start();
-if (!isset($_SESSION['started']))
-{
+if (!isset($_SESSION['started'])) {
     session_regenerate_id();
     $_SESSION['started'] = true;
 }
@@ -50,8 +49,7 @@ require 'lib/basic_error_handler.php';
 set_error_handler('error_php');
 require 'global_func.php';
 $domain = determine_game_urlbase();
-if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] == 0)
-{
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] == 0) {
     $login_url = "https://{$domain}/login.php";
     header("Location: {$login_url}");
     exit;
@@ -65,68 +63,60 @@ const MONO_ON = 1;
 require "class/class_db_{$_CONFIG['driver']}.php";
 $db = new database();
 $db->configure($_CONFIG['hostname'], $_CONFIG['username'],
-        $_CONFIG['password'], $_CONFIG['database']);
+    $_CONFIG['password'], $_CONFIG['database']);
 $db->connect();
-$c = $db->connection_id;
+$c   = $db->connection_id;
 $set = get_site_settings();
 if ($set['use_timestamps_over_crons']) {
     define('SILENT_CRONS', true);
     require_once __DIR__ . '/crons/cronless_crons.php';
 }
 global $jobquery, $housequery;
-if (isset($jobquery) && $jobquery)
-{
-    $is =
-            $db->query(
-                    "SELECT `u`.*, `us`.*, `j`.*, `jr`.*
-                     FROM `users` AS `u`
-                     INNER JOIN `userstats` AS `us`
-                     ON `u`.`userid`=`us`.`userid`
-                     LEFT JOIN `jobs` AS `j` ON `j`.`jID` = `u`.`job`
-                     LEFT JOIN `jobranks` AS `jr`
-                     ON `jr`.`jrID` = `u`.`jobrank`
-                     WHERE `u`.`userid` = '{$userid}'
-                     LIMIT 1");
+if (isset($jobquery) && $jobquery) {
+    $ir = $db->row(
+        'SELECT u.*, us.*, j.*, jr.*
+        FROM users AS u
+        INNER JOIN userstats AS us ON u.userid = us.userid
+        LEFT JOIN jobs AS j ON j.jID = u.job
+        LEFT JOIN jobranks AS jr ON jr.jrID = u.jobrank
+        WHERE u.userid = ?
+        LIMIT 1',
+        $userid,
+    );
+} elseif (isset($housequery) && $housequery) {
+    $ir = $db->row(
+        'SELECT u.*, us.*, h.*
+        FROM users AS u
+        INNER JOIN userstats AS us ON u.userid = us.userid
+        LEFT JOIN houses AS h ON h.hWILL = u.maxwill
+        WHERE u.userid = ?
+        LIMIT 1',
+        $userid,
+    );
+} else {
+    $ir = $db->row(
+        'SELECT u.*, us.*
+        FROM users AS u
+        INNER JOIN userstats AS us ON u.userid = us.userid
+        WHERE u.userid = ?
+        LIMIT 1',
+        $userid,
+    );
 }
-elseif (isset($housequery) && $housequery)
-{
-    $is =
-            $db->query(
-                    "SELECT `u`.*, `us`.*, `h`.*
-                     FROM `users` AS `u`
-                     INNER JOIN `userstats` AS `us`
-                     ON `u`.`userid`=`us`.`userid`
-                     LEFT JOIN `houses` AS `h` ON `h`.`hWILL` = `u`.`maxwill`
-                     WHERE `u`.`userid` = '{$userid}'
-                     LIMIT 1");
-}
-else
-{
-    $is =
-            $db->query(
-                    "SELECT `u`.*, `us`.*
-                     FROM `users` AS `u`
-                     INNER JOIN `userstats` AS `us`
-                     ON `u`.`userid`=`us`.`userid`
-                     WHERE `u`.`userid` = '{$userid}'
-                     LIMIT 1");
-}
-$ir = $db->fetch_row($is);
 set_userdata_data_types($ir);
-if ($ir['force_logout'] > 0)
-{
-    $db->query(
-            "UPDATE `users`
-    		 SET `force_logout` = 0
-    		 WHERE `userid` = {$userid}");
+if ($ir['force_logout'] > 0) {
+    $db->update(
+        'users',
+        ['force_logout' => 0],
+        ['userid' => $userid],
+    );
     session_unset();
     session_destroy();
     $login_url = "https://{$domain}/login.php";
     header("Location: {$login_url}");
     exit;
 }
-if (!is_staff())
-{
+if (!is_staff()) {
     echo 'This page cannot be accessed.<br />&gt; <a href="index.php">Go Home</a>';
     die;
 }

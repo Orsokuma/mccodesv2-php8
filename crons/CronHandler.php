@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+use ParagonIE\EasyDB\EasyDB;
+use ParagonIE\EasyDB\EasyPlaceholder;
+
 const CRON_FILE_INC = true;
 
 if (($argc ?? 1) > 1) {
@@ -40,15 +43,15 @@ class CronHandler
     protected static ?self $inst = null;
     public array $lastRuns = [];
     protected int $pendingIncrements = 0;
-    protected ?database $db = null;
+    protected ?EasyDB $db = null;
     protected array $settings = [];
     protected bool $timerStarted = false;
     protected int $affectedRows = 0;
 
     /**
-     * @param database|null $db
+     * @param EasyDB|null $db
      */
-    public function __construct(?database $db = null)
+    public function __construct(?EasyDB $db = null)
     {
         $this->setDb($db);
         $this->setSettings();
@@ -59,7 +62,7 @@ class CronHandler
      * @param database|null $db
      * @return void
      */
-    private function setDb(?database $db): void
+    private function setDb(?EasyDB $db): void
     {
         if (!empty($db) || empty($this->db)) {
             $this->db = $db;
@@ -81,10 +84,10 @@ class CronHandler
      */
     private function setLastRuns(): void
     {
-        $get_last_runs = $this->db->query(
+        $get_last_runs = $this->db->run(
             'SELECT * FROM cron_times ORDER BY name',
         );
-        while ($row = $this->db->fetch_row($get_last_runs)) {
+        foreach ($get_last_runs as $row) {
             $this->lastRuns[$row['name']] = $row['last_run'];
         }
     }
@@ -140,20 +143,12 @@ class CronHandler
     /**
      * @return self|null
      */
-    public static function getInstance(?database $db): ?self
+    public static function getInstance(?EasyDB $db): ?self
     {
         if (self::$inst === null) {
             self::$inst = new self($db);
         }
         return self::$inst;
-    }
-
-    /**
-     * @return void
-     */
-    protected function updateAffectedRowCnt(): void
-    {
-        $this->affectedRows += $this->db->affected_rows() ?? 0;
     }
 
     /**
@@ -200,12 +195,9 @@ class CronHandler
      */
     private function getTimestamp(): string
     {
-        $get_db_time = $this->db->query(
+        return $this->db->cell(
             'SELECT NOW(3)',
         );
-        $time        = $this->db->fetch_single($get_db_time);
-        $this->db->free_result($get_db_time);
-        return $time;
     }
 
     /**
@@ -216,10 +208,16 @@ class CronHandler
      */
     protected function logError(string $section, ?string $message = null): void
     {
-        $this->db->query(sprintf(
-            'INSERT INTO logs_cron_fails (cron, method, message, time_started, time_finished) VALUES (\'%s\', \'%s\', \'%s\', \'%s\', \'%s\')',
-            self::$cron, $section, $message, self::$cronStats[self::$cron]['start'], self::$cronStats[self::$cron]['end'],
-        ));
+        $this->db->insert(
+            'logs_cron_fails',
+            [
+                'cron' => self::$cron,
+                'method' => $section,
+                'message' => $message,
+                'time_started' => self::$cronStats[self::$cron]['start'],
+                'time_finished' => self::$cronStats[self::$cron]['end'],
+            ],
+        );
     }
 
     /**
@@ -251,16 +249,40 @@ class CronHandler
         if (empty($div)) {
             return;
         }
-        $this->db->query(
-            'UPDATE cron_times SET last_run = CONCAT(CONCAT(DATE_FORMAT(NOW(), \'%Y-%m-%d\'), \' \'), SEC_TO_TIME((TIME_TO_SEC(NOW(3)) DIV ' . $div . ') * ' . $div . ')) WHERE name = \'' . self::$cron . '\'',
+        $this->db->update(
+            'cron_times',
+            ['last_run' => new EasyPlaceholder('CONCAT(CONCAT(DATE_FORMAT(NOW(), \'%Y-%m-%d\', \' \'), SEC_TO_TIME((TIME_TO_SEC(NOW(3)) DIV ?) * ?))', $div, $div)],
+            ['name' => self::$cron],
         );
-        $this->db->query(sprintf(
-            'INSERT INTO logs_cron_runtimes (cron, time_started, time_finished, updated_cnt) VALUES (\'%s\', \'%s\', \'%s\', %u)',
-            self::$cron,
-            self::$cronStats[self::$cron]['start'],
-            self::$cronStats[self::$cron]['end'],
-            $this->affectedRows,
-        ));
+        $this->db->insert(
+            'logs_cron_runtimes',
+            [
+                'cron' => self::$cron,
+                'time_started' => self::$cronStats[self::$cron]['start'],
+                'time_finished' => self::$cronStats[self::$cron]['end'],
+                'updated_cnt' => $this->affectedRows,
+            ]
+        );
+    }
+
+    /**
+     * @param string $statement
+     * @param ...$params
+     * @return void
+     */
+    protected function basicQueryWrap(string $statement, ...$params): void
+    {
+        $updated = $this->db->safeQuery($statement, $params, EasyDB::DEFAULT_FETCH_STYLE, true);
+        $this->updateAffectedRowCnt($updated);
+    }
+
+    /**
+     * @param int|null $count
+     * @return void
+     */
+    protected function updateAffectedRowCnt(?int $count = null): void
+    {
+        $this->affectedRows += $count ?? 0;
     }
 }
 

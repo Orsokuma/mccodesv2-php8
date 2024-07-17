@@ -59,11 +59,15 @@ EOF;
     public function userdata($ir, $lv, $fm, $cm, int $dosessh = 1): void
     {
         global $db, $userid, $set;
-        $IP = $db->escape($_SERVER['REMOTE_ADDR']);
-        $db->query(
-            "UPDATE `users`
-                 SET `laston` = {$_SERVER['REQUEST_TIME']}, `lastip` = '$IP'
-                 WHERE `userid` = $userid");
+        $IP = $_SERVER['REMOTE_ADDR'];
+        $db->update(
+            'users',
+            [
+                'laston' => $_SERVER['REQUEST_TIME'],
+                'lastip' => $IP,
+            ],
+            ['userid' => $userid],
+        );
         if (!$ir['email']) {
             global $domain;
             die(
@@ -74,10 +78,14 @@ EOF;
         }
         if ($dosessh && ($_SESSION['attacking'] || $ir['attacking'])) {
             echo 'You lost all your EXP for running from the fight.';
-            $db->query(
-                "UPDATE `users`
-                     SET `exp` = 0, `attacking` = 0
-                     WHERE `userid` = $userid");
+            $db->update(
+                'users',
+                [
+                    'exp' => 0,
+                    'attacking' => 0,
+                ],
+                ['userid' => $userid],
+            );
             $_SESSION['attacking'] = 0;
         }
         $enperc = min((int)($ir['energy'] / $ir['maxenergy'] * 100), 100);
@@ -130,12 +138,10 @@ EOF;
 <!-- Links -->
 OUT;
         if ($ir['fedjail'] > 0) {
-            $q =
-                $db->query(
-                    "SELECT *
-                             FROM `fedjail`
-                             WHERE `fed_userid` = $userid");
-            $r = $db->fetch_row($q);
+            $r = $db->row(
+                'SELECT * FROM fedjail WHERE fed_userid = ?',
+                $userid,
+            );
             die(
             "<span style='font-weight: bold; color:red;'>
                     You have been put in the {$set['game_name']} Federal Jail

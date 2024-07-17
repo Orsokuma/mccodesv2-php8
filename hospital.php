@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
@@ -19,16 +19,14 @@ echo "
 			<th>Reason</th>
 		</tr>
    ";
-$q =
-        $db->query(
-                'SELECT `userid`, `username`, `hospital`, `level`,
-                 `hospreason`, `gangPREF`
-                 FROM `users` AS `u`
-                 LEFT JOIN `gangs` AS `g`
-                 ON `u`.`gang` = `g`.`gangID`
-                 WHERE `u`.`hospital` > 0
-                 ORDER BY `u`.`hospital` DESC');
-while ($r = $db->fetch_row($q))
+$q = $db->run(
+    'SELECT userid, username, hospital, level, hospreason, gangPREF
+    FROM users AS u
+    LEFT JOIN gangs AS g ON u.gang = g.gangID
+    WHERE u.hospital > 0
+    ORDER BY u.hospital DESC'
+);
+foreach ($q as $r)
 {
     echo "
 		<tr>
@@ -39,6 +37,5 @@ while ($r = $db->fetch_row($q))
 		</tr>
    ";
 }
-$db->free_result($q);
 echo '</table>';
 $h->endpage();

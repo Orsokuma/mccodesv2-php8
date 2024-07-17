@@ -10,56 +10,44 @@ declare(strict_types=1);
 global $db, $ir, $userid, $h;
 require_once('globals.php');
 $_GET['ID'] =
-        (isset($_GET['ID']) && is_numeric($_GET['ID']))
-                ? abs((int) $_GET['ID']) : 0;
-$id =
-        $db->query(
-                "SELECT `armor`, `itmid`, `itmname`
-                FROM `inventory` AS `iv`
-                LEFT JOIN `items` AS `it`
-                ON `iv`.`inv_itemid` = `it`.`itmid`
-                WHERE `iv`.`inv_id` = {$_GET['ID']}
-                AND `iv`.`inv_userid` = $userid
-        		LIMIT 1");
-if ($db->num_rows($id) == 0)
-{
-    $db->free_result($id);
+    (isset($_GET['ID']) && is_numeric($_GET['ID']))
+        ? abs((int)$_GET['ID']) : 0;
+$r          = $db->row(
+    'SELECT armor, itmid, itmname
+    FROM inventory AS iv
+    LEFT JOIN items AS it ON iv.inv_itemid = it.itmid
+    WHERE iv.inv_id = ? AND iv.inv_userid = ?
+    LIMIT 1',
+    $_GET['ID'],
+    $userid,
+);
+if (empty($r)) {
     echo 'Invalid item ID';
     $h->endpage();
     exit;
 }
-else
-{
-    $r = $db->fetch_row($id);
-    $db->free_result($id);
-}
-if ($r['armor'] <= 0)
-{
+if ($r['armor'] <= 0) {
     echo 'This item cannot be equipped to this slot.';
     $h->endpage();
     exit;
 }
-if (isset($_POST['type']))
-{
-    if ($_POST['type'] !== 'equip_armor')
-    {
+if (isset($_POST['type'])) {
+    if ($_POST['type'] !== 'equip_armor') {
         echo 'This slot ID is not valid.';
         $h->endpage();
         exit;
     }
-    if ($ir['equip_armor'] > 0)
-    {
+    if ($ir['equip_armor'] > 0) {
         item_add($userid, $ir['equip_armor'], 1);
     }
     item_remove($userid, $r['itmid'], 1);
-    $db->query(
-            "UPDATE `users`
-             SET `equip_armor` = {$r['itmid']}
-             WHERE `userid` = {$userid}");
+    $db->update(
+        'users',
+        ['equip_armor' => $r['itmid']],
+        ['userid' => $userid],
+    );
     echo "Item {$r['itmname']} equipped successfully.";
-}
-else
-{
+} else {
     echo "<h3>Equip Armor</h3><hr />
 <form action='equip_armor.php?ID={$_GET['ID']}' method='post'>
 Click Equip Armor to equip {$r['itmname']} as your armor,

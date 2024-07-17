@@ -2,20 +2,19 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
 
-if (file_exists('./installer.lock'))
-{
+if (file_exists('./installer.lock')) {
     exit;
 }
+require __DIR__ . '/vendor/autoload.php';
 const MONO_ON = 1;
 session_name('MCCSID');
 session_start();
-if (!isset($_SESSION['started']))
-{
+if (!isset($_SESSION['started'])) {
     session_regenerate_id();
     $_SESSION['started'] = true;
 }
@@ -23,21 +22,19 @@ require_once('installer_head.php');
 require_once('global_func.php');
 require_once('lib/installer_error_handler.php');
 set_error_handler('error_php');
-if (!isset($_GET['code']))
-{
+if (!isset($_GET['code'])) {
     $_GET['code'] = '';
 }
-switch ($_GET['code'])
-{
-case 'install':
-    install();
-    break;
-case 'config':
-    config();
-    break;
-default:
-    diagnostics();
-    break;
+switch ($_GET['code']) {
+    case 'install':
+        install();
+        break;
+    case 'config':
+        config();
+        break;
+    default:
+        diagnostics();
+        break;
 }
 
 /**
@@ -47,23 +44,18 @@ default:
 function menuprint($highlight): void
 {
     $items =
-            ['diag' => '1. Diagnostics', 'input' => '2. Configuration',
-                    'sql' => '3. Installation & Extras',];
-    $c = 0;
+        ['diag' => '1. Diagnostics', 'input' => '2. Configuration',
+            'sql' => '3. Installation & Extras',];
+    $c     = 0;
     echo '<hr />';
-    foreach ($items as $k => $v)
-    {
+    foreach ($items as $k => $v) {
         $c++;
-        if ($c > 1)
-        {
+        if ($c > 1) {
             echo ' >> ';
         }
-        if ($k == $highlight)
-        {
+        if ($k == $highlight) {
             echo '<span style="color: black;">' . $v . '</span>';
-        }
-        else
-        {
+        } else {
             echo '<span style="color: gray;">' . $v . '</span>';
         }
     }
@@ -76,34 +68,25 @@ function menuprint($highlight): void
 function diagnostics(): void
 {
     menuprint('diag');
-    if (version_compare(phpversion(), '5.2.0') < 0)
-    {
-        $pv = '<span style="color: red">Failed</span>';
+    if (version_compare(phpversion(), '5.2.0') < 0) {
+        $pv  = '<span style="color: red">Failed</span>';
         $pvf = 0;
-    }
-    else
-    {
-        $pv = '<span style="color: green">OK</span>';
+    } else {
+        $pv  = '<span style="color: green">OK</span>';
         $pvf = 1;
     }
-    if (is_writable('./'))
-    {
-        $wv = '<span style="color: green">OK</span>';
+    if (is_writable('./')) {
+        $wv  = '<span style="color: green">OK</span>';
         $wvf = 1;
-    }
-    else
-    {
-        $wv = '<span style="color: red">Failed</span>';
+    } else {
+        $wv  = '<span style="color: red">Failed</span>';
         $wvf = 0;
     }
-    if (function_exists('mysqli_connect'))
-    {
-        $dv = '<span style="color: green">OK</span>';
+    if (function_exists('mysqli_connect')) {
+        $dv  = '<span style="color: green">OK</span>';
         $dvf = 1;
-    }
-    else
-    {
-        $dv = '<span style="color: red">Failed</span>';
+    } else {
+        $dv  = '<span style="color: red">Failed</span>';
         $dvf = 0;
     }
     echo "
@@ -131,8 +114,7 @@ function diagnostics(): void
         	</tr>
     </table>
        ";
-    if ($pvf + $wvf + $dvf < 3)
-    {
+    if ($pvf + $wvf + $dvf < 3) {
         echo "
 		<hr />
 		<span style='color: red; font-weight: bold;'>
@@ -141,9 +123,7 @@ function diagnostics(): void
 		</span>
 		<hr />
    		";
-    }
-    else
-    {
+    } else {
         echo "
 		<hr />
 		&gt; <a href='installer.php?code=config'>Next Step</a>
@@ -277,111 +257,97 @@ function gpc_cleanup($text): string
 function install(): void
 {
     menuprint('sql');
-    $paypal =
-            (isset($_POST['paypal'])
-                    && filter_input(INPUT_POST, 'paypal',
-                            FILTER_VALIDATE_EMAIL))
-                    ? gpc_cleanup($_POST['paypal']) : '';
-    $adm_email =
-            (isset($_POST['a_email'])
-                    && filter_input(INPUT_POST, 'a_email',
-                            FILTER_VALIDATE_EMAIL))
-                    ? gpc_cleanup($_POST['a_email']) : '';
+    $paypal       =
+        (isset($_POST['paypal'])
+            && filter_input(INPUT_POST, 'paypal',
+                FILTER_VALIDATE_EMAIL))
+            ? gpc_cleanup($_POST['paypal']) : '';
+    $adm_email    =
+        (isset($_POST['a_email'])
+            && filter_input(INPUT_POST, 'a_email',
+                FILTER_VALIDATE_EMAIL))
+            ? gpc_cleanup($_POST['a_email']) : '';
     $adm_username =
-            (isset($_POST['a_username']) && strlen($_POST['a_username']) > 3)
-                    ? gpc_cleanup($_POST['a_username']) : '';
-    $adm_gender =
-            (isset($_POST['gender'])
-                    && in_array($_POST['gender'], ['Male', 'Female'],
-                            true)) ? $_POST['gender'] : 'Male';
-    $description =
-            (isset($_POST['game_description']))
-                    ? gpc_cleanup($_POST['game_description']) : '';
-    $owner =
-            (isset($_POST['game_owner']) && strlen($_POST['game_owner']) > 3)
-                    ? gpc_cleanup($_POST['game_owner']) : '';
-    $game_name =
-            (isset($_POST['game_name'])) ? gpc_cleanup($_POST['game_name'])
-                    : '';
-    $adm_pswd =
-            (isset($_POST['a_password']) && strlen($_POST['a_password']) > 3)
-                    ? gpc_cleanup($_POST['a_password']) : '';
-    $adm_cpswd =
-            isset($_POST['a_cpassword']) ? gpc_cleanup($_POST['a_cpassword'])
-                    : '';
-    $db_hostname =
-            isset($_POST['hostname']) ? gpc_cleanup($_POST['hostname']) : '';
-    $db_username =
-            isset($_POST['username']) ? gpc_cleanup($_POST['username']) : '';
-    $db_password =
-            isset($_POST['password']) ? gpc_cleanup($_POST['password']) : '';
-    $db_database =
-            isset($_POST['database']) ? gpc_cleanup($_POST['database']) : '';
-    $db_driver =
-            (isset($_POST['driver'])
-                    && $_POST['driver'] === 'mysqli') ? $_POST['driver'] : 'mysqli';
-    $errors = [];
-    if (empty($db_hostname))
-    {
+        (isset($_POST['a_username']) && strlen($_POST['a_username']) > 3)
+            ? gpc_cleanup($_POST['a_username']) : '';
+    $adm_gender   =
+        (isset($_POST['gender'])
+            && in_array($_POST['gender'], ['Male', 'Female'],
+                true)) ? $_POST['gender'] : 'Male';
+    $description  =
+        (isset($_POST['game_description']))
+            ? gpc_cleanup($_POST['game_description']) : '';
+    $owner        =
+        (isset($_POST['game_owner']) && strlen($_POST['game_owner']) > 3)
+            ? gpc_cleanup($_POST['game_owner']) : '';
+    $game_name    =
+        (isset($_POST['game_name'])) ? gpc_cleanup($_POST['game_name'])
+            : '';
+    $adm_pswd     =
+        (isset($_POST['a_password']) && strlen($_POST['a_password']) > 3)
+            ? gpc_cleanup($_POST['a_password']) : '';
+    $adm_cpswd    =
+        isset($_POST['a_cpassword']) ? gpc_cleanup($_POST['a_cpassword'])
+            : '';
+    $db_hostname  =
+        isset($_POST['hostname']) ? gpc_cleanup($_POST['hostname']) : '';
+    $db_username  =
+        isset($_POST['username']) ? gpc_cleanup($_POST['username']) : '';
+    $db_password  =
+        isset($_POST['password']) ? gpc_cleanup($_POST['password']) : '';
+    $db_database  =
+        isset($_POST['database']) ? gpc_cleanup($_POST['database']) : '';
+    $db_driver    =
+        (isset($_POST['driver'])
+            && $_POST['driver'] === 'mysqli') ? $_POST['driver'] : 'mysqli';
+    $errors       = [];
+    if (empty($db_hostname)) {
         $errors[] = 'No Database hostname specified';
     }
-    if (empty($db_username))
-    {
+    if (empty($db_username)) {
         $errors[] = 'No Database username specified';
     }
-    if (empty($db_database))
-    {
+    if (empty($db_database)) {
         $errors[] = 'No Database database specified';
     }
-    if (!function_exists($db_driver . '_connect'))
-    {
+    if (!function_exists($db_driver . '_connect')) {
         $errors[] = 'Invalid database driver specified';
     }
     if (empty($adm_username)
-            || !preg_match("/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
-                    $adm_username))
-    {
+        || !preg_match("/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
+            $adm_username)) {
         $errors[] = 'Invalid admin username specified';
     }
-    if (empty($adm_pswd))
-    {
+    if (empty($adm_pswd)) {
         $errors[] = 'Invalid admin password specified';
     }
-    if ($adm_pswd !== $adm_cpswd)
-    {
+    if ($adm_pswd !== $adm_cpswd) {
         $errors[] = 'The admin passwords did not match';
     }
-    if (empty($adm_email))
-    {
+    if (empty($adm_email)) {
         $errors[] = 'Invalid admin email specified';
     }
     if (empty($owner)
-            || !preg_match("/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
-                    $owner))
-    {
+        || !preg_match("/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
+            $owner)) {
         $errors[] = 'Invalid game owner specified';
     }
-    if (empty($game_name))
-    {
+    if (empty($game_name)) {
         $errors[] = 'Invalid game name specified';
     }
-    if (empty($description))
-    {
+    if (empty($description)) {
         $errors[] = 'Invalid game description specified';
     }
-    if (empty($paypal))
-    {
+    if (empty($paypal)) {
         $errors[] = 'Invalid game PayPal specified';
     }
-    if (count($errors) > 0)
-    {
+    if (count($errors) > 0) {
         echo 'Installation failed.<br />
         There were one or more problems with your input.<br />
         <br />
         <b>Problem(s) encountered:</b>
         <ul>';
-        foreach ($errors as $error)
-        {
+        foreach ($errors as $error) {
             echo "<li><span style='color: red;'>{$error}</span></li>";
         }
         echo "</ul>
@@ -401,17 +367,16 @@ function install(): void
     echo 'Writing game config file...<br />';
     echo 'Write Config...<br />';
     $code = md5((string)rand(1, 100000000000));
-    if (file_exists('config.php'))
-    {
+    if (file_exists('config.php')) {
         unlink('config.php');
     }
     $e_db_hostname = addslashes($db_hostname);
     $e_db_username = addslashes($db_username);
     $e_db_password = addslashes($db_password);
     $e_db_database = addslashes($db_database);
-    $lit_config = '$_CONFIG';
-    $config_file =
-            <<<EOF
+    $lit_config    = '$_CONFIG';
+    $config_file   =
+        <<<EOF
 <?php
             {$lit_config} = array(
 	'hostname' => '{$e_db_hostname}',
@@ -424,72 +389,102 @@ function install(): void
 );
 ?>
 EOF;
-    $f = fopen('config.php', 'w');
+    $f             = fopen('config.php', 'w');
     fwrite($f, $config_file);
     fclose($f);
     echo '... file written.<br />';
+    $db = ParagonIE\EasyDB\Factory::fromArray([
+        'mysql:host='.$db_hostname.';dbname='.$db_database,
+        $db_username,
+        $db_password
+    ]);
     echo 'Writing base database schema...<br />';
-    $fo = fopen('dbdata.sql', 'r');
+    $fo    = fopen('dbdata.sql', 'r');
     $query = '';
     $lines = explode("\n", fread($fo, 1024768));
     fclose($fo);
-    foreach ($lines as $line)
-    {
-        if (!(str_starts_with($line, '--')) && trim($line) != '')
-        {
+    foreach ($lines as $line) {
+        if (!(str_starts_with($line, '--')) && trim($line) != '') {
             $query .= $line;
-            if (!(!str_contains($line, ';')))
-            {
-                $db->query($query);
+            if (!(!str_contains($line, ';'))) {
+                $db->safeQuery($query);
                 $query = '';
             }
         }
     }
     echo '... done.<br />';
     echo 'Writing game configuration...<br />';
-    $ins_username =
-            $db->escape(htmlentities($adm_username, ENT_QUOTES, 'ISO-8859-1'));
-    $salt = generate_pass_salt();
-    $e_salt = $db->escape($salt);
-    $encpsw = encode_password($adm_pswd, $salt);
-    $e_encpsw = $db->escape($encpsw);
-    $ins_email = $db->escape($adm_email);
-    $IP = $db->escape($_SERVER['REMOTE_ADDR']);
-    $ins_game_name =
-            $db->escape(htmlentities($game_name, ENT_QUOTES, 'ISO-8859-1'));
-    $ins_game_desc =
-            $db->escape(htmlentities($description, ENT_QUOTES, 'ISO-8859-1'));
-    $ins_paypal = $db->escape($paypal);
-    $ins_game_owner =
-            $db->escape(htmlentities($owner, ENT_QUOTES, 'ISO-8859-1'));
-    $db->query(
-            "INSERT INTO `users`
-             (`username`, `login_name`, `userpass`, `level`, `money`,
-             `crystals`, `donatordays`, `user_level`, `energy`, `maxenergy`,
-             `will`, `maxwill`, `brave`, `maxbrave`, `hp`, `maxhp`, `location`,
-             `gender`, `signedup`, `email`, `bankmoney`, `lastip`,
-             `lastip_signup`, `pass_salt`, , `display_pic`, `staffnotes`, `voted`, `user_notepad`)
-             VALUES ('{$ins_username}', '{$ins_username}', '{$e_encpsw}', 1,
-             100, 0, 0, 2, 12, 12, 100, 100, 5, 5, 100, 100, 1,
-             '{$adm_gender}', " . time()
-                    . ", '{$ins_email}', -1, '$IP', '$IP',
-             '{$e_salt}', '', '', '', '')");
-    $i = $db->insert_id();
-    $db->query(
-            "INSERT INTO `userstats`
-    		 VALUES($i, 10, 10, 10, 10, 10)");
-    $db->query(
-            "INSERT INTO `settings`
-             VALUES(NULL, 'game_name', '{$ins_game_name}', 'string')");
-    $db->query(
-            "INSERT INTO `settings`
-             VALUES(NULL, 'game_owner', '{$ins_game_owner}', 'string')");
-    $db->query(
-            "INSERT INTO `settings`
-             VALUES(NULL, 'paypal', '{$ins_paypal}', 'string')");
-    $db->query(
-            "INSERT INTO `settings`
-             VALUES(NULL, 'game_description', '{$ins_game_desc}', 'string')");
+    $ins_username   = htmlentities($adm_username, ENT_QUOTES, 'ISO-8859-1');
+    $salt           = generate_pass_salt();
+    $encpsw         = encode_password($adm_pswd, $salt);
+    $IP             = $_SERVER['REMOTE_ADDR'];
+    $ins_game_name  = htmlentities($game_name, ENT_QUOTES, 'ISO-8859-1');
+    $ins_game_desc  = htmlentities($description, ENT_QUOTES, 'ISO-8859-1');
+    $ins_game_owner = htmlentities($owner, ENT_QUOTES, 'ISO-8859-1');
+    $maps = [
+        [
+            'conf_name' => 'game_name',
+            'conf_value' => $ins_game_name,
+        ],
+        [
+            'conf_name' => 'game_owner',
+            'conf_value' => $ins_game_owner,
+        ],
+        [
+            'conf_name' => 'game_description',
+            'conf_value' => $ins_game_desc,
+        ],
+        [
+            'conf_name' => 'paypal',
+            'conf_value' => $paypal,
+        ],
+    ];
+    $i              = $db->insert(
+        'users',
+        [
+            'username' => $ins_username,
+            'login_name' => $ins_username,
+            'userpass' => $encpsw,
+            'pass_salt' => $salt,
+            'email' => $adm_email,
+            'gender' => $adm_gender,
+            'lastip' => $IP,
+            'lastip_signup' => $IP,
+            'signedup' => time(),
+            'level' => 1,
+            'money' => 100,
+            'user_level' => 2,
+            'energy' => 12,
+            'maxenergy' => 12,
+            'brave' => 5,
+            'maxbrave' => 5,
+            'will' => 100,
+            'maxwill' => 100,
+            'hp' => 100,
+            'maxhp' => 100,
+            'bankmoney' => -1,
+            'cybermoney' => -1,
+            'location' => 1,
+            'display_pic' => '',
+            'staffnotes' => '',
+            'voted' => '',
+            'user_notepad' => '',
+        ],
+    );
+    $db->insert(
+        'userstats',
+        [
+            'userid' => $i,
+            'strength' => 10,
+            'agility' => 10,
+            'guard' => 10,
+            'labour' => 10,
+            'IQ' => 10,
+        ],
+    );
+    foreach ($maps as $map) {
+        $db->insert('settings', $map);
+    }
     echo '... Done.<br />';
     $path = dirname($_SERVER['SCRIPT_FILENAME']);
     echo "
@@ -512,38 +507,33 @@ EOF;
     @unlink('./installer.php');
     $success = !file_exists('./installer.php');
     echo "<span style='color: "
-            . ($success ? "green;'>Succeeded" : "red;'>Failed")
-            . '</span><br />';
-    if (!$success)
-    {
+        . ($success ? "green;'>Succeeded" : "red;'>Failed")
+        . '</span><br />';
+    if (!$success) {
         echo 'Attempting to lock installer... ';
         @touch('./installer.lock');
         $success2 = file_exists('installer.lock');
         echo "<span style='color: "
-                . ($success2 ? "green;'>Succeeded" : "red;'>Failed")
-                . '</span><br />';
-        if ($success2)
-        {
+            . ($success2 ? "green;'>Succeeded" : "red;'>Failed")
+            . '</span><br />';
+        if ($success2) {
             echo "<span style='font-weight: bold;'>"
-                    . 'You should now remove installer.php from your server.'
-                    . '</span>';
-        }
-        else
-        {
+                . 'You should now remove installer.php from your server.'
+                . '</span>';
+        } else {
             echo "<span style='font-weight: bold; font-size: 20pt;'>"
-                    . 'YOU MUST REMOVE installer.php '
-                    . 'from your server.<br />'
-                    . 'Failing to do so will allow other people '
-                    . 'to run the installer again and potentially '
-                    . 'mess up your game entirely.' . '</span>';
+                . 'YOU MUST REMOVE installer.php '
+                . 'from your server.<br />'
+                . 'Failing to do so will allow other people '
+                . 'to run the installer again and potentially '
+                . 'mess up your game entirely.' . '</span>';
         }
-    }
-    else
-    {
+    } else {
         require_once('installer_foot.php');
         @unlink('./installer_head.php');
         @unlink('./installer_foot.php');
         exit;
     }
 }
+
 require_once('installer_foot.php');

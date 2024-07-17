@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
@@ -20,17 +20,14 @@ echo "
 			<th>Actions</th>
 		</tr>
    ";
-$q =
-        $db->query(
-            'SELECT `jail_reason`, `jail`, `level`, `username`, `userid`,
-                `gangPREF`
-                FROM `users` AS `u`
-                LEFT JOIN `gangs` AS `g`
-                ON `u`.`gang` = `g`.`gangID`
-                WHERE `u`.`jail` > 0
-                ORDER BY `u`.`jail` DESC');
-while ($r = $db->fetch_row($q))
-{
+$q = $db->run(
+    'SELECT jail_reason, jail, level, username, userid, gangPREF
+    FROM users AS u
+    LEFT JOIN gangs AS g ON u.gang = g.gangID
+    WHERE u.jail > 0
+    ORDER BY u.jail DESC'
+);
+foreach ($q as $r) {
     echo "
 		<tr>
 			<td>
@@ -48,6 +45,5 @@ while ($r = $db->fetch_row($q))
 		</tr>
    ";
 }
-$db->free_result($q);
 echo '</table>';
 $h->endpage();

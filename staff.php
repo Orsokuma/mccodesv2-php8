@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
@@ -19,11 +19,11 @@ function manually_fire_cron(): void
 {
     check_access('administrator');
     global $db, $h;
-    $get_crons = $db->query(
+    $get_crons = $db->run(
         'SELECT id, name FROM cron_times ORDER BY name',
     );
-    $crons = [];
-    while ($row = $db->fetch_row($get_crons)) {
+    $crons     = [];
+    foreach ($get_crons as $row) {
         $crons[] = $row['name'];
     }
     $_POST['cron'] = array_key_exists('cron', $_POST) && in_array($_POST['cron'], $crons) ? strtolower($_POST['cron']) : null;
@@ -33,10 +33,10 @@ function manually_fire_cron(): void
             $h->endpage();
             exit;
         }
-        require_once __DIR__.'/crons/CronHandler.php';
+        require_once __DIR__ . '/crons/CronHandler.php';
         (CronHandler::getInstance($db))->run($_POST['cron'], 1);
-        stafflog_add('Manually fired cron: '.$_POST['cron']);
-        echo $_POST['cron'].' cron fired.';
+        stafflog_add('Manually fired cron: ' . $_POST['cron']);
+        echo $_POST['cron'] . ' cron fired.';
     }
     echo '
     <h3>Manually Fire Cron</h3>
@@ -46,9 +46,9 @@ function manually_fire_cron(): void
         <select name="cron" id="cron">
             <option value="0" disabled selected>-- SELECT --</option>
             ';
-            foreach ($crons as $cron) {
-                echo '<option value="'.$cron.'"'.($cron === $_POST['cron'] ? ' selected' : '').'>'.$cron.'</option>';
-            }
+    foreach ($crons as $cron) {
+        echo '<option value="' . $cron . '"' . ($cron === $_POST['cron'] ? ' selected' : '') . '>' . $cron . '</option>';
+    }
     echo '
         </select><br>
         <button type="submit" name="submit">
@@ -113,7 +113,7 @@ function display_basic_settings_form(): void
             Game Description:<br />
             <textarea rows='7' cols='50' name='game_description'>{$set['game_description']}</textarea><br />
             PayPal Address: <input type='text' name='paypal' value='{$set['paypal']}' /><br />
-            Use Timestamps Instead of Cron Jobs: ".render_menu_options('use_timestamps_over_crons', $idempotent_options, $set['use_timestamps_over_crons']). '<br>
+            Use Timestamps Instead of Cron Jobs: " . render_menu_options('use_timestamps_over_crons', $idempotent_options, $set['use_timestamps_over_crons']) . '<br>
             Gym/Crimes Validation: ' . render_menu_options('validate_on', $idempotent_options, $set['validate_on']) . '<br />
             Validation Period: ' . render_menu_options('validate_period', $period_options, $set['validate_period']) . '<br />
             Registration CAPTCHA: ' . render_menu_options('regcap_on', $idempotent_options, $set['regcap_on']) . '<br />
@@ -133,11 +133,10 @@ function display_basic_settings_form(): void
  */
 function process_post_data(): void
 {
-    global $db;
     $preg_strs = ['game_name', 'game_owner'];
     foreach ($preg_strs as $str) {
-        $_POST[$str] = array_key_exists($str, $_POST) && preg_match('/^[a-z0-9_.]+([\\s]{1}[a-z0-9_.]|[a-z0-9_.])+$/i', $_POST[$str])
-            ? $db->escape(strip_tags(stripslashes($_POST[$str])))
+        $_POST[$str] = array_key_exists($str, $_POST) && preg_match('/^[a-z0-9_.]+(\s[a-z0-9_.]|[a-z0-9_.])+$/i', $_POST[$str])
+            ? strip_tags(stripslashes($_POST[$str]))
             : '';
     }
     $nums = ['ct_refillprice', 'ct_iqpercrys', 'ct_moneypercrys', 'willp_item'];
@@ -154,10 +153,10 @@ function process_post_data(): void
     }
 
     $_POST['game_description'] = isset($_POST['game_description'])
-        ? $db->escape(strip_tags(stripslashes($_POST['game_description'])))
+        ? strip_tags(stripslashes($_POST['game_description']))
         : '';
     $_POST['paypal']           = isset($_POST['paypal']) && filter_input(INPUT_POST, 'paypal', FILTER_VALIDATE_EMAIL)
-        ? $db->escape(stripslashes($_POST['paypal']))
+        ? stripslashes($_POST['paypal'])
         : '';
     $_POST['validate_period']  = isset($_POST['validate_period']) && in_array($_POST['validate_period'], ['5', '15', '60', 'login'])
         ? $_POST['validate_period']
@@ -173,12 +172,11 @@ function update_basic_settings(): void
     staff_csrf_stdverify('staff_basicset', 'staff.php?action=basicset');
     unset($_POST['verf']);
     if (!empty($_POST['willp_item'])) {
-        $qi =
-            $db->query(
-                'SELECT `itmid`
-                             FROM `items`
-                             WHERE `itmid` = ' . $_POST['willp_item']);
-        if ($db->num_rows($qi) == 0) {
+        $exists = $db->exists(
+            'SELECT COUNT(itmid) FROM items WHERE itmid = ?',
+            $_POST['willp_item'],
+        );
+        if (!$exists) {
             echo '
                 The item you tried to input doesn\'t seem to be a real item.<br />
                 &gt; <a href="staff.php?action=basicset">Go Back</a>
@@ -191,10 +189,11 @@ function update_basic_settings(): void
         echo 'Please remember to make a will potion item and set it<br />';
     }
     foreach ($_POST as $k => $v) {
-        $db->query(
-            "UPDATE `settings`
-                     SET `conf_value` = '$v'
-                     WHERE `conf_name` = '$k'");
+        $db->update(
+            'settings',
+            ['conf_value' => $v],
+            ['conf_name' => $k],
+        );
     }
     echo '
         Settings updated!<br />
@@ -240,16 +239,17 @@ function announcements(): void
     check_access('administrator');
     if (!empty($_POST['text'])) {
         staff_csrf_stdverify('staff_announcement', 'staff.php?action=announce');
-        $_POST['text'] =
-            $db->escape(
-                htmlentities(stripslashes($_POST['text']), ENT_QUOTES,
-                    'ISO-8859-1'));
-        $db->query(
-            "INSERT INTO `announcements`
-                 VALUES('{$_POST['text']}', " . time() . ')');
-        $db->query(
-            'UPDATE `users`
-                 SET `new_announcements` = `new_announcements` + 1');
+        $_POST['text'] = htmlentities(stripslashes($_POST['text']), ENT_QUOTES, 'ISO-8859-1');
+        $db->insert(
+            'announcements',
+            [
+                'a_text' => $_POST['text'],
+                'a_time' => time(),
+            ],
+        );
+        $db->safeQuery(
+            'UPDATE users SET new_announcements = new_announcements + 1',
+        );
         echo '
         Announcement added!<br />
         &gt; <a href="staff.php">Back</a>
@@ -280,9 +280,7 @@ function index(): void
 {
     global $db, $ir, $set, $_CONFIG;
     if (check_access('administrator', false)) {
-        $versq = $db->query('SELECT VERSION()');
-        $mv    = $db->fetch_single($versq);
-        $db->free_result($versq);
+        $mv        = $db->cell('SELECT VERSION()');
         $versionno = intval('20503');
         $version   = '2.0.5b';
         echo "
@@ -326,15 +324,14 @@ function index(): void
                     <th>IP</th>
                 </tr>
            ";
-        $q =
-            $db->query(
-                'SELECT `user`, `action`, `time`, `ip`, `username`
-                         FROM `stafflog` AS `s`
-                         INNER JOIN `users` AS `u`
-                         ON `s`.`user` = `u`.`userid`
-                         ORDER BY `s`.`time` DESC
-                         LIMIT 20');
-        while ($r = $db->fetch_row($q)) {
+        $q = $db->run(
+            'SELECT user, action, time, ip, username
+            FROM stafflog AS s
+            INNER JOIN users AS u ON s.user = u.userid
+            ORDER BY s.time DESC
+            LIMIT 20'
+        );
+        foreach ($q as $r) {
             echo "
             <tr>
                 <td>{$r['username']} [{$r['user']}]</td>
@@ -345,17 +342,17 @@ function index(): void
             </tr>
                ";
         }
-        $db->free_result($q);
         echo '</table><hr />';
     }
     echo '<h3>Staff Notepad</h3><hr />';
     if (isset($_POST['pad'])) {
         staff_csrf_stdverify('staff_notepad', 'staff.php');
-        $pad = $db->escape(stripslashes($_POST['pad']));
-        $db->query(
-            "UPDATE `settings`
-                 SET `conf_value` = '{$pad}'
-                 WHERE `conf_name` = 'staff_pad'");
+        $pad = stripslashes($_POST['pad']);
+        $db->update(
+            'settings',
+            ['conf_value' => $pad],
+            ['conf_name' => 'staff_pad'],
+        );
         $set['staff_pad'] = stripslashes($_POST['pad']);
         echo '<b>Staff Notepad Updated!</b><hr />';
     }

@@ -2,13 +2,12 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
 
-if (!defined('MONO_ON'))
-{
+if (!defined('MONO_ON')) {
     exit;
 }
 ?>

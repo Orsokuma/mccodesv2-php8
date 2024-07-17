@@ -83,47 +83,47 @@ function startpollsub(): void
     staff_csrf_stdverify('staff_startpoll', 'staff_polls.php?action=spoll');
     $question =
             (isset($_POST['question']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['question'])))
+                    ? strip_tags(stripslashes($_POST['question']))
                     : '';
     $choice1 =
             (isset($_POST['choice1']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['choice1'])))
+                    ? strip_tags(stripslashes($_POST['choice1']))
                     : '';
     $choice2 =
             (isset($_POST['choice2']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['choice2'])))
+                    ? strip_tags(stripslashes($_POST['choice2']))
                     : '';
     $choice3 =
             (isset($_POST['choice3']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['choice3'])))
+                    ? strip_tags(stripslashes($_POST['choice3']))
                     : '';
     $choice4 =
             (isset($_POST['choice4']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['choice4'])))
+                    ? strip_tags(stripslashes($_POST['choice4']))
                     : '';
     $choice5 =
             (isset($_POST['choice5']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['choice5'])))
+                    ? strip_tags(stripslashes($_POST['choice5']))
                     : '';
     $choice6 =
             (isset($_POST['choice6']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['choice6'])))
+                    ? strip_tags(stripslashes($_POST['choice6']))
                     : '';
     $choice7 =
             (isset($_POST['choice7']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['choice7'])))
+                    ? strip_tags(stripslashes($_POST['choice7']))
                     : '';
     $choice8 =
             (isset($_POST['choice8']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['choice8'])))
+                    ? strip_tags(stripslashes($_POST['choice8']))
                     : '';
     $choice9 =
             (isset($_POST['choice9']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['choice9'])))
+                    ? strip_tags(stripslashes($_POST['choice9']))
                     : '';
     $choice10 =
             (isset($_POST['choice10']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['choice10'])))
+                    ? strip_tags(stripslashes($_POST['choice10']))
                     : '';
     if (empty($question) || empty($choice1) || empty($choice2))
     {
@@ -132,15 +132,24 @@ function startpollsub(): void
         $h->endpage();
         exit;
     }
-    $db->query(
-                    "INSERT INTO `polls`
-                     (`active`, `question`, `choice1`, `choice2`, `choice3`,
-                     `choice4`, `choice5`, `choice6`, `choice7`, `choice8`,
-                     `choice9`, `choice10`, `hidden`)
-                     VALUES('1', '$question', '$choice1', '$choice2',
-                     '$choice3', '$choice4', '$choice5', '$choice6',
-                     '$choice7', '$choice8', '$choice9' ,'$choice10',
-                     '{$_POST['hidden']}')");
+    $db->insert(
+        'polls',
+        [
+            'active' => '1',
+            'question' => $question,
+            'choice1' => $choice1,
+            'choice2' => $choice2,
+            'choice3' => $choice3,
+            'choice4' => $choice4,
+            'choice5' => $choice5,
+            'choice6' => $choice6,
+            'choice7' => $choice7,
+            'choice8' => $choice8,
+            'choice9' => $choice9,
+            'choice10' => $choice10,
+            'hidden' => $_POST['hidden'],
+        ],
+    );
     echo 'New Poll Started.<br />
     &gt; <a href="staff.php">Go Home</a>';
     $h->endpage();
@@ -164,12 +173,10 @@ function endpoll(): void
         <br />
         <form action='staff_polls.php?action=endpoll' method='post'>
            ";
-        $q =
-                $db->query(
-                        "SELECT `id`, `question`
-                         FROM `polls`
-                         WHERE `active` = '1'");
-        while ($r = $db->fetch_row($q))
+        $exists = $db->run(
+            "SELECT id, question FROM polls WHERE active = '1'"
+        );
+        foreach ($exists as $r)
         {
             echo '
 					<input type="radio" name="poll" value="' . $r['id']
@@ -178,7 +185,6 @@ function endpoll(): void
 					<br />
    			';
         }
-        $db->free_result($q);
         echo $csrf
                 . '
 			<input type="submit" value="Close Selected Poll" />
@@ -188,24 +194,21 @@ function endpoll(): void
     else
     {
         staff_csrf_stdverify('staff_endpoll', 'staff_polls.php?action=endpoll');
-        $q =
-                $db->query(
-                        'SELECT COUNT(`id`)
-                         FROM `polls`
-                         WHERE `id` = ' . $_POST['poll']);
-        if ($db->fetch_single($q) == 0)
+        $exists = $db->exists(
+            'SELECT COUNT(id) FROM polls WHERE id = ?',
+            $_POST['poll'],
+        );
+        if (!$exists)
         {
-            $db->free_result($q);
             echo 'Invalid poll.<br />
             &gt; <a href="staff_polls.php?action=endpoll">Go Back</a>';
             $h->endpage();
             exit;
         }
-        $db->free_result($q);
         $db->query(
-                "UPDATE `polls`
-                 SET `active` = '0'
-                 WHERE `id` = {$_POST['poll']}");
+            'UPDATE polls SET active = \'0\' WHERE id = ?',
+            $_POST['poll'],
+        );
         echo 'Poll closed.<br />
         &gt; <a href="staff.php">Go Home</a>';
         $h->endpage();

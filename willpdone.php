@@ -2,21 +2,19 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
 
 global $h, $set;
 require_once('globals.php');
-if (!isset($_GET['action']))
-{
+if (!isset($_GET['action'])) {
     ob_get_clean();
     header('HTTP/1.1 400 Bad Request');
     exit;
 }
-if ($_GET['action'] == 'cancel')
-{
+if ($_GET['action'] == 'cancel') {
     echo 'You have cancelled your donation. Please donate later...';
 } elseif ($_GET['action'] == 'done') {
     if (!$_GET['tx']) {

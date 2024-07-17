@@ -2,15 +2,15 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
 
 global $db, $userid, $h, $domain, $set;
 require_once('globals.php');
-$fiveK = money_formatter(5000);
-$fiftK = money_formatter(15000);
+$fiveK    = money_formatter(5000);
+$fiftK    = money_formatter(15000);
 $thirtfvK = money_formatter(35000);
 print
     <<<EOF

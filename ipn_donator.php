@@ -7,6 +7,7 @@ declare(strict_types=1);
  * License: MIT License
  */
 
+use ParagonIE\EasyDB\EasyPlaceholder;
 global $db, $set;
 require_once('globals_nonauth.php');
 
@@ -40,63 +41,60 @@ if ($fp) {
     while (!feof($fp)) {
         $res = fgets($fp, 1024);
         if (strcmp($res, 'VERIFIED') == 0) {
-            $txn_db = $db->escape(stripslashes($txn_id));
+            $txn_db = stripslashes($txn_id);
             // check the payment_status is Completed
             if ($payment_status != 'Completed') {
                 fclose($fp);
-                die('');
+                exit;
             }
-            $dp_check =
-                $db->query(
-                    "SELECT COUNT(`dpID`)
-                             FROM `dps_accepted`
-                             WHERE `dpTXN` = '{$txn_db}'");
-            if ($db->fetch_single($dp_check) > 0) {
-                $db->free_result($dp_check);
+            $dp_exists = $db->cell(
+                'SELECT COUNT(dpID) FROM dps_accepted WHERE dpTXN = ?',
+                $txn_id,
+            );
+            if ($dp_exists > 0) {
                 fclose($fp);
-                die('');
+                exit;
             }
-            $db->free_result($dp_check);
             // check that txn_id has not been previously processed
             // check that receiver_email is your Primary PayPal email
             if ($receiver_email != $set['paypal']) {
                 fclose($fp);
-                die('');
+                exit;
             }
             // check that payment_amount/payment_currency are correct
             if ($payment_currency != 'USD') {
                 fclose($fp);
-                die('');
+                exit;
             }
             // parse for pack
             $packr = explode('|', $item_name);
             if (str_replace('www.', '', $packr[0])
                 != str_replace('www.', '', $_SERVER['HTTP_HOST'])) {
                 fclose($fp);
-                die('');
+                exit;
             }
             if ($packr[1] != 'DP') {
                 fclose($fp);
-                die('');
+                exit;
             }
             $pack = $packr[2];
             if ($pack != 1 and $pack != 2 and $pack != 3 and $pack != 4
                 and $pack != 5) {
                 fclose($fp);
-                die('');
+                exit;
             }
             if (($pack == 1 || $pack == 2 || $pack == 3)
                 && $payment_amount != '3.00') {
                 fclose($fp);
-                die('');
+                exit;
             }
             if ($pack == 4 && $payment_amount != '5.00') {
                 fclose($fp);
-                die('');
+                exit;
             }
             if ($pack == 5 && $payment_amount != '10.00') {
                 fclose($fp);
-                die('');
+                exit;
             }
             // grab IDs
             $buyer = abs((int)$packr[3]);
@@ -104,67 +102,94 @@ if ($fp) {
             $t = '';
             // all seems to be in order, credit it.
             if ($pack == 1) {
-                $db->query(
-                    "UPDATE `users` AS `u`
-                         LEFT JOIN `userstats` AS `us`
-                         ON `u`.`userid` = `us`.`userid`
-                         SET `u`.`money` = `u`.`money` + 5000,
-                         `u`.`crystals` = `u`.`crystals` + 50,
-                         `us`.`IQ` = `us`.`IQ` + 50,
-                         `u`.`donatordays` = `u`.`donatordays` + 30
-                         WHERE `u`.`userid` = {$for}");
+                $db->update(
+                    'users',
+                    [
+                        'money' => new EasyPlaceholder('money + 5000'),
+                        'crystals' => new EasyPlaceholder('crystals + 50'),
+                        'donatordays' => new EasyPlaceholder('donatordays + 30'),
+                    ],
+                    ['userid' => $for],
+                );
+                $db->update(
+                    'userstats',
+                    ['IQ' => new EasyPlaceholder('IQ + 50')],
+                    ['userid' => $for],
+                );
                 $d = 30;
                 $t = 'standard';
             } elseif ($pack == 2) {
-                $db->query(
-                    "UPDATE `users` AS `u`
-                         SET `u`.`crystals` = `u`.`crystals` + 100,
-                         `u`.`donatordays` = `u`.`donatordays` + 30
-                         WHERE `u`.`userid` = {$for}");
+                $db->update(
+                    'users',
+                    [
+                        'crystals' => new EasyPlaceholder('crystals + 100'),
+                        'donatordays' => new EasyPlaceholder('donatordays + 30'),
+                    ],
+                    ['userid' => $for],
+                );
                 $d = 30;
                 $t = 'crystals';
             } elseif ($pack == 3) {
-                $db->query(
-                    "UPDATE `users` AS `u`
-                         LEFT JOIN `userstats` AS `us`
-                         ON `u`.`userid` = `us`.`userid`
-                         SET `us`.`IQ` = `us`.`IQ` + 50,
-                         `u`.`donatordays` = `u`.`donatordays` + 30
-                         WHERE `u`.`userid` = {$for}");
+                $db->update(
+                    'users',
+                    ['donatordays' => new EasyPlaceholder('donatordays + 30')],
+                    ['userid' => $for],
+                );
+                $db->update(
+                    'userstats',
+                    ['IQ' => new EasyPlaceholder('IQ + 50')],
+                    ['userid' => $for],
+                );
                 $d = 30;
                 $t = 'iq';
             } elseif ($pack == 4) {
-                $db->query(
-                    "UPDATE `users` AS `u`
-                         LEFT JOIN `userstats` AS `us`
-                         ON `u`.`userid` = `us`.`userid`
-                         SET `u`.`money` = `u`.`money` + 15000,
-                         `u`.`crystals` = `u`.`crystals` + 75,
-                         `us`.`IQ` = `us`.`IQ` + 80,
-                         `u`.`donatordays` = `u`.`donatordays` + 55
-                         WHERE `u`.`userid` = {$for}");
+                $db->update(
+                    'users',
+                    [
+                        'money' => new EasyPlaceholder('money + 15000'),
+                        'crystals' => new EasyPlaceholder('crystals + 75'),
+                        'donatordays' => new EasyPlaceholder('donatordays + 55'),
+                    ],
+                    ['userid' => $for],
+                );
+                $db->update(
+                    'userstats',
+                    ['IQ' => new EasyPlaceholder('IQ + 80')],
+                    ['userid' => $for],
+                );
                 $d = 55;
                 $t = 'fivedollars';
             } elseif ($pack == 5) {
-                $db->query(
-                    "UPDATE `users` AS `u`
-                         LEFT JOIN `userstats` AS `us`
-                         ON `u`.`userid` = `us`.`userid`
-                         SET `u`.`money` = `u`.`money` + 35000,
-                         `u`.`crystals` = `u`.`crystals` + 160,
-                         `us`.`IQ` = `us`.`IQ` + 180,
-                         `u`.`donatordays` = `u`.`donatordays` + 115
-                         WHERE `u`.`userid` = {$for}");
+                $db->update(
+                    'users',
+                    [
+                        'money' => new EasyPlaceholder('money + 35000'),
+                        'crystals' => new EasyPlaceholder('crystals + 160'),
+                        'donatordays' => new EasyPlaceholder('donatordays + 115'),
+                    ],
+                    ['userid' => $for],
+                );
+                $db->update(
+                    'userstats',
+                    ['IQ' => new EasyPlaceholder('IQ + 180')],
+                    ['userid' => $for],
+                );
                 $d = 115;
                 $t = 'tendollars';
             }
             // process payment
             event_add($for,
                 "Your \${$payment_amount} Pack {$pack} Donator Pack has been successfully credited to you.");
-            $db->query(
-                "INSERT INTO `dps_accepted`
-                     VALUES(NULL, {$buyer}, {$for}, '$t', " . time()
-                . ", '$txn_db')");
+            $db->insert(
+                'dps_accepted',
+                [
+                    'dpBUYER' => $buyer,
+                    'dpFOR' => $for,
+                    'dpTYPE' => $t,
+                    'dpTIME' => time(),
+                    'dpTXN' => $txn_id,
+                ]
+            );
         }
     }
 

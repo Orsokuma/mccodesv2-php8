@@ -1,11 +1,14 @@
 <?php
 declare(strict_types=1);
+
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
+
+use ParagonIE\EasyDB\EasyPlaceholder;
 
 /**
  * Return the difference between the current time and a given time, formatted in appropriate units so the number is not too big or small.
@@ -15,17 +18,16 @@ declare(strict_types=1);
 function datetime_parse(string|int $time_stamp): string
 {
     $time_difference = ($_SERVER['REQUEST_TIME'] - (int)$time_stamp);
-    $unit =
-            ['second', 'minute', 'hour', 'day', 'week', 'month', 'year'];
-    $lengths = [60, 60, 24, 7, 4.35, 12];
-    for ($i = 0; $time_difference >= $lengths[$i]; $i++)
-    {
+    $unit            =
+        ['second', 'minute', 'hour', 'day', 'week', 'month', 'year'];
+    $lengths         = [60, 60, 24, 7, 4.35, 12];
+    for ($i = 0; $time_difference >= $lengths[$i]; $i++) {
         $time_difference = $time_difference / $lengths[$i];
     }
     $time_difference = round($time_difference);
     return $time_difference . ' ' . $unit[$i]
-            . (($time_difference > 1 OR $time_difference < 1) ? 's'
-                    : '') . ' ago';
+        . (($time_difference > 1 or $time_difference < 1) ? 's'
+            : '') . ' ago';
 }
 
 /**
@@ -50,30 +52,22 @@ function itemtype_dropdown(string $ddname = 'item_type', int $selected = -1): st
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `itmtypeid`, `itmtypename`
-    				 FROM `itemtypes`
-    				 ORDER BY `itmtypename` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT itmtypeid, itmtypename FROM itemtypes ORDER BY itmtypename'
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['itmtypeid']}'";
-        if ($selected == $r['itmtypeid'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['itmtypeid'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['itmtypename']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -89,30 +83,22 @@ function item_dropdown(string $ddname = 'item', int $selected = -1): string
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `itmid`, `itmname`
-    				 FROM `items`
-    				 ORDER BY `itmname` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT itmid, itmname FROM items ORDER BY itmname',
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['itmid']}'";
-        if ($selected == $r['itmid'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['itmid'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['itmname']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -128,29 +114,21 @@ function item2_dropdown(string $ddname = 'item', int $selected = -1): string
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `itmid`, `itmname`
-    				 FROM `items`
-    				 ORDER BY `itmname` ASC');
-    if ($selected < 1)
-    {
+    $q   = $db->run(
+        'SELECT itmid, itmname FROM items ORDER BY itmname',
+    );
+    if ($selected < 1) {
         $ret .= "<option value='0' selected='selected'>-- None --</option>";
-    }
-    else
-    {
+    } else {
         $ret .= "<option value='0'>-- None --</option>";
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['itmid']}'";
-        if ($selected == $r['itmid'])
-        {
+        if ($selected == $r['itmid']) {
             $ret .= " selected='selected'";
         }
         $ret .= ">{$r['itmname']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -166,30 +144,22 @@ function location_dropdown(string $ddname = 'location', int $selected = -1): str
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `cityid`, `cityname`
-    				 FROM `cities`
-    				 ORDER BY `cityname` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT cityid, cityname FROM cities ORDER BY cityname',
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['cityid']}'";
-        if ($selected == $r['cityid'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['cityid'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['cityname']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -205,30 +175,22 @@ function shop_dropdown(string $ddname = 'shop', int $selected = -1): string
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `shopID`, `shopNAME`
-    				 FROM `shops`
-    				 ORDER BY `shopNAME` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT shopID, shopNAME FROM shops ORDER BY shopNAME',
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['shopID']}'";
-        if ($selected == $r['shopID'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['shopID'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['shopNAME']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -244,30 +206,22 @@ function user_dropdown(string $ddname = 'user', int $selected = -1): string
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `userid`, `username`
-    				 FROM `users`
-    				 ORDER BY `username` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT userid, username FROM users ORDER BY username',
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['userid']}'";
-        if ($selected == $r['userid'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['userid'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['username']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -283,32 +237,25 @@ function challengebot_dropdown(string $ddname = 'bot', int $selected = -1): stri
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `u`.`userid`, `u`.`username`
-                     FROM `challengebots` AS `cb`
-                     INNER JOIN `users` AS `u`
-                     ON `cb`.`cb_npcid` = `u`.`userid`
-                     ORDER BY `u`.`username` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT u.userid, u.username
+        FROM challengebots AS cb
+        INNER JOIN users AS u ON cb.cb_npcid = u.userid
+        ORDER BY u.username',
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['userid']}'";
-        if ($selected == $r['userid'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['userid'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['username']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -324,31 +271,22 @@ function fed_user_dropdown(string $ddname = 'user', int $selected = -1): string
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `userid`, `username`
-                     FROM `users`
-                     WHERE `fedjail` = 1
-                     ORDER BY `username` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT userid, username FROM users WHERE fedjail = 1 ORDER BY username',
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['userid']}'";
-        if ($selected == $r['userid'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['userid'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['username']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -364,31 +302,22 @@ function mailb_user_dropdown(string $ddname = 'user', int $selected = -1): strin
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `userid`, `username`
-                     FROM `users`
-                     WHERE `mailban` > 0
-                     ORDER BY `username` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT userid, username FROM users WHERE mailban > 0 ORDER BY username',
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['userid']}'";
-        if ($selected == $r['userid'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['userid'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['username']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -404,31 +333,22 @@ function forumb_user_dropdown(string $ddname = 'user', int $selected = -1): stri
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `userid`, `username`
-                     FROM `users`
-                     WHERE `forumban` > 0
-                     ORDER BY `username` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT userid, username FROM users WHERE forumban > 0 ORDER BY username',
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['userid']}'";
-        if ($selected == $r['userid'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['userid'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['username']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -444,30 +364,22 @@ function job_dropdown(string $ddname = 'job', int $selected = -1): string
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `jID`, `jNAME`
-    				 FROM `jobs`
-    				 ORDER BY `jNAME` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT jID, jNAME FROM jobs ORDER BY jNAME',
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['jID']}'";
-        if ($selected == $r['jID'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['jID'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['jNAME']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -483,32 +395,25 @@ function jobrank_dropdown(string $ddname = 'jobrank', int $selected = -1): strin
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `jrID`, `jNAME`, `jrNAME`
-                     FROM `jobranks` AS `jr`
-                     INNER JOIN `jobs` AS `j`
-                     ON `jr`.`jrJOB` = `j`.`jID`
-                     ORDER BY `j`.`jNAME` ASC, `jr`.`jrNAME` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT jrID, jNAME, jrNAME
+        FROM jobranks AS jr
+        INNER JOIN jobs AS j ON jr.jrJOB = j.jID
+        ORDER BY j.jNAME, jr.jrNAME',
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['jrID']}'";
-        if ($selected == $r['jrID'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['jrID'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['jNAME']} - {$r['jrNAME']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -524,30 +429,22 @@ function house_dropdown(string $ddname = 'house', int $selected = -1): string
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `hID`, `hNAME`
-    				 FROM houses
-    				 ORDER BY `hNAME` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT hID, hNAME FROM houses ORDER BY hNAME',
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['hID']}'";
-        if ($selected == $r['hID'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['hID'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['hNAME']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -564,30 +461,22 @@ function house2_dropdown(string $ddname = 'house', int $selected = -1): string
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `hWILL`, `hNAME`
-    				 FROM houses
-    				 ORDER BY `hNAME` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT hWILL, hNAME FROM houses ORDER BY hNAME'
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['hWILL']}'";
-        if ($selected == $r['hWILL'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['hWILL'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['hNAME']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -603,30 +492,22 @@ function course_dropdown(string $ddname = 'course', int $selected = -1): string
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `crID`, `crNAME`
-    				 FROM `courses`
-    				 ORDER BY `crNAME` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT crID, crNAME FROM courses ORDER BY crNAME',
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['crID']}'";
-        if ($selected == $r['crID'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['crID'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['crNAME']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -642,30 +523,22 @@ function crime_dropdown(string $ddname = 'crime', int $selected = -1): string
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `crimeID`, `crimeNAME`
-    				 FROM `crimes`
-    				 ORDER BY `crimeNAME` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT crimeID, crimeNAME FROM crimes ORDER BY crimeNAME',
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['crimeID']}'";
-        if ($selected == $r['crimeID'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['crimeID'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['crimeNAME']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -682,30 +555,22 @@ function crimegroup_dropdown(string $ddname = 'crimegroup',
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `cgID`, `cgNAME`
-    				 FROM `crimegroups`
-    				 ORDER BY `cgNAME` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT cgID, cgNAME FROM crimegroups ORDER BY cgNAME',
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['cgID']}'";
-        if ($selected == $r['cgID'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['cgID'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['cgNAME']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -719,15 +584,20 @@ function crimegroup_dropdown(string $ddname = 'crimegroup',
 function event_add(int $userid, string $text): int
 {
     global $db;
-    $text = $db->escape($text);
-    $db->query(
-            "INSERT INTO `events`
-             VALUES(NULL, $userid, " . time() . ", 0, '$text')");
-    $db->query(
-            "UPDATE `users`
-             SET `new_events` = `new_events` + 1
-             WHERE `userid` = {$userid}");
-    return 1;
+    $inserted = $db->insert(
+        'events',
+        [
+            'evUSER' => $userid,
+            'evTIME' => time(),
+            'evTEXT' => $text,
+        ]
+    );
+    $updated  = $db->update(
+        'users',
+        ['new_events' => new EasyPlaceholder('new_events + 1')],
+        ['userid' => $userid],
+    );
+    return $updated + ($inserted > 0);
 }
 
 /**
@@ -737,29 +607,35 @@ function check_level(): void
 {
     global $db, $ir, $userid;
     $ir['exp_needed'] =
-            (int) (($ir['level'] + 1) * ($ir['level'] + 1)
-                    * ($ir['level'] + 1) * 2.2);
-    if ($ir['exp'] >= $ir['exp_needed'])
-    {
-        $expu = $ir['exp'] - $ir['exp_needed'];
-        $ir['level'] += 1;
-        $ir['exp'] = $expu;
-        $ir['energy'] += 2;
-        $ir['brave'] += 2;
-        $ir['maxenergy'] += 2;
-        $ir['maxbrave'] += 2;
-        $ir['hp'] += 50;
-        $ir['maxhp'] += 50;
+        (int)(($ir['level'] + 1) * ($ir['level'] + 1)
+            * ($ir['level'] + 1) * 2.2);
+    if ($ir['exp'] >= $ir['exp_needed']) {
+        $expu             = $ir['exp'] - $ir['exp_needed'];
+        $ir['level']      += 1;
+        $ir['exp']        = $expu;
+        $ir['energy']     += 2;
+        $ir['brave']      += 2;
+        $ir['maxenergy']  += 2;
+        $ir['maxbrave']   += 2;
+        $ir['hp']         += 50;
+        $ir['maxhp']      += 50;
         $ir['exp_needed'] =
-                (int) (($ir['level'] + 1) * ($ir['level'] + 1)
-                        * ($ir['level'] + 1) * 2.2);
-        $db->query(
-                "UPDATE `users`
-                 SET `level` = `level` + 1, exp = {$expu},
-                 `energy` = `energy` + 2, `brave` = `brave` + 2,
-                 `maxenergy` = `maxenergy` + 2, `maxbrave` = `maxbrave` + 2,
-                 `hp` = `hp` + 50, `maxhp` = `maxhp` + 50
-                 WHERE `userid` = {$userid}");
+            (int)(($ir['level'] + 1) * ($ir['level'] + 1)
+                * ($ir['level'] + 1) * 2.2);
+        $db->update(
+            'users',
+            [
+                'level' => new EasyPlaceholder('level + 1'),
+                'exp' => $expu,
+                'energy' => new EasyPlaceholder('energy + 2'),
+                'maxenergy' => new EasyPlaceholder('maxenergy + 2'),
+                'brave' => new EasyPlaceholder('brave + 2'),
+                'maxbrave' => new EasyPlaceholder('maxbrave + 2'),
+                'hp' => new EasyPlaceholder('hp + 50'),
+                'maxhp' => new EasyPlaceholder('maxhp + 50'),
+            ],
+            ['userid' => $userid,]
+        );
     }
 }
 
@@ -772,17 +648,16 @@ function check_level(): void
 function get_rank(int|float $stat, string $mykey): int
 {
     global $db, $userid;
-    $q =
-            $db->query(
-                    "SELECT count(`u`.`userid`)
-                    FROM `userstats` AS `us`
-                    LEFT JOIN `users` AS `u`
-                    ON `us`.`userid` = `u`.`userid`
-                    WHERE {$mykey} > {$stat}
-                    AND `us`.`userid` != {$userid} AND `u`.`user_level` != 0");
-    $result = $db->fetch_single($q) + 1;
-    $db->free_result($q);
-    return $result;
+    return $db->cell(
+            'SELECT COUNT(u.userid)
+        FROM userstats AS us
+        LEFT JOIN users AS u ON us.userid = u.userid
+        WHERE ' . $mykey . ' > ?
+          AND us.userid != ?
+          AND u.user_level != 0',
+            $stat,
+            $userid,
+        ) + 1;
 }
 
 /**
@@ -792,47 +667,42 @@ function get_rank(int|float $stat, string $mykey): int
  * @param int $qty The item quantity to be given
  * @param int $notid [optional] If specified and greater than zero, prevents the item given's<br />
  * database entry combining with inventory id $notid.
+ * @return int
  */
-function item_add(int $user, int $itemid, int $qty, int $notid = 0): void
+function item_add(int $user, int $itemid, int $qty, int $notid = 0): int
 {
     global $db;
-    if ($notid > 0)
-    {
-        $q =
-                $db->query(
-                        "SELECT `inv_id`
-                         FROM `inventory`
-                         WHERE `inv_userid` = {$user}
-                         AND `inv_itemid` = {$itemid}
-                         AND `inv_id` != {$notid}
-                         LIMIT 1");
+    if ($notid > 0) {
+        $r = $db->row(
+            'SELECT inv_id FROM inventory WHERE inv_userid = ? AND inv_itemid = ? AND inv_id != ? LIMIT 1',
+            $user,
+            $itemid,
+            $notid,
+        );
+    } else {
+        $r = $db->row(
+            'SELECT inv_id FROM inventory WHERE inv_userid = ? AND inv_itemid = ? LIMIT 1',
+            $user,
+            $itemid,
+        );
     }
-    else
-    {
-        $q =
-                $db->query(
-                        "SELECT `inv_id`
-                         FROM `inventory`
-                         WHERE `inv_userid` = {$user}
-                         AND `inv_itemid` = {$itemid}
-                         LIMIT 1");
+    if (!empty($r)) {
+        $id = $db->update(
+            'inventory',
+            ['inv_qty' => new EasyPlaceholder('inv_qty + ?', $qty)],
+            ['inv_id' => $r['inv_id']],
+        );
+    } else {
+        $id = $db->insert(
+            'inventory',
+            [
+                'inv_userid' => $user,
+                'inv_itemid' => $itemid,
+                'inv_qty' => $qty,
+            ],
+        );
     }
-    if ($db->num_rows($q) > 0)
-    {
-        $r = $db->fetch_row($q);
-        $db->query(
-                "UPDATE `inventory`
-                SET `inv_qty` = `inv_qty` + {$qty}
-                WHERE `inv_id` = {$r['inv_id']}");
-    }
-    else
-    {
-        $db->query(
-                "INSERT INTO `inventory`
-                 (`inv_itemid`, `inv_userid`, `inv_qty`)
-                 VALUES ({$itemid}, {$user}, {$qty})");
-    }
-    $db->free_result($q);
+    return $id;
 }
 
 /**
@@ -845,31 +715,25 @@ function item_add(int $user, int $itemid, int $qty, int $notid = 0): void
 function item_remove(int $user, int $itemid, int $qty): void
 {
     global $db;
-    $q =
-            $db->query(
-                    "SELECT `inv_id`, `inv_qty`
-                     FROM `inventory`
-                     WHERE `inv_userid` = {$user}
-                     AND `inv_itemid` = {$itemid}
-                     LIMIT 1");
-    if ($db->num_rows($q) > 0)
-    {
-        $r = $db->fetch_row($q);
-        if ($r['inv_qty'] > $qty)
-        {
-            $db->query(
-                    "UPDATE `inventory`
-                     SET `inv_qty` = `inv_qty` - {$qty}
-                     WHERE `inv_id` = {$r['inv_id']}");
-        }
-        else
-        {
-            $db->query(
-                    "DELETE FROM `inventory`
-            		 WHERE `inv_id` = {$r['inv_id']}");
+    $r = $db->row(
+        'SELECT inv_id, inv_qty FROM inventory WHERE inv_userid = ? AND inv_itemid = ? LIMIT 1',
+        $user,
+        $itemid,
+    );
+    if (!empty($r)) {
+        if ($r['inv_qty'] > $qty) {
+            $db->update(
+                'inventory',
+                ['inv_qty' => new EasyPlaceholder('inv_qty - ?', $qty)],
+                ['inv_id' => $r['inv_id']],
+            );
+        } else {
+            $db->delete(
+                'inventory',
+                ['inv_id' => $r['inv_id']],
+            );
         }
     }
-    $db->free_result($q);
 }
 
 /**
@@ -883,30 +747,22 @@ function forum_dropdown(string $ddname = 'forum', int $selected = -1): string
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                'SELECT `ff_id`, `ff_name`
-    				 FROM `forum_forums`
-    				 ORDER BY `ff_name` ASC');
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT ff_id, ff_name FROM forum_forums ORDER BY ff_name',
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['ff_id']}'";
-        if ($selected == $r['ff_id'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['ff_id'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['ff_name']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -922,31 +778,22 @@ function forum2_dropdown(string $ddname = 'forum', int $selected = -1): string
 {
     global $db;
     $ret = "<select name='$ddname' type='dropdown'>";
-    $q =
-            $db->query(
-                    "SELECT `ff_id`, `ff_name`
-                     FROM `forum_forums`
-                     WHERE `ff_auth` != 'gang'
-                     ORDER BY `ff_name` ASC");
-    if ($selected == -1)
-    {
+    $q   = $db->run(
+        'SELECT ff_id, ff_name FROM forum_forums WHERE ff_auth != \'gang\' ORDER BY ff_name'
+    );
+    if ($selected == -1) {
         $first = 0;
-    }
-    else
-    {
+    } else {
         $first = 1;
     }
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         $ret .= "\n<option value='{$r['ff_id']}'";
-        if ($selected == $r['ff_id'] || $first == 0)
-        {
-            $ret .= " selected='selected'";
+        if ($selected == $r['ff_id'] || $first == 0) {
+            $ret   .= " selected='selected'";
             $first = 1;
         }
         $ret .= ">{$r['ff_name']}</option>";
     }
-    $db->free_result($q);
     $ret .= "\n</select>";
     return $ret;
 }
@@ -958,11 +805,16 @@ function forum2_dropdown(string $ddname = 'forum', int $selected = -1): string
 function stafflog_add(string $text): void
 {
     global $db, $ir;
-    $IP = $db->escape($_SERVER['REMOTE_ADDR']);
-    $text = $db->escape($text);
-    $db->query(
-            "INSERT INTO `stafflog`
-             VALUES(NULL, {$ir['userid']}, " . time() . ", '$text', '$IP')");
+    $IP = $_SERVER['REMOTE_ADDR'];
+    $db->insert(
+        'stafflog',
+        [
+            'user' => $ir['userid'],
+            'time' => time(),
+            'action' => $text,
+            'ip' => $IP,
+        ]
+    );
 }
 
 /**
@@ -975,9 +827,9 @@ function request_csrf_code(string $formid): string
     // Generate the token
     $token = md5((string)mt_rand());
     // Insert/Update it
-    $issue_time = time();
+    $issue_time                 = time();
     $_SESSION["csrf_{$formid}"] =
-            ['token' => $token, 'issued' => $issue_time];
+        ['token' => $token, 'issued' => $issue_time];
     return $token;
 }
 
@@ -989,7 +841,7 @@ function request_csrf_code(string $formid): string
 function request_csrf_html(string $formid): string
 {
     return "<input type='hidden' name='verf' value='"
-            . request_csrf_code($formid) . "' />";
+        . request_csrf_code($formid) . "' />";
 }
 
 /**
@@ -1003,20 +855,16 @@ function verify_csrf_code(string $formid, string $code): bool
     // Lookup the token entry
     // Is there a token in existence?
     if (!isset($_SESSION["csrf_{$formid}"])
-            || !is_array($_SESSION["csrf_{$formid}"]))
-    {
+        || !is_array($_SESSION["csrf_{$formid}"])) {
         // Obviously verification fails
         return false;
-    }
-    else
-    {
+    } else {
         // From here on out we always want to remove the token when we're done - so don't return immediately
         $verified = false;
-        $token = $_SESSION["csrf_{$formid}"];
+        $token    = $_SESSION["csrf_{$formid}"];
         // Expiry time on a form?
         $expiry = 900; // hacky lol
-        if ($token['issued'] + $expiry > time())
-        {
+        if ($token['issued'] + $expiry > time()) {
             // It's ok, check the contents
             $verified = ($token['token'] === $code);
         } // don't need an else case - verified = false
@@ -1036,9 +884,9 @@ function verify_csrf_code(string $formid, string $code): bool
  * previously used it, without resetting every user's password.
  *
  * @param string $input The input password given by the user.
- * 						Should be without slashes.
- * @param string $salt 	The user's unique pass salt
- * @param string $pass	The user's encrypted password
+ *                        Should be without slashes.
+ * @param string $salt The user's unique pass salt
+ * @param string $pass The user's encrypted password
  *
  * @return bool    true for equal, false for not (login failed etc)
  *
@@ -1052,18 +900,17 @@ function verify_user_password(string $input, string $salt, string $pass): bool
  * Given a password and a salt, encode them to the form which is stored in
  * the game's database.
  *
- * @param string $password 		The password to be encoded
- * @param string $salt			The user's unique pass salt
- * @param bool $already_md5	Whether the specified password is already
- * 								a md5 hash. This would be true for legacy
- * 								v2 passwords.
+ * @param string $password The password to be encoded
+ * @param string $salt The user's unique pass salt
+ * @param bool $already_md5 Whether the specified password is already
+ *                                a md5 hash. This would be true for legacy
+ *                                v2 passwords.
  *
- * @return string	The resulting encoded password.
+ * @return string    The resulting encoded password.
  */
 function encode_password(string $password, string $salt, bool $already_md5 = false): string
 {
-    if (!$already_md5)
-    {
+    if (!$already_md5) {
         $password = md5($password);
     }
     return md5($salt . $password);
@@ -1073,7 +920,7 @@ function encode_password(string $password, string $salt, bool $already_md5 = fal
  * Generate a salt to use to secure a user's password
  * from rainbow table attacks.
  *
- * @return string	The generated salt, 8 alphanumeric characters
+ * @return string    The generated salt, 8 alphanumeric characters
  */
 function generate_pass_salt(): string
 {
@@ -1087,26 +934,19 @@ function generate_pass_salt(): string
 function determine_game_urlbase(): string
 {
     $domain = $_SERVER['HTTP_HOST'];
-    $turi = $_SERVER['REQUEST_URI'];
-    $turiq = '';
-    for ($t = strlen($turi) - 1; $t >= 0; $t--)
-    {
-        if ($turi[$t] != '/')
-        {
+    $turi   = $_SERVER['REQUEST_URI'];
+    $turiq  = '';
+    for ($t = strlen($turi) - 1; $t >= 0; $t--) {
+        if ($turi[$t] != '/') {
             $turiq = $turi[$t] . $turiq;
-        }
-        else
-        {
+        } else {
             break;
         }
     }
     $turiq = '/' . $turiq;
-    if ($turiq == '/')
-    {
+    if ($turiq == '/') {
         $domain .= substr($turi, 0, -1);
-    }
-    else
-    {
+    } else {
         $domain .= str_replace($turiq, '', $turi);
     }
     return $domain;
@@ -1122,101 +962,83 @@ function determine_game_urlbase(): string
 function is_ajax(): bool
 {
     return isset($_SERVER['HTTP_X_REQUESTED_WITH'])
-            && is_string($_SERVER['HTTP_X_REQUESTED_WITH'])
-            && strtolower($_SERVER['HTTP_X_REQUESTED_WITH'])
-                    === 'xmlhttprequest';
+        && is_string($_SERVER['HTTP_X_REQUESTED_WITH'])
+        && strtolower($_SERVER['HTTP_X_REQUESTED_WITH'])
+        === 'xmlhttprequest';
 }
 
 /**
  * Get the file size in bytes of a remote file, if we can.
  *
- * @param string $url	The url to the file
+ * @param string $url The url to the file
  *
- * @return int			The file's size in bytes, or 0 if we could
- * 						not determine its size.
+ * @return int            The file's size in bytes, or 0 if we could
+ *                        not determine its size.
  */
 
 function get_filesize_remote(string $url): int
 {
     // Retrieve headers
-    if (strlen($url) < 8)
-    {
+    if (strlen($url) < 8) {
         return 0; // no file
     }
     $is_ssl = false;
     /** @noinspection HttpUrlsUsage */
-    if (str_starts_with($url, 'http://'))
-    {
+    if (str_starts_with($url, 'http://')) {
         $port = 80;
-    }
-    elseif (str_starts_with($url, 'https://') && extension_loaded('openssl'))
-    {
-        $port = 443;
+    } elseif (str_starts_with($url, 'https://') && extension_loaded('openssl')) {
+        $port   = 443;
         $is_ssl = true;
-    }
-    else
-    {
+    } else {
         return 0; // bad protocol
     }
     // Break up url
     $url_parts = explode('/', $url);
-    $host = $url_parts[2];
+    $host      = $url_parts[2];
     unset($url_parts[2]);
     unset($url_parts[1]);
     unset($url_parts[0]);
     $path = '/' . implode('/', $url_parts);
-    if (str_contains($host, ':'))
-    {
+    if (str_contains($host, ':')) {
         $host_parts = explode(':', $host);
-        if (count($host_parts) == 2 && ctype_digit($host_parts[1]))
-        {
-            $port = (int) $host_parts[1];
+        if (count($host_parts) == 2 && ctype_digit($host_parts[1])) {
+            $port = (int)$host_parts[1];
             $host = $host_parts[0];
-        }
-        else
-        {
+        } else {
             return 0; // malformed host
         }
     }
     $request =
-            "HEAD {$path} HTTP/1.1\r\n" . "Host: {$host}\r\n"
-                    . "Connection: Close\r\n\r\n";
-    $fh = fsockopen(($is_ssl ? 'ssl://' : '') . $host, $port);
-    if ($fh === false)
-    {
+        "HEAD {$path} HTTP/1.1\r\n" . "Host: {$host}\r\n"
+        . "Connection: Close\r\n\r\n";
+    $fh      = fsockopen(($is_ssl ? 'ssl://' : '') . $host, $port);
+    if ($fh === false) {
         return 0;
     }
     fwrite($fh, $request);
-    $headers = [];
+    $headers      = [];
     $total_loaded = 0;
-    while (!feof($fh) && $line = fgets($fh, 1024))
-    {
-        if ($line == "\r\n")
-        {
+    while (!feof($fh) && $line = fgets($fh, 1024)) {
+        if ($line == "\r\n") {
             break;
         }
-        if (str_contains($line, ':'))
-        {
+        if (str_contains($line, ':')) {
             [$key, $val] = explode(':', $line, 2);
             $headers[strtolower($key)] = trim($val);
-        }
-        else
-        {
+        } else {
             $headers[] = strtolower($line);
         }
         $total_loaded += strlen($line);
-        if ($total_loaded > 50000)
-        {
+        if ($total_loaded > 50000) {
             // Stop loading garbage!
             break;
         }
     }
     fclose($fh);
-    if (!isset($headers['content-length']))
-    {
+    if (!isset($headers['content-length'])) {
         return 0;
     }
-    return (int) $headers['content-length'];
+    return (int)$headers['content-length'];
 }
 
 /**
@@ -1230,9 +1052,11 @@ function get_filesize_remote(string $url): int
 function set_userdata_data_types(array &$ir): void
 {
     global $db, $_CONFIG;
-    $types_query = $db->query('SELECT COLUMN_NAME AS colName, DATA_TYPE AS dataType FROM information_schema.COLUMNS WHERE COLUMNS.TABLE_SCHEMA = \''.$_CONFIG['database'].'\' AND COLUMNS.TABLE_NAME IN (\'users\', \'userstats\', \'houses\', \'jobs\', \'jobranks\')');
+    $rows = $db->run(
+        'SELECT COLUMN_NAME AS colName, DATA_TYPE AS dataType FROM information_schema.COLUMNS WHERE COLUMNS.TABLE_SCHEMA = \'' . $_CONFIG['database'] . '\' AND COLUMNS.TABLE_NAME IN (\'users\', \'userstats\', \'houses\', \'jobs\', \'jobranks\')'
+    );
     $data = [];
-    while ($row = $db->fetch_row($types_query)) {
+    foreach ($rows as $row) {
         $data[$row['colName']] = match ($row['dataType']) {
             'tinyint', 'bool' => 'bool',
             'smallint', 'int', 'bigint' => 'int',
@@ -1248,19 +1072,28 @@ function set_userdata_data_types(array &$ir): void
     }
 }
 
+/**
+ * @return array
+ */
 function get_site_settings(): array
 {
     global $db;
-    $set = [];
-    $settq = $db->query('SELECT * FROM `settings`');
-    while ($r = $db->fetch_row($settq)) {
-        $set[$r['conf_name']] = $r['conf_value'];
-        settype($set[$r['conf_name']], $r['data_type']);
+    $set  = [];
+    $rows = $db->run(
+        'SELECT * FROM settings',
+    );
+    foreach ($rows as $row) {
+        $set[$row['conf_name']] = $row['conf_value'];
+        settype($set[$row['conf_name']], $row['data_type']);
     }
     return $set;
 }
 
-function userBox(int|string $target_id): string
+/**
+ * @param int|string $target_id
+ * @return string|int
+ */
+function userBox(int|string $target_id): string|int
 {
     return $target_id;
 }
@@ -1285,11 +1118,11 @@ function check_access(string|array $permissions, bool $exit = true, ?int $target
     // If target_id isn't provided, use the current user
     $target_id ??= (int)$userid;
     // Get the target's roles
-    $get_user_roles = $db->query(
-        'SELECT staff_role FROM users_roles WHERE userid = '.$target_id,
+    $roles        = $db->run(
+        'SELECT staff_role FROM users_roles WHERE userid = ' . $target_id,
     );
     $target_roles = [];
-    while ($role = $db->fetch_row($get_user_roles)) {
+    foreach ($roles as $role) {
         $target_roles[] = $role['staff_role'];
     }
     // They don't have any
@@ -1303,17 +1136,20 @@ function check_access(string|array $permissions, bool $exit = true, ?int $target
         return false;
     }
     // Get the corresponding role data
-    $get_staff_roles = $db->query(
-        'SELECT * FROM staff_roles WHERE id IN ('.implode(',', $target_roles).')',
+    $statement        = \ParagonIE\EasyDB\EasyStatement::open()
+        ->in('id IN (?*)', $target_roles);
+    $staff_roles      = $db->run(
+        'SELECT * FROM staff_roles WHERE ' . $statement,
+        ...$statement->values(),
     );
     $role_permissions = [];
-    while ($row = $db->fetch_row($get_staff_roles)) {
+    foreach ($staff_roles as $row) {
         foreach ($row as $key => $value) {
             // id and name aren't permissions
             if (in_array($key, ['id', 'name'])) {
                 continue;
             }
-            // If the target has the `administrator` permission, grant all accesses
+            // If the target has the administrator permission, grant all accesses
             if ($row['administrator']) {
                 $value = true;
             }
@@ -1345,28 +1181,123 @@ function check_access(string|array $permissions, bool $exit = true, ?int $target
 function is_staff(): bool
 {
     global $db, $userid;
-    $preliminary = $db->query(
-        'SELECT COUNT(*) FROM users_roles WHERE staff_role > 0 AND userid = '.$userid,
+    return $db->exists(
+        'SELECT COUNT(*) FROM users_roles WHERE staff_role > 0 AND userid = ?',
+        $userid,
     );
-    return $db->fetch_single($preliminary) > 0;
 }
 
+/**
+ * @param int|null $online_cutoff
+ * @return array
+ */
 function get_online_staff(?int $online_cutoff = null): array
 {
     global $db;
     $online_cutoff ??= time() - 900;
-    $q = $db->query(
+    return $db->run(
         'SELECT u.userid, u.username, u.laston
         FROM users AS u
         INNER JOIN users_roles AS ur ON ur.userid = u.userid
-        WHERE ur.staff_role > 0 AND u.laston > ' .$online_cutoff. '
+        WHERE ur.staff_role > 0 AND u.laston > ?
         GROUP BY u.userid
-        ORDER BY userid'
+        ORDER BY userid',
+        $online_cutoff,
     );
-    $rows = [];
-    while ($r = $db->fetch_row($q)) {
-        $rows[] = $r;
+}
+
+/**
+ * @return void
+ */
+function end_attack(): void
+{
+    global $db, $userid;
+    $db->update(
+        'users',
+        ['attacking' => 0],
+        ['userid' => $userid],
+    );
+}
+
+/**
+ * @param int $to
+ * @param int $from
+ * @param int $amount
+ * @return void
+ */
+function attack_update_gang_respect(int $to, int $from, int $amount): void
+{
+    global $db;
+    $db->update(
+        'gangs',
+        ['gangRESPECT' => new EasyPlaceholder('gangRESPECT + ?', $amount)],
+        ['gangID' => $to],
+    );
+    $db->update(
+        'gangs',
+        ['gangRESPECT' => new EasyPlaceholder('gangRESPECT - ?', $amount)],
+        ['gangID' => $from],
+    );
+}
+
+/**
+ * @param int $gangId
+ * @return void
+ */
+function destroy_gang_and_end_wars(int $gangId): void
+{
+    global $db;
+    $db->update(
+        'users',
+        ['gang' => 0],
+        ['gang' => $gangId],
+    );
+
+    $db->safeQuery(
+        'DELETE FROM gangs WHERE gangRESPECT <= 0'
+    );
+    $db->delete(
+        'gangwars',
+        ['warDECLARER' => $gangId],
+    );
+    $db->delete(
+        'gangwars',
+        ['warDECLARED' => $gangId],
+    );
+}
+
+/**
+ * @param array $r
+ * @return void
+ */
+function check_challenge_beaten(array $r): void
+{
+    global $db, $userid;
+    $cb = $db->row(
+        'SELECT cb_money FROM challengebots WHERE cb_npcid = ?',
+        $r['userid'],
+    );
+    if (!empty($cb)) {
+        $has_beaten = $db->cell(
+            'SELECT COUNT(npcid) FROM challengesbeaten WHERE userid = ? AND npcid = ?',
+            $userid,
+            $r['userid'],
+        );
+        if (!$has_beaten) {
+            $m = (int)$cb['cb_money'];
+            $db->update(
+                'users',
+                ['money' => new EasyPlaceholder('money + ?', $m)],
+                ['userid' => $userid],
+            );
+            $db->insert(
+                'challengesbeaten',
+                [
+                    'userid' => $userid,
+                    'npcid' => $r['userid'],
+                ]
+            );
+            echo '<br /> You gained ' . money_formatter($m) . ' for beating the challenge bot ' . $r['username'];
+        }
     }
-    $db->free_result($q);
-    return $rows;
 }

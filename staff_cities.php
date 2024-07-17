@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
@@ -42,34 +42,36 @@ function addcity(): void
             && preg_match(
                 "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
                 $_POST['name']))
-            ? $db->escape(strip_tags(stripslashes($_POST['name'])))
+            ? strip_tags(stripslashes($_POST['name']))
             : '';
     $desc     =
         (isset($_POST['desc'])
             && preg_match(
                 "/^[a-z0-9_.]+([\\s]{1}[a-z0-9_.]|[a-z0-9_.])+$/i",
                 $_POST['desc']))
-            ? $db->escape(strip_tags(stripslashes($_POST['desc'])))
+            ? strip_tags(stripslashes($_POST['desc']))
             : '';
     if ($minlevel && $desc && $name) {
         staff_csrf_stdverify('staff_addcity',
             'staff_cities.php?action=addcity');
-        $q =
-            $db->query(
-                "SELECT COUNT(`cityid`)
-                         FROM `cities`
-                         WHERE `cityname` = '{$name}'");
-        if ($db->fetch_single($q) > 0) {
-            $db->free_result($q);
+        $exists = $db->exists(
+            'SELECT COUNT(cityid) FROM cities WHERE cityname = ?',
+            $name,
+        );
+        if ($exists) {
             echo 'Sorry, you cannot have two cities with the same name.<br />
             &gt; <a href="staff.php">Goto Main</a>';
             $h->endpage();
             exit;
         }
-        $db->free_result($q);
-        $db->query(
-            "INSERT INTO `cities`
-                 VALUES(NULL, '$name', '$desc', '$minlevel')");
+        $db->insert(
+            'cities',
+            [
+                'cityname' => $name,
+                'citydesc' => $desc,
+                'cityminlevel' => $minlevel,
+            ],
+        );
         echo 'City ' . $name
             . ' added to the game.<br />&gt; <a href="staff.php">Goto Main</a>';
         stafflog_add("Created City $name");
@@ -106,14 +108,14 @@ function edit_city_do(): void
             && preg_match(
                 "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
                 $_POST['name']))
-            ? $db->escape(strip_tags(stripslashes($_POST['name'])))
+            ? strip_tags(stripslashes($_POST['name']))
             : '';
     $desc        =
         (isset($_POST['desc'])
             && preg_match(
                 "/^[a-z0-9_.]+([\\s]{1}[a-z0-9_.]|[a-z0-9_.])+$/i",
                 $_POST['desc']))
-            ? $db->escape(strip_tags(stripslashes($_POST['desc'])))
+            ? strip_tags(stripslashes($_POST['desc']))
             : '';
     $_POST['id'] =
         (isset($_POST['id']) && is_numeric($_POST['id']))
@@ -127,24 +129,25 @@ function edit_city_do(): void
     }
     staff_csrf_stdverify('staff_editcity2',
         'staff_cities.php?action=editcity');
-    $q =
-        $db->query(
-            "SELECT COUNT(`cityid`)
-                         FROM `cities`
-                         WHERE `cityname` = '{$name}'
-                         AND `cityid` != {$_POST['id']}");
-    if ($db->fetch_single($q) > 0) {
-        $db->free_result($q);
+    $exists = $db->exists(
+        'SELECT COUNT(cityid) FROM cities WHERE cityname = ? AND cityid != ?',
+        $name,
+        $_POST['id'],
+    );
+    if ($exists) {
         echo 'Sorry, you cannot have two cities with the same name.<br />&gt; <a href="staff.php">Goto Main</a>';
         $h->endpage();
         exit;
     }
-    $db->free_result($q);
-    $db->query(
-        "UPDATE `cities`
-                 SET `cityminlevel` = $minlevel, `citydesc` = '$desc',
-                 `cityname` = '$name'
-                 WHERE `cityid` = {$_POST['id']}");
+    $db->update(
+        'cities',
+        [
+            'cityname' => $name,
+            'citydesc' => $desc,
+            'cityminlevel' => $minlevel,
+        ],
+        ['cityid' => $_POST['id']],
+    );
     echo 'City ' . $name
         . ' was edited successfully.<br />
                 &gt; <a href="staff.php">Goto Main</a>';
@@ -168,20 +171,16 @@ function edit_city_form(): void
     }
     staff_csrf_stdverify('staff_editcity1',
         'staff_cities.php?action=editcity');
-    $q =
-        $db->query(
-            "SELECT `cityminlevel`, `citydesc`, `cityname`
-                         FROM `cities`
-                         WHERE `cityid` = {$_POST['city']}");
-    if ($db->num_rows($q) == 0) {
-        $db->free_result($q);
+    $old = $db->row(
+        'SELECT * FROM cities WHERE cityid = ?',
+        $_POST['user'],
+    );
+    if (empty($old)) {
         echo 'City doesn\'t exist.<br />
             &gt; <a href="staff.php">Goto Main</a>';
         $h->endpage();
         exit;
     }
-    $old = $db->fetch_row($q);
-    $db->free_result($q);
     $csrf = request_csrf_html('staff_editcity2');
     echo "
         <h3>Editing a City</h3>
@@ -249,13 +248,11 @@ function delcity(): void
         (isset($_POST['city']) && is_numeric($_POST['city']))
             ? abs(intval($_POST['city'])) : '';
     if ($_POST['city']) {
-        $q =
-            $db->query(
-                "SELECT `cityid`, `cityname`
-                         FROM `cities`
-                         WHERE `cityid` = {$_POST['city']}");
-        if ($db->num_rows($q) == 0) {
-            $db->free_result($q);
+        $old = $db->query(
+            'SELECT cityid, cityname FROM cities WHERE cityid = ?',
+            $_POST['city'],
+        );
+        if (empty($old)) {
             echo 'City doesn\'t exist.<br />
             &gt; <a href="staff.php">Goto Main</a>';
             $h->endpage();
@@ -263,25 +260,26 @@ function delcity(): void
         }
         staff_csrf_stdverify('staff_delcity',
             'staff_cities.php?action=delcity');
-        $old = $db->fetch_row($q);
-        $db->free_result($q);
         if ($old['cityid'] == 1) {
             echo 'This city cannot be deleted.<br />
             &gt; <a href="staff.php">Goto Main</a>';
             $h->endpage();
             exit;
         }
-        $db->query(
-            "UPDATE `users`
-                 SET `location` = 1
-                 WHERE `location` = {$old['cityid']}");
-        $db->query(
-            "UPDATE `shops`
-                 SET `shopLOCATION` = 1
-                 WHERE `shopLOCATION` = {$old['cityid']}");
-        $db->query(
-            "DELETE FROM `cities`
-        		 WHERE `cityid` = {$old['cityid']}");
+        $db->update(
+            'users',
+            ['location' => 1],
+            ['location' => $old['cityid']],
+        );
+        $db->update(
+            'shops',
+            ['shopLOCATION' => 1],
+            ['shopLOCATION' => $old['cityid']],
+        );
+        $db->delete(
+            'cities',
+            ['cityid' => $old['cityid']],
+        );
         echo 'City ' . $old['cityname']
             . ' deleted.<br />&gt; <a href="staff.php">Goto Main</a>';
         stafflog_add("Deleted city {$old['cityname']}");

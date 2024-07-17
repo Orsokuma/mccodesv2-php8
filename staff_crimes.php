@@ -1,11 +1,14 @@
 <?php
 declare(strict_types=1);
+
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
+
+use ParagonIE\EasyDB\EasyStatement;
 
 global $ir, $h;
 require_once('sglobals.php');
@@ -116,11 +119,11 @@ function process_crime_post_data(): void
     }
     $strs = ['percform', 'itext', 'stext', 'ftext', 'jtext'];
     foreach ($strs as $str) {
-        $_POST[$str] = array_key_exists($str, $_POST) ? $db->escape(strip_tags(stripslashes($_POST[$str]))) : '';
+        $_POST[$str] = array_key_exists($str, $_POST) ? strip_tags(stripslashes($_POST[$str])) : '';
     }
     $preg_strs = ['name', 'jailreason'];
     foreach ($preg_strs as $str) {
-        $_POST[$str] = array_key_exists($str, $_POST) && preg_match("/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])*$/i", $_POST['name']) ? $db->escape(strip_tags(stripslashes($_POST[$str]))) : '';
+        $_POST[$str] = array_key_exists($str, $_POST) && preg_match("/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])*$/i", $_POST['name']) ? strip_tags(stripslashes($_POST[$str])) : '';
     }
 }
 
@@ -146,32 +149,36 @@ function new_crime_submit(): void
     }
     staff_csrf_stdverify('staff_newcrime', 'staff_crimes.php?action=newcrime');
     if (!empty($_POST['item'])) {
-        $qi          =
-            $db->query(
-                'SELECT COUNT(`itmid`)
-                         FROM `items`
-                         WHERE `itmid` = ' . $_POST['item']);
-        $exist_check = $db->fetch_single($qi);
-        $db->free_result($qi);
-        if ($exist_check == 0) {
+        $exist_check = $db->exists(
+            'SELECT COUNT(itmid) FROM items WHERE itmid = ',
+            $_POST['item'],
+        );
+        if (!$exist_check) {
             echo 'Item you selected doesn\'t seem to exist.<br />
             &gt; <a href="staff_crimes.php?action=newcrime">Go back</a>';
             $h->endpage();
             exit;
         }
     }
-    $db->query(
-        "INSERT INTO `crimes`
-             (`crimeNAME`, `crimeBRAVE`, `crimePERCFORM`, `crimeSUCCESSMUNY`,
-             `crimeSUCCESSCRYS`, `crimeSUCCESSITEM`, `crimeGROUP`,
-             `crimeITEXT`, `crimeSTEXT`, `crimeFTEXT`, `crimeJTEXT`,
-             `crimeJAILTIME`, `crimeJREASON`, `crimeXP`)
-             VALUES('{$_POST['name']}', '{$_POST['brave']}',
-             '{$_POST['percform']}', '{$_POST['money']}', {$_POST['crys']},
-             {$_POST['item']}, '{$_POST['group']}', '{$_POST['itext']}',
-             '{$_POST['stext']}', '{$_POST['ftext']}', '{$_POST['jtext']}',
-             {$_POST['jailtime']}, '{$_POST['jailreason']}',
-             {$_POST['crimexp']})");
+    $db->insert(
+        'crimes',
+        [
+            'crimeNAME' => $_POST['name'],
+            'crimeBRAVE' => $_POST['brave'],
+            'crimePERCFORM' => $_POST['percform'],
+            'crimeSUCCESSMUNY' => $_POST['money'],
+            'crimeSUCCESSCRYS' => $_POST['crys'],
+            'crimeSUCCESSITEM' => $_POST['item'],
+            'crimeGROUP' => $_POST['group'],
+            'crimeITEXT' => $_POST['itext'],
+            'crimeSTEXT' => $_POST['stext'],
+            'crimeFTEXT' => $_POST['ftext'],
+            'crimeJTEXT' => $_POST['jtext'],
+            'crimeJAILTIME' => $_POST['jailtime'],
+            'crimeJREASON' => $_POST['jailreason'],
+            'crimeXP' => $_POST['crimexp'],
+        ],
+    );
     echo 'Crime (' . $_POST['name']
         . ') created.<br />
             &gt; <a href="staff.php">Goto Main</a>';
@@ -209,23 +216,15 @@ function edit_crime_form(): void
             ? abs(intval($_POST['crime'])) : '';
     staff_csrf_stdverify('staff_editcrime1',
         'staff_crimes.php?action=editcrime');
-    $d =
-        $db->query(
-            "SELECT `crimeXP`, `crimeJREASON`, `crimeJAILTIME`,
-                     `crimeJTEXT`, `crimeFTEXT`, `crimeSTEXT`, `crimeITEXT`,
-                     `crimeGROUP`, `crimeSUCCESSITEM`, `crimeSUCCESSCRYS`,
-                     `crimeSUCCESSMUNY`, `crimePERCFORM`, `crimeBRAVE`,
-                     `crimeNAME`
-                     FROM `crimes`
-                     WHERE `crimeID` = {$_POST['crime']}");
-    if ($db->num_rows($d) == 0) {
-        $db->free_result($d);
+    $itemi = $db->row(
+        'SELECT * FROM crimes WHERE crimeID = ?',
+        $_POST['crime'],
+    );
+    if (empty($itemi)) {
         echo 'Crime doesn\'t seem to exist.<br />&gt; <a href="staff_crimes.php?action=newcrime">Go back</a>';
         $h->endpage();
         exit;
     }
-    $itemi = $db->fetch_row($d);
-    $db->free_result($d);
     $csrf = request_csrf_html('staff_editcrime2');
     echo "
     <h3>Editing Crime</h3>
@@ -280,15 +279,15 @@ function edit_crime_sub(): void
             && preg_match(
                 "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
                 $_POST['crimeNAME']))
-            ? $db->escape(
-            strip_tags(stripslashes($_POST['crimeNAME']))) : '';
+            ?
+            strip_tags(stripslashes($_POST['crimeNAME'])) : '';
     $_POST['crimeBRAVE']       =
         (isset($_POST['crimeBRAVE']) && is_numeric($_POST['crimeBRAVE']))
             ? abs(intval($_POST['crimeBRAVE'])) : '';
     $_POST['crimePERCFORM']    =
         (isset($_POST['crimePERCFORM']))
-            ? $db->escape(
-            strip_tags(stripslashes($_POST['crimePERCFORM'])))
+            ?
+            strip_tags(stripslashes($_POST['crimePERCFORM']))
             : '';
     $_POST['crimeSUCCESSMUNY'] =
         (isset($_POST['crimeSUCCESSMUNY'])
@@ -307,23 +306,23 @@ function edit_crime_sub(): void
             ? abs(intval($_POST['crimeGROUP'])) : '';
     $_POST['crimeITEXT']       =
         (isset($_POST['crimeITEXT']))
-            ? $db->escape(
-            strip_tags(stripslashes($_POST['crimeITEXT'])))
+            ?
+            strip_tags(stripslashes($_POST['crimeITEXT']))
             : '';
     $_POST['crimeSTEXT']       =
         (isset($_POST['crimeSTEXT']))
-            ? $db->escape(
-            strip_tags(stripslashes($_POST['crimeSTEXT'])))
+            ?
+            strip_tags(stripslashes($_POST['crimeSTEXT']))
             : '';
     $_POST['crimeFTEXT']       =
         (isset($_POST['crimeFTEXT']))
-            ? $db->escape(
-            strip_tags(stripslashes($_POST['crimeFTEXT'])))
+            ?
+            strip_tags(stripslashes($_POST['crimeFTEXT']))
             : '';
     $_POST['crimeJTEXT']       =
         (isset($_POST['crimeJTEXT']))
-            ? $db->escape(
-            strip_tags(stripslashes($_POST['crimeJTEXT'])))
+            ?
+            strip_tags(stripslashes($_POST['crimeJTEXT']))
             : '';
     $_POST['crimeJAILTIME']    =
         (isset($_POST['crimeJAILTIME'])
@@ -334,8 +333,8 @@ function edit_crime_sub(): void
             && preg_match(
                 "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
                 $_POST['crimeJREASON']))
-            ? $db->escape(
-            strip_tags(stripslashes($_POST['crimeJREASON'])))
+            ?
+            strip_tags(stripslashes($_POST['crimeJREASON']))
             : '';
     $_POST['crimeXP']          =
         (isset($_POST['crimeXP']) && is_numeric($_POST['crimeXP']))
@@ -357,37 +356,37 @@ function edit_crime_sub(): void
     staff_csrf_stdverify('staff_editcrime2',
         'staff_crimes.php?action=editcrime');
     if (!empty($_POST['crimeSUCCESSITEM'])) {
-        $qi          =
-            $db->query(
-                'SELECT COUNT(`itmid`)
-                         FROM `items`
-                         WHERE `itmid` = ' . $_POST['crimeSUCCESSITEM']);
-        $exist_check = $db->fetch_single($qi);
-        $db->free_result($qi);
-        if ($exist_check == 0) {
+        $exist_check = $db->exists(
+            'SELECT COUNT(itmid) FROM items WHERE itmid = ?',
+            $_POST['crimeSUCCESSITEM'],
+        );
+        if (!$exist_check) {
             echo 'Item you selected doesn\'t seem to exist.<br />
             &gt; <a href="staff_crimes.php?action=editcrime">Go back</a>';
             $h->endpage();
             exit;
         }
     }
-    $db->query(
-        "UPDATE `crimes`
-             SET `crimeNAME` = '{$_POST['crimeNAME']}',
-             `crimeBRAVE` = '{$_POST['crimeBRAVE']}',
-             `crimePERCFORM` = '{$_POST['crimePERCFORM']}',
-             `crimeSUCCESSMUNY` = '{$_POST['crimeSUCCESSMUNY']}',
-             `crimeSUCCESSCRYS` = '{$_POST['crimeSUCCESSCRYS']}',
-             `crimeSUCCESSITEM` = '{$_POST['crimeSUCCESSITEM']}',
-             `crimeGROUP` = '{$_POST['crimeGROUP']}',
-             `crimeITEXT` = '{$_POST['crimeITEXT']}',
-             `crimeSTEXT` = '{$_POST['crimeSTEXT']}',
-             `crimeFTEXT` = '{$_POST['crimeFTEXT']}',
-             `crimeJTEXT` = '{$_POST['crimeJTEXT']}',
-             `crimeJAILTIME` = {$_POST['crimeJAILTIME']},
-             `crimeJREASON` = '{$_POST['crimeJREASON']}',
-             `crimeXP` = {$_POST['crimeXP']}
-             WHERE `crimeID` = {$_POST['crimeID']}");
+    $db->update(
+        'crimes',
+        [
+            'crimeNAME' => $_POST['crimeNAME'],
+            'crimeBRAVE' => $_POST['crimeBRAVE'],
+            'crimePERCFORM' => $_POST['crimePERCFORM'],
+            'crimeSUCCESSMUNY' => $_POST['crimeSUCCESSMUNY'],
+            'crimeSUCCESSCRYS' => $_POST['crimeSUCCESSCRYS'],
+            'crimeSUCCESSITEM' => $_POST['crimeSUCCESSITEM'],
+            'crimeGROUP' => $_POST['crimeGROUP'],
+            'crimeITEXT' => $_POST['crimeITEXT'],
+            'crimeSTEXT' => $_POST['crimeSTEXT'],
+            'crimeFTEXT' => $_POST['crimeFTEXT'],
+            'crimeJTEXT' => $_POST['crimeJTEXT'],
+            'crimeJAILTIME' => $_POST['crimeJAILTIME'],
+            'crimeJREASON' => $_POST['crimeJREASON'],
+            'crimeXP' => $_POST['crimeXP'],
+        ],
+        ['crimeID' => $_POST['crimeID']]
+    );
     echo 'Crime (' . $_POST['crimeNAME']
         . ') edited.<br />
             &gt; <a href="staff.php">Goto Main</a>';
@@ -428,20 +427,16 @@ function delcrime(): void
                 $h->endpage();
                 exit;
             }
-            $d =
-                $db->query(
-                    "SELECT `crimeNAME`
-                         FROM `crimes`
-                         WHERE `crimeID` = '$target'");
-            if ($db->num_rows($d) == 0) {
-                $db->free_result($d);
+            $itemi = $db->query(
+                'SELECT crimeNAME FROM crimes WHERE crimeID = ?',
+                $target,
+            );
+            if (empty($itemi)) {
                 echo 'Crime you selected doesn\'t seem to exist.<br />
             &gt; <a href="staff_crimes.php?action=delcrime">Go back</a>';
                 $h->endpage();
                 exit;
             }
-            $itemi = $db->fetch_row($d);
-            $db->free_result($d);
             $csrf = request_csrf_html('staff_delcrime2');
             echo '
         <h3>Confirm</h3>
@@ -479,23 +474,20 @@ function delcrime(): void
                 $h->endpage();
                 exit;
             }
-            $d =
-                $db->query(
-                    "SELECT `crimeNAME`
-                        FROM `crimes`
-                        WHERE `crimeID` = '$target'");
-            if ($db->num_rows($d) == 0) {
-                $db->free_result($d);
+            $itemi = $db->row(
+                'SELECT crimeNAME FROM crimes WHERE crimeID = ?',
+                $target,
+            );
+            if (empty($itemi)) {
                 echo 'Crime you selected doesn\'t seem to exist.<br />
             &gt; <a href="staff_crimes.php?action=delcrime">Go back</a>';
                 $h->endpage();
                 exit;
             }
-            $itemi = $db->fetch_row($d);
-            $db->free_result($d);
-            $db->query(
-                "DELETE FROM `crimes`
-        	     WHERE `crimeID` = '$target'");
+            $db->delete(
+                'crimes',
+                ['crimeID' => $target],
+            );
             echo 'Crime (' . $itemi['crimeNAME']
                 . ') Deleted.<br />
                 &gt; <a href="staff.php">Goto Main.</a>';
@@ -535,7 +527,7 @@ function new_crimegroup_submit(): void
             && preg_match(
                 "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
                 $_POST['cgNAME']))
-            ? $db->escape(strip_tags(stripslashes($_POST['cgNAME'])))
+            ? strip_tags(stripslashes($_POST['cgNAME']))
             : '';
     $_POST['cgORDER'] =
         (isset($_POST['cgORDER']) && is_numeric($_POST['cgORDER']))
@@ -549,23 +541,23 @@ function new_crimegroup_submit(): void
     }
     staff_csrf_stdverify('staff_newcrimegroup',
         'staff_crimes.php?action=newcrimegroup');
-    $d =
-        $db->query(
-            'SELECT COUNT(`cgID`)
-                     FROM `crimegroups`
-                     WHERE `cgORDER` = ' . $_POST['cgORDER']);
-    if ($db->fetch_single($d) > 0) {
-        $db->free_result($d);
+    $exists = $db->exists(
+        'SELECT COUNT(cgID) FROM crimegroups WHERE cgORDER = ?',
+        $_POST['cgORDER'],
+    );
+    if ($exists) {
         echo 'You cannot put two crime groups in the same order.<br />
         &gt; <a href="staff_crimes.php?action=newcrimegroup">Go back</a>';
         $h->endpage();
         exit;
     }
-    $db->free_result($d);
-    $db->query(
-        "INSERT INTO `crimegroups`
-             (`cgNAME`, `cgORDER`)
-             VALUES('{$_POST['cgNAME']}', '{$_POST['cgORDER']}')");
+    $db->insert(
+        'crimegroups',
+        [
+            'cgNAME' => $_POST['cgNAME'],
+            'cgORDER' => $_POST['cgORDER'],
+        ],
+    );
     echo 'Crime Group created!<br />
     &gt; <a href="staff_crimes.php?action=newcrimegroup">Go Back</a>';
     stafflog_add('Created Crime Group ' . $_POST['cgNAME']);
@@ -606,20 +598,16 @@ function edit_crimegroup_form(): void
         $h->endpage();
         exit;
     }
-    $d =
-        $db->query(
-            "SELECT `cgORDER`, `cgNAME`
-                     FROM `crimegroups`
-                     WHERE `cgID` = {$_POST['crimeGROUP']}");
-    if ($db->num_rows($d) == 0) {
-        $db->free_result($d);
+    $itemi = $db->row(
+        "SELECT cgORDER, cgNAME FROM crimegroups WHERE cgID = ?",
+        $_POST['crimeGROUP'],
+    );
+    if (empty($itemi)) {
         echo 'Group you selected doesn\'t seem to exist.<br />
         &gt; <a href="staff_crimes.php?action=editcrimegroup">Go back</a>';
         $h->endpage();
         exit;
     }
-    $itemi = $db->fetch_row($d);
-    $db->free_result($d);
     $csrf = request_csrf_html('staff_editcrimegroup2');
     echo "
     <h3>Editing Crime Group</h3>
@@ -646,7 +634,7 @@ function edit_crimegroup_sub(): void
             && preg_match(
                 "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
                 $_POST['cgNAME']))
-            ? $db->escape(strip_tags(stripslashes($_POST['cgNAME'])))
+            ? strip_tags(stripslashes($_POST['cgNAME']))
             : '';
     $_POST['cgORDER'] =
         (isset($_POST['cgORDER']) && is_numeric($_POST['cgORDER']))
@@ -663,26 +651,25 @@ function edit_crimegroup_sub(): void
         $h->endpage();
         exit;
     } else {
-        $d =
-            $db->query(
-                'SELECT COUNT(`cgID`)
-                         FROM `crimegroups`
-                         WHERE `cgORDER` = ' . $_POST['cgORDER']
-                . '
-                         AND `cgID` != ' . $_POST['cgID']);
-        if ($db->fetch_single($d) > 0) {
-            $db->free_result($d);
+        $exists = $db->exists(
+            'SELECT COUNT(cgID) FROM crimegroups WHERE cgORDER = ? AND cgID != ?',
+            $_POST['cgORDER'],
+            $_POST['cgID'],
+        );
+        if ($exists) {
             echo 'You cannot put two crime groups in the same order.<br />
             &gt; <a href="staff_crimes.php?action=editcrimegroup">Go back</a>';
             $h->endpage();
             exit;
         }
-        $db->free_result($d);
-        $db->query(
-            "UPDATE `crimegroups`
-                 SET `cgNAME` = '{$_POST['cgNAME']}',
-                 `cgORDER` = '{$_POST['cgORDER']}'
-                 WHERE `cgID` = '{$_POST['cgID']}'");
+        $db->update(
+            'crimegroups',
+            [
+                'cgNAME' => $_POST['cgNAME'],
+                'cgORDER' => $_POST['cgORDER'],
+            ],
+            ['cgID' => $_POST['cgID']],
+        );
         echo 'Crime Group edited<br />
         &gt; <a href="staff_crimes.php?action=editcrimegroup">Go Back</a>';
         stafflog_add("Edited Crime Group {$_POST['cgNAME']}");
@@ -732,27 +719,22 @@ function delete_crimegroup_configure(): void
         $h->endpage();
         exit;
     }
-    $q =
-        $db->query(
-            "SELECT COUNT(`cgID`)
-                         FROM `crimegroups`
-                         WHERE `cgID` IN($target, $target2)");
-    if ($db->fetch_single($q) < 2) {
-        $db->free_result($q);
+    $count = $db->cell(
+        'SELECT COUNT(cgID) FROM crimegroups WHERE cgID IN (?, ?)',
+        $target,
+        $target2,
+    );
+    if ($count < 2) {
         echo 'One of the two or both groups selected don\'t exist.<br />
             &gt; <a href="staff_crimes.php?action=delcrimegroup">Go back</a>';
         $h->endpage();
         exit;
     }
-    $db->free_result($q);
-    $d     =
-        $db->query(
-            "SELECT `cgNAME`
-                         FROM `crimegroups`
-                         WHERE `cgID` = $target");
-    $itemi = $db->fetch_single($d);
-    $db->free_result($d);
-    $csrf = request_csrf_html('staff_delcrimegroup2');
+    $itemi = $db->cell(
+        "SELECT cgNAME FROM crimegroups WHERE cgID = ?",
+        $target,
+    );
+    $csrf  = request_csrf_html('staff_delcrimegroup2');
     echo '
         <h3>Confirm</h3>
         Delete crime group -  ' . $itemi
@@ -766,6 +748,7 @@ function delete_crimegroup_configure(): void
         </form>
             ";
 }
+
 function delete_crimegroup_do(): void
 {
     global $db, $h;
@@ -785,19 +768,17 @@ function delete_crimegroup_do(): void
         $h->endpage();
         exit;
     }
-    $q =
-        $db->query(
-            "SELECT COUNT(`cgID`)
-                         FROM `crimegroups`
-                         WHERE `cgID` IN($target, $target2)");
-    if ($db->fetch_single($q) < 2) {
-        $db->free_result($q);
+    $count = $db->cell(
+        'SELECT COUNT(cgID) FROM crimegroups WHERE cgID IN (?, ?)',
+        $target,
+        $target2,
+    );
+    if ($count < 2) {
         echo 'One of the two or both groups selected don\'t exist.<br />
             &gt; <a href="staff_crimes.php?action=delcrimegroup">Go back</a>';
         $h->endpage();
         exit;
     }
-    $db->free_result($q);
     $_POST['yesorno'] =
         (isset($_POST['yesorno'])
             && in_array($_POST['yesorno'], ['Yes', 'No']))
@@ -808,20 +789,19 @@ function delete_crimegroup_do(): void
         $h->endpage();
         exit;
     }
-    $d     =
-        $db->query(
-            "SELECT `cgNAME`
-                         FROM `crimegroups`
-                         WHERE `cgID` = $target");
-    $itemi = $db->fetch_row($d);
-    $db->free_result($d);
-    $db->query(
-        "DELETE FROM `crimegroups`
-        	     WHERE `cgID` = $target");
-    $db->query(
-        "UPDATE `crimes`
-                 SET `crimeGROUP` = {$target2}
-                 WHERE `crimeGROUP` = {$target}");
+    $itemi = $db->row(
+        'SELECT cgNAME FROM crimegroups WHERE cgID = ?',
+        $target,
+    );
+    $db->delete(
+        'crimegroups',
+        ['cgID' => $target],
+    );
+    $db->update(
+        'crimes',
+        ['crimeGROUP' => $target2],
+        ['crimeGROUP' => $target],
+    );
     stafflog_add("Deleted crime group {$itemi['cgNAME']}");
     echo 'Crime Group deleted.<br />
         &gt; <a href="staff.php">Goto Main</a>';
@@ -873,39 +853,36 @@ function reorder_crimegroups(): void
             }
             $used[] = $v;
         }
-        $ro_cnt = count($used);
-        $ro     = implode(',', $used);
-        $c_g    =
-            $db->query(
-                'SELECT COUNT(`cgID`)
-                         FROM `crimegroups`
-                         WHERE `cgORDER` IN(' . $ro . ')');
-        if ($db->fetch_single($c_g) < $ro_cnt) {
-            $db->free_result($c_g);
+        $ro_cnt    = count($used);
+        $statement = EasyStatement::open()
+            ->in('cgORDER IN (?*)', $used);
+        $count     = $db->cell(
+            'SELECT COUNT(cgID) FROM crimegroups WHERE ' . $statement,
+            ...$statement->values(),
+        );
+        if ($count < $ro_cnt) {
             echo 'Group order doesn\'t exist.<br />
             &gt; <a href="staff_crimes.php?action=reorder">Go Back</a>';
             $h->endpage();
             exit;
         }
-        $db->free_result($c_g);
         foreach ($_POST as $k => $v) {
             $cg = str_replace('order', '', $k);
-            $db->query(
-                "UPDATE `crimegroups`
-                     SET `cgORDER` = {$v}
-                     WHERE `cgID` = {$cg}");
+            $db->update(
+                'crimegroups',
+                ['cgORDER' => $v],
+                ['cgID' => $cg],
+            );
         }
         echo 'Crime group order updated!';
         stafflog_add('Reordered crime groups');
     } else {
-        $q    =
-            $db->query(
-                'SELECT `cgID`, `cgNAME`
-                        FROM `crimegroups`
-                        ORDER BY `cgORDER` ASC, `cgID` ASC');
-        $rows = $db->num_rows($q);
-        $i    = 0;
-        $csrf = request_csrf_html('staff_reorder_crimegroups');
+        $rows      = $db->run(
+            'SELECT cgID, cgNAME FROM crimegroups ORDER BY cgORDER, cgID'
+        );
+        $row_count = count($rows);
+        $i         = 0;
+        $csrf      = request_csrf_html('staff_reorder_crimegroups');
         echo "
         <h3>Re-ordering Crime Groups</h3><hr />
         <table width='100%' cellspacing='1' cellpadding='1' class='table'>
@@ -917,14 +894,14 @@ function reorder_crimegroups(): void
         	<input type='hidden' name='submit' value='1' />
         	{$csrf}
            ";
-        while ($r = $db->fetch_row($q)) {
+        foreach ($rows as $r) {
             $i++;
             echo "
     		<tr>
     			<td>{$r['cgNAME']}</td>
     			<td><select name='order{$r['cgID']}' type='dropdown'>
        		";
-            for ($j = 1; $j <= $rows; $j++) {
+            for ($j = 1; $j <= $row_count; $j++) {
                 if ($j == $i) {
                     echo "<option value='{$j}' selected='selected'>{$j}</option>";
                 } else {
@@ -937,7 +914,6 @@ function reorder_crimegroups(): void
 			</tr>
    			';
         }
-        $db->free_result($q);
         echo "
 			<tr>
 				<td colspan='2' align='center'><input type='submit' value='Reorder' /></td>

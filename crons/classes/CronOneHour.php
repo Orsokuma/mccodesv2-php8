@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use ParagonIE\EasyDB\EasyPlaceholder;
+use ParagonIE\EasyDB\EasyDB;
 
 if (!defined('CRON_FILE_INC')) {
     exit;
@@ -15,10 +15,10 @@ final class CronOneHour extends CronHandler
     private static ?self $instance = null;
 
     /**
-     * @param database|null $db
+     * @param EasyDB|null $db
      * @return self|null
      */
-    public static function getInstance(?database $db): ?self
+    public static function getInstance(?EasyDB $db): ?self
     {
         parent::getInstance($db);
         if (self::$instance === null) {
@@ -45,77 +45,76 @@ final class CronOneHour extends CronHandler
 
     /**
      * @return void
+     * @throws Throwable
      */
     public function processGangCrimes(): void
     {
-        $this->db->query(
+        $this->basicQueryWrap(
             'UPDATE gangs SET gangCHOURS = GREATEST(gangCHOURS - ' . $this->pendingIncrements . ', 0) WHERE gangCRIME > 0',
+            $this->pendingIncrements,
         );
-        $this->updateAffectedRowCnt();
-        $q = $this->db->query(
-            'SELECT gangID,ocSTARTTEXT, ocSUCCTEXT, ocFAILTEXT, ocMINMONEY, ocMAXMONEY, ocID, ocNAME
+        $rows = $this->db->run(
+            'SELECT gangID, ocSTARTTEXT, ocSUCCTEXT, ocFAILTEXT, ocMINMONEY, ocMAXMONEY, ocID, ocNAME
             FROM gangs AS g
             INNER JOIN orgcrimes AS oc ON g.gangCRIME = oc.ocID
             WHERE g.gangCRIME > 0 AND g.gangCHOURS <= 0'
         );
-        while ($r = $this->db->fetch_row($q)) {
+        foreach ($rows as $r) {
             $suc = rand(0, 1);
+            $qm  = $this->db->run(
+                'SELECT userid FROM users WHERE gang = ?',
+                $r['gangID'],
+            );
             if ($suc) {
-                $log  = $r['ocSTARTTEXT'] . $r['ocSUCCTEXT'];
-                $muny = rand($r['ocMINMONEY'], $r['ocMAXMONEY']);
-                $log  = $this->db->escape(str_replace('{muny}', (string)$muny, $log));
-                $this->db->query(
-                    'UPDATE gangs SET gangMONEY = gangMONEY + ' . $muny . ', gangCRIME = 0 WHERE gangID = ' . $r['gangID'],
-                );
-                $this->updateAffectedRowCnt();
-                $this->db->query(sprintf(
-                    'INSERT INTO oclogs (oclOC, oclGANG, oclLOG, oclRESULT, oclMONEY, ocCRIMEN, ocTIME)
-                    VALUES (%u, %u, \'%s\', \'success\', %u, \'%s\', %u)',
-                    $r['ocID'], $r['gangID'], $log, $muny, $r['ocNAME'], time(),
-                ));
-                $i = $this->db->insert_id();
-                $this->updateAffectedRowCnt();
-                $qm = $this->db->query(
-                    'SELECT userid FROM users WHERE gang = ' . $r['gangID'],
-                );
-                while ($rm = $this->db->fetch_row($qm)) {
-                    event_add($rm['userid'], 'Your Gang\'s Organised Crime Succeeded. Go <a href="oclog.php?ID=' . $i . '">here</a> to view the details.');
-                    $this->updateAffectedRowCnt();
-                }
+                $log    = $r['ocSTARTTEXT'] . $r['ocSUCCTEXT'];
+                $muny   = rand($r['ocMINMONEY'], $r['ocMAXMONEY']);
+                $log    = str_replace('{muny}', (string)$muny, $log);
+                $result = 'success';
             } else {
-                $log  = $r['ocSTARTTEXT'] . $r['ocFAILTEXT'];
-                $muny = 0;
-                $log  = $this->db->escape(str_replace('{muny}', (string)$muny, $log));
-                $this->db->query(
-                    'UPDATE gangs SET gangCRIME = 0 WHERE gangID = ' . $r['gangID']
-                );
-                $this->updateAffectedRowCnt();
-                $this->db->query(sprintf(
-                    'INSERT INTO oclogs (oclOC, oclGANG, oclLOG, oclRESULT, oclMONEY, ocCRIMEN, ocTIME)
-                    VALUES (%u, %u, \'%s\', \'failure\', %u, \'%s\', %u)',
-                    $r['ocID'], $r['gangID'], $log, $muny, $r['ocNAME'], time(),
-                ));
-                $i = $this->db->insert_id();
-                $this->updateAffectedRowCnt();
-                $qm = $this->db->query(
-                    'SELECT userid FROM users WHERE gang = ' . $r['gangID'],
-                );
-                while ($rm = $this->db->fetch_row($qm)) {
-                    event_add($rm['userid'], 'Your Gang\'s Organised Crime Failed. Go <a href="oclog.php?ID=' . $i . '">here</a> to view the details.');
-                    $this->updateAffectedRowCnt();
-                }
+                $log    = $r['ocSTARTTEXT'] . $r['ocFAILTEXT'];
+                $muny   = 0;
+                $log    = str_replace('{muny}', (string)$muny, $log);
+                $result = 'failure';
             }
-            $this->db->free_result($qm);
+            $save = function () use ($r, $qm, $muny, $log, $result) {
+                $this->basicQueryWrap(
+                    'UPDATE gangs SET gangMONEY = gangMONEY + ?, gangCRIME = 0 WHERE gangID = ?',
+                    $muny,
+                    $r['gangID'],
+                );
+                $i = $this->db->insert(
+                    'oclogs',
+                    [
+                        'oclOC' => $r['ocID'],
+                        'oclGANG' => $r['gangID'],
+                        'oclLOG' => $log,
+                        'oclRESULT' => $result,
+                        'oclMONEY' => $muny,
+                        'oclCRIMEN' => $r['ocNAME'],
+                        'ocTIME' => time(),
+                    ]
+                );
+                if ($i > 0) {
+                    $this->updateAffectedRowCnt(1);
+                }
+                $past_tense = $result === 'success' ? 'Succeeded' : 'Failed';
+                foreach ($qm as $rm) {
+                    $event = event_add($rm['userid'], 'Your Gang\'s Organised Crime ' . $past_tense . '. Go <a href="oclog.php?ID=' . $i . '">here</a> to view the details.');
+                    $this->updateAffectedRowCnt($event);
+                }
+            };
+            $this->db->tryFlatTransaction($save);
         }
-        $this->db->free_result($q);
     }
 
+    /**
+     * @return void
+     */
     public function resetVerifiedStatus(): void
     {
-        $this->db->query(
+        $this->basicQueryWrap(
             'UPDATE users SET verified = 0 WHERE verified > 0',
         );
-        $this->updateAffectedRowCnt();
     }
 
     public function getClassName(): string

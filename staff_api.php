@@ -1,5 +1,8 @@
 <?php
 declare(strict_types=1);
+
+use ParagonIE\EasyDB\EasyDB;
+
 $nohdr = true;
 global $db;
 require __DIR__ . '/sglobals.php';
@@ -14,22 +17,22 @@ if (!is_staff()) {
 class StaffAPI
 {
     private static ?self $inst = null;
-    private ?database $db = null;
+    private ?EasyDB $db = null;
 
     /**
-     * @param database|null $db
+     * @param EasyDB|null $db
      */
-    public function __construct(?database $db)
+    public function __construct(?EasyDB $db)
     {
         $this->setDb($db);
         $this->processIncoming();
     }
 
     /**
-     * @param database|null $db
+     * @param EasyDB|null $db
      * @return void
      */
-    private function setDb(?database $db): void
+    private function setDb(?EasyDB $db): void
     {
         $this->db = $db;
     }
@@ -72,16 +75,15 @@ class StaffAPI
      * @param int $target_id
      * @return array
      */
-    private function getUserRoles(int $target_id): array
+    private function getNonUserRoles(int $target_id): array
     {
-        $get_roles = $this->db->query(
-            'SELECT id, name FROM staff_roles WHERE id IN (SELECT staff_role FROM users_roles WHERE userid = ' . $target_id . ') ORDER BY name, id'
+        $get_non_roles = $this->db->run(
+            'SELECT id, name FROM staff_roles WHERE id NOT IN (SELECT staff_role FROM users_roles WHERE userid = ' . $target_id . ') ORDER BY name, id'
         );
-        $data      = [];
-        while ($role = $this->db->fetch_row($get_roles)) {
+        $data          = [];
+        foreach ($get_non_roles as $role) {
             $data[] = $role;
         }
-        $this->db->free_result($get_roles);
         return [
             'type' => 'success',
             'message' => 'See data key',
@@ -93,16 +95,16 @@ class StaffAPI
      * @param int $target_id
      * @return array
      */
-    private function getNonUserRoles(int $target_id): array
+    private function getUserRoles(int $target_id): array
     {
-        $get_non_roles = $this->db->query(
-            'SELECT id, name FROM staff_roles WHERE id NOT IN (SELECT staff_role FROM users_roles WHERE userid = ' . $target_id . ') ORDER BY name, id'
+        $get_roles = $this->db->run(
+            'SELECT id, name FROM staff_roles WHERE id IN (SELECT staff_role FROM users_roles WHERE userid = ?) ORDER BY name, id',
+            $target_id,
         );
         $data      = [];
-        while ($role = $this->db->fetch_row($get_non_roles)) {
+        foreach ($get_roles as $role) {
             $data[] = $role;
         }
-        $this->db->free_result($get_non_roles);
         return [
             'type' => 'success',
             'message' => 'See data key',
@@ -111,10 +113,10 @@ class StaffAPI
     }
 
     /**
-     * @param database|null $db
+     * @param EasyDB|null $db
      * @return self|null
      */
-    public static function getInstance(?database $db): ?self
+    public static function getInstance(?EasyDB $db): ?self
     {
         if (self::$inst === null) {
             self::$inst = new self($db);

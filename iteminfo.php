@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
@@ -10,31 +10,23 @@ declare(strict_types=1);
 global $db, $h;
 require_once('globals.php');
 $_GET['ID'] =
-        (isset($_GET['ID']) && is_numeric($_GET['ID']))
-                ? abs(intval($_GET['ID'])) : '';
-$itmid = $_GET['ID'];
-if (!$itmid)
-{
+    (isset($_GET['ID']) && is_numeric($_GET['ID']))
+        ? abs(intval($_GET['ID'])) : '';
+$itmid      = $_GET['ID'];
+if (!$itmid) {
     echo 'Invalid item ID';
-}
-else
-{
-    $q =
-            $db->query(
-                    "SELECT `itmname`, `itmdesc`, `itmbuyprice`,
-                     `itmsellprice`, `itmtypename`
-                     FROM `items` AS `i`
-                     INNER JOIN `itemtypes` AS `it`
-                     ON `i`.`itmtype` = `it`.`itmtypeid`
-                     WHERE `i`.`itmid` = {$itmid}
-                     LIMIT 1");
-    if ($db->num_rows($q) == 0)
-    {
+} else {
+    $id = $db->row(
+        'SELECT itmname, itmdesc, itmbuyprice, itmsellprice, itmtypename
+        FROM items AS i
+        INNER JOIN itemtypes AS it ON i.itmtype = it.itmtypeid
+        WHERE i.itmid = ?
+        LIMIT 1',
+        $itmid,
+    );
+    if (empty($id)) {
         echo 'Invalid item ID';
-    }
-    else
-    {
-        $id = $db->fetch_row($q);
+    } else {
         echo "
 <table width=75% class='table' cellspacing='1'>
 		<tr style='background: gray;'>
@@ -53,29 +45,23 @@ else
 		<tr>
 	<td>
    ";
-        if ($id['itmbuyprice'])
-        {
+        if ($id['itmbuyprice']) {
             echo money_formatter((int)$id['itmbuyprice']);
-        }
-        else
-        {
+        } else {
             echo 'N/A';
         }
         echo '
 	</td>
 	<td>
    ';
-        if ($id['itmsellprice'])
-        {
+        if ($id['itmsellprice']) {
             echo money_formatter((int)$id['itmsellprice'])
-                    . '
+                . '
 	</td>
 		</tr>
 </table>
    ';
-        }
-        else
-        {
+        } else {
             echo '
 N/A</td>
 		</tr>
@@ -83,6 +69,5 @@ N/A</td>
    ';
         }
     }
-    $db->free_result($q);
 }
 $h->endpage();

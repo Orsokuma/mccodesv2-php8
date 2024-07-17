@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
@@ -11,7 +11,7 @@ global $set;
 require_once('globals_nonauth.php');
 $login_csrf = request_csrf_code('login');
 print
-        <<<EOF
+    <<<EOF
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -29,10 +29,9 @@ print
 <!-- Begin Main Content -->
 EOF;
 $IP = str_replace(['/', '\\', '\0'], '', $_SERVER['REMOTE_ADDR']);
-if (file_exists('ipbans/' . $IP))
-{
+if (file_exists('ipbans/' . $IP)) {
     die(
-            "<span style='font-weight: bold; color:red;'>
+    "<span style='font-weight: bold; color:red;'>
             Your IP has been banned, there is no way around this.
             </span></body></html>");
 }
@@ -65,7 +64,7 @@ echo "</td></tr></table><br />
 <h3><a href='register.php'>REGISTER NOW!</a></h3><br />
 <i><center>Powered by codes made by Dabomstew (&copy {$year}). Game Copyright &copy;{$year} {$set['game_owner']}.</center></i>";
 print
-        <<<OUT
+    <<<OUT
 </td>
 <td class="rgrad"></td>
 </tr>

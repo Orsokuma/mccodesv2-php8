@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
@@ -10,7 +10,7 @@ declare(strict_types=1);
 global $db, $h;
 require_once('globals.php');
 $staff = [];
-$q     = $db->query(
+$q     = $db->run(
     'SELECT u.userid, u.laston, u.username, u.level, u.money, GROUP_CONCAT(sr.name ORDER BY sr.id) AS roles
     FROM users AS u
     INNER JOIN users_roles AS ur ON ur.userid = u.userid
@@ -19,10 +19,9 @@ $q     = $db->query(
     GROUP BY u.userid
     ORDER BY u.userid'
 );
-while ($r = $db->fetch_row($q)) {
+foreach ($q as $r) {
     $staff[$r['userid']] = $r;
 }
-$db->free_result($q);
 echo '
 <b>Staff</b>
 <br />

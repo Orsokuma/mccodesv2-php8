@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
@@ -33,20 +33,16 @@ function error_critical($human_error, $debug_error, $action): void
     // including the game's name. If not, just say
     // "Internal Server Error"
     global $set;
-    if (isset($set) && is_array($set) && array_key_exists('game_name', $set))
-    {
+    if (isset($set) && is_array($set) && array_key_exists('game_name', $set)) {
         echo '<h1>' . $set['game_name'] . ' - Critical Error</h1>';
-    }
-    else
-    {
+    } else {
         echo '<h1>Internal Server Error</h1>';
     }
-    if (DEBUG)
-    {
+    if (DEBUG) {
         echo 'A critical error has occurred, and page execution has stopped. '
-                . 'Below are the details:<br />' . $debug_error
-                . '<br /><br />' . '<strong>Action taken:</strong> ' . $action
-                . '<br /><br />';
+            . 'Below are the details:<br />' . $debug_error
+            . '<br /><br />' . '<strong>Action taken:</strong> ' . $action
+            . '<br /><br />';
         // Only uncomment the below if you know what you're doing,
         // for debug purposes.
         //if (is_array($context) && count($context) > 0)
@@ -54,13 +50,10 @@ function error_critical($human_error, $debug_error, $action): void
         //    echo '<strong>Context at error time:</strong> ' . '<br /><br />'
         //            . nl2br(print_r($context, true));
         //}
-    }
-    else
-    {
+    } else {
         echo 'A critical error has occurred, and this page cannot be displayed. '
-                . 'Please try again later.';
-        if (!empty($human_error))
-        {
+            . 'Please try again later.';
+        if (!empty($human_error)) {
             echo '<br />' . $human_error;
         }
     }
@@ -80,26 +73,19 @@ function error_php($errno, $errstr, string $errfile = '', int $errline = 0,
 {
     // What's happened?
     // If it's a PHP warning or user error/warning, don't go further - indicates bad code, unsafe
-    if ($errno == E_WARNING)
-    {
+    if ($errno == E_WARNING) {
         error_critical('<strong>PHP Warning:</strong> ' . $errstr . ' (' . $errno
             . ')', 'Line executed: ' . $errfile . ':' . $errline,
             $errcontext);
-    }
-    elseif ($errno == E_RECOVERABLE_ERROR)
-    {
+    } elseif ($errno == E_RECOVERABLE_ERROR) {
         error_critical('<strong>PHP Recoverable Error:</strong> ' . $errstr . ' ('
             . $errno . ')',
             'Line executed: ' . $errfile . ':' . $errline, $errcontext);
-    }
-    elseif ($errno == E_USER_ERROR)
-    {
+    } elseif ($errno == E_USER_ERROR) {
         error_critical('<strong>Engine Error:</strong> ' . $errstr . ' (' . $errno
             . ')', 'Line executed: ' . $errfile . ':' . $errline,
             $errcontext);
-    }
-    elseif ($errno == E_USER_WARNING)
-    {
+    } elseif ($errno == E_USER_WARNING) {
         error_critical('<strong>Engine Warning:</strong> ' . $errstr . ' (' . $errno
             . ')', 'Line executed: ' . $errfile . ':' . $errline,
             $errcontext);

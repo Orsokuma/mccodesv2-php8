@@ -21,45 +21,36 @@ echo "<h3>Battle Tent</h3>
 		<th>Money Won</th>
 		<th>Challenge</th>
 	</tr>";
-$q =
-        $db->query(
-                "SELECT `cb`.`cb_money`, `c`.`npcid`, `cy`.`cityname`,
-                        `u`.`userid`, `username`, `level`, `hp`, `maxhp`, `location`, `hospital`, `jail`
-                FROM `challengebots` AS `cb`
-                LEFT JOIN `users` AS `u` ON `cb`.`cb_npcid` = `u`.`userid`
-                LEFT JOIN `challengesbeaten` AS `c` ON `c`.`npcid` = `u`.`userid` AND `c`.`userid` = $userid
-                LEFT JOIN `cities` AS `cy` ON `u`.`location` = `cy`.`cityid`");
-while ($r = $db->fetch_row($q))
-{
-    $earn = $r['cb_money'];
-    $v = $r['userid'];
-    $countq =
-            $db->query(
-                    "SELECT COUNT(`npcid`) FROM `challengesbeaten` WHERE `npcid` = $v");
-    $times = $db->fetch_single($countq);
-    $db->free_result($countq);
+$q = $db->run(
+    'SELECT cb.cb_money, c.npcid, cy.cityname, u.userid, username, level, hp, maxhp, location, hospital, jail
+    FROM challengebots AS cb
+    LEFT JOIN users AS u ON cb.cb_npcid = u.userid
+    LEFT JOIN challengesbeaten AS c ON c.npcid = u.userid AND c.userid = ?
+    LEFT JOIN cities AS cy ON u.location = cy.cityid',
+    $userid,
+);
+foreach ($q as $r) {
+    $earn  = $r['cb_money'];
+    $v     = $r['userid'];
+    $times = $db->cell(
+        'SELECT COUNT(npcid) FROM challengesbeaten WHERE npcid = ?',
+        $v,
+    );
     echo "<tr><td>{$r['username']}</td><td>{$r['level']}</td><td>$times</td><td>";
     if ($r['hp'] >= $r['maxhp'] / 2 && $r['location'] == $ir['location']
-            && !$ir['hospital'] && !$ir['jail'] && !$r['hospital']
-            && !$r['jail'])
-    {
+        && !$ir['hospital'] && !$ir['jail'] && !$r['hospital']
+        && !$r['jail']) {
         echo '<font color=green>Yes</font>';
-    }
-    else
-    {
+    } else {
         echo '<font color=red>No</font>';
     }
     echo "</td><td>{$r['cityname']}</td><td>$earn</td><td>";
-    if ($r['npcid'])
-    {
+    if ($r['npcid']) {
         echo '<i>Already</i>';
-    }
-    else
-    {
+    } else {
         echo "<a href='attack.php?ID={$r['userid']}'>Challenge</a>";
     }
     echo '</td></tr>';
 }
-$db->free_result($q);
 echo '</table>';
 $h->endpage();

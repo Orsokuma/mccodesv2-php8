@@ -19,12 +19,11 @@ function error_critical($debug_error, $action,
     header('HTTP/1.1 500 Internal Server Error');
     echo '<h1>Installer Error</h1>';
     echo 'A critical error has occurred, and installation has stopped. '
-            . 'Below are the details:<br />' . $debug_error . '<br /><br />'
-            . '<strong>Action taken:</strong> ' . $action . '<br /><br />';
-    if (is_array($context) && count($context) > 0)
-    {
+        . 'Below are the details:<br />' . $debug_error . '<br /><br />'
+        . '<strong>Action taken:</strong> ' . $action . '<br /><br />';
+    if (is_array($context) && count($context) > 0) {
         echo '<strong>Context at error time:</strong> ' . '<br /><br />'
-                . nl2br(print_r($context, true));
+            . nl2br(print_r($context, true));
     }
     require_once('./installer_foot.php');
     exit;
@@ -43,26 +42,19 @@ function error_php($errno, $errstr, string $errfile = '', int $errline = 0,
 {
     // What's happened?
     // If it's a PHP warning or user error/warning, don't go further - indicates bad code, unsafe
-    if ($errno == E_WARNING)
-    {
+    if ($errno == E_WARNING) {
         error_critical('<strong>PHP Warning:</strong> ' . $errstr . ' (' . $errno
             . ')', 'Line executed: ' . $errfile . ':' . $errline,
             $errcontext);
-    }
-    elseif ($errno == E_RECOVERABLE_ERROR)
-    {
+    } elseif ($errno == E_RECOVERABLE_ERROR) {
         error_critical('<strong>PHP Recoverable Error:</strong> ' . $errstr . ' ('
             . $errno . ')',
             'Line executed: ' . $errfile . ':' . $errline, $errcontext);
-    }
-    elseif ($errno == E_USER_ERROR)
-    {
+    } elseif ($errno == E_USER_ERROR) {
         error_critical('<strong>User Error:</strong> ' . $errstr . ' (' . $errno
             . ')', 'Line executed: ' . $errfile . ':' . $errline,
             $errcontext);
-    }
-    elseif ($errno == E_USER_WARNING)
-    {
+    } elseif ($errno == E_USER_WARNING) {
         error_critical('<strong>User Warning:</strong> ' . $errstr . ' (' . $errno
             . ')', 'Line executed: ' . $errfile . ':' . $errline,
             $errcontext);

@@ -2,10 +2,12 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
+
+use ParagonIE\EasyDB\EasyPlaceholder;
 
 $macropage = 'gym.php';
 global $db, $ir, $userid, $h;
@@ -59,15 +61,19 @@ if (isset($_POST['stat']) && $_POST['amnt'])
         {
             $gain /= 2;
         }
-        $db->query(
-                "UPDATE `userstats`
-        		 SET `{$stat}` = `{$stat}` + $gain
-        		 WHERE `userid` = $userid");
-        $db->query(
-                "UPDATE `users`
-                 SET `will` = {$ir['will']},
-                 `energy` = `energy` - {$_POST['amnt']}
-                 WHERE `userid` = $userid");
+        $db->update(
+            'userstats',
+            [$stat => new EasyPlaceholder($stat.' + ?', $gain)],
+            ['userid' => $userid],
+        );
+        $db->update(
+            'users',
+            [
+                'will' => $ir['will'],
+                'energy' => new EasyPlaceholder('energy - ?', $_POST['amnt']),
+            ],
+            ['userid' => $userid],
+        );
         $inc = $ir[$stat] + $gain;
         $inc2 = $ir['energy'] - $_POST['amnt'];
         if ($stat == 'strength')

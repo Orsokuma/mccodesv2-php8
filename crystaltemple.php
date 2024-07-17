@@ -1,11 +1,14 @@
 <?php
 declare(strict_types=1);
+
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
+
+use ParagonIE\EasyDB\EasyPlaceholder;
 
 global $db, $ir, $userid, $h, $set;
 require_once('globals.php');
@@ -25,8 +28,8 @@ function csrf_error($goBackTo): void
     $h->endpage();
     exit;
 }
-if (!isset($_GET['spend']))
-{
+
+if (!isset($_GET['spend'])) {
     echo "Welcome to the crystal temple!<br />
 You have <b>{$ir['crystals']}</b> crystals.<br />
 What would you like to spend your crystals on?<br />
@@ -39,18 +42,21 @@ IQ - {$set['ct_iqpercrys']} IQ per crystal
 </a><br />
 <a href='crystaltemple.php?spend=money'>
 Money - " . money_formatter($set['ct_moneypercrys'])
-            . ' per crystal</a><br />';
+        . ' per crystal</a><br />';
 } elseif ($_GET['spend'] == 'refill') {
     if ($ir['crystals'] < $set['ct_refillprice']) {
         echo "You don't have enough crystals!";
     } elseif ($ir['energy'] == $ir['maxenergy']) {
         echo 'You already have full energy.';
     } else {
-        $db->query(
-            "UPDATE `users`
-                    SET `energy` = `maxenergy`,
-                    `crystals` = `crystals` - {$set['ct_refillprice']}
-                    WHERE `userid` = $userid");
+        $db->update(
+            'users',
+            [
+                'energy' => $ir['maxenergy'],
+                'crystals' => new EasyPlaceholder('crystals - ?', $set['ct_refillprice']),
+            ],
+            ['userid' => $userid],
+        );
         echo "You have paid {$set['ct_refillprice']} crystals to
                   refill your energy bar.";
     }
@@ -78,14 +84,16 @@ Money - " . money_formatter($set['ct_moneypercrys'])
 			      <a href='crystaltemple.php?spend=IQ'>Back</a>";
     } else {
         $iqgain = (int)($_POST['crystals'] * $set['ct_iqpercrys']);
-        $db->query(
-            "UPDATE `users`
-                     SET `crystals` = `crystals` - {$_POST['crystals']}
-                     WHERE `userid` = $userid");
-        $db->query(
-            "UPDATE `userstats`
-                    SET `IQ` = `IQ` + $iqgain
-            		WHERE `userid` = $userid");
+        $db->update(
+            'users',
+            ['crystals' => new EasyPlaceholder('crystals - ?', $_POST['crystals'])],
+            ['userid' => $userid],
+        );
+        $db->update(
+            'userstats',
+            ['IQ' => new EasyPlaceholder('IQ + ?', $iqgain)],
+            ['userid' => $userid],
+        );
         echo "You traded {$_POST['crystals']} crystals for $iqgain IQ.";
     }
 } elseif ($_GET['spend'] == 'money') {
@@ -113,11 +121,14 @@ Money - " . money_formatter($set['ct_moneypercrys'])
 				  <a href='crystaltemple.php?spend=money'>Back</a>";
     } else {
         $iqgain = $_POST['crystals'] * $set['ct_moneypercrys'];
-        $db->query(
-            "UPDATE `users`
-                     SET `crystals` = `crystals` - {$_POST['crystals']},
-                     `money` = `money` + $iqgain
-            		 WHERE `userid` = $userid");
+        $db->update(
+            'users',
+            [
+                'crystals' => new EasyPlaceholder('crystals - ?', $_POST['crystals']),
+                'money' => new EasyPlaceholder('money + ?', $iqgain),
+            ],
+            ['userid' => $userid],
+        );
         echo "You traded {$_POST['crystals']} crystals for "
             . money_formatter($iqgain) . '.';
     }

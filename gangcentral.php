@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
@@ -19,31 +19,23 @@ echo "<h3>Gang Central</h3>
 		<th>President</th>
 		<th>Respect Level</th>
 	</tr>";
-$gq =
-        $db->query(
-            'SELECT `gangID`, `gangNAME`, `gangRESPECT`,
-                 `userid`, `username`
-                 FROM `gangs` AS `g`
-                 LEFT JOIN `users` AS `u` ON `g`.`gangPRESIDENT` = `u`.`userid`
-                 ORDER BY `g`.`gangID` ASC');
-while ($gangdata = $db->fetch_row($gq))
-{
+$gq = $db->run(
+    'SELECT gangID, gangNAME, gangRESPECT, userid, username
+    FROM gangs AS g
+    LEFT JOIN users AS u ON g.gangPRESIDENT = u.userid
+    ORDER BY g.gangID'
+);
+foreach ($gq as $gangdata) {
+    $cnt = $db->cell(
+        'SELECT COUNT(userid) FROM users WHERE gang = ?',
+        $gangdata['gangID']
+    );
     echo "<tr>
     		<td><a href='gangs.php?action=view&ID={$gangdata['gangID']}'>{$gangdata['gangNAME']}</a></td>
-    		<td>";
-    $cnt =
-            $db->query(
-                    "SELECT COUNT(`userid`)
-                     FROM `users`
-                     WHERE `gang` = {$gangdata['gangID']}");
-    print
-            $db->fetch_single($cnt)
-                    . "</td>
+    		<td>" . $cnt . "</td>
             <td><a href='viewuser.php?u={$gangdata['userid']}'>{$gangdata['username']}</a></td>
 			<td>{$gangdata['gangRESPECT']}</td>
 		</tr>";
-    $db->free_result($cnt);
 }
-$db->free_result($gq);
 echo '</table>';
 $h->endpage();

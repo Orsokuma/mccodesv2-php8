@@ -6,7 +6,7 @@ if (!defined('MONO_ON')) {
 }
 const CRON_OVERRIDE = true;
 require_once __DIR__ . '/CronHandler.php';
-$get_crons = $db->query(
+$rows = $db->run(
     'SELECT * FROM cron_times',
 );
 /**
@@ -16,10 +16,9 @@ $get_crons = $db->query(
  * (ex: minute-1 -> 2024-06-21 03:25:16)
  */
 $crons = [];
-while ($row = $db->fetch_row($get_crons)) {
+foreach ($rows as $row) {
     $crons[$row['name']] = $row['last_run'];
 }
-$db->free_result($get_crons);
 
 /**
  * @param string $cron the "last_run" timestamp of a cron

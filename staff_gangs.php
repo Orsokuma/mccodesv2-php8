@@ -1,60 +1,62 @@
 <?php
 declare(strict_types=1);
+
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
+
+use ParagonIE\EasyDB\EasyPlaceholder;
+
 global $h;
 require_once('sglobals.php');
 check_access('manage_gangs');
 //This contains gang stuffs
-if (!isset($_GET['action']))
-{
+if (!isset($_GET['action'])) {
     $_GET['action'] = '';
 }
-switch ($_GET['action'])
-{
-case 'grecord':
-    admin_gang_record();
-    break;
-case 'gcredit':
-    admin_gang_credit();
-    break;
-case 'gwar':
-    admin_gang_wars();
-    break;
-case 'gwardelete':
-    admin_gang_wardelete();
-    break;
-case 'gedit':
-    admin_gang_edit_begin();
-    break;
-case 'gedit_name':
-    admin_gang_edit_name();
-    break;
-case 'gedit_prefix':
-    admin_gang_edit_prefix();
-    break;
-case 'gedit_finances':
-    admin_gang_edit_finances();
-    break;
-case 'gedit_staff':
-    admin_gang_edit_staff();
-    break;
-case 'gedit_capacity':
-    admin_gang_edit_capacity();
-    break;
-case 'gedit_crime':
-    admin_gang_edit_crime();
-    break;
-case 'gedit_ament':
-    admin_gang_edit_ament();
-    break;
-default:
-    echo 'Error: This script requires an action.';
-    break;
+switch ($_GET['action']) {
+    case 'grecord':
+        admin_gang_record();
+        break;
+    case 'gcredit':
+        admin_gang_credit();
+        break;
+    case 'gwar':
+        admin_gang_wars();
+        break;
+    case 'gwardelete':
+        admin_gang_wardelete();
+        break;
+    case 'gedit':
+        admin_gang_edit_begin();
+        break;
+    case 'gedit_name':
+        admin_gang_edit_name();
+        break;
+    case 'gedit_prefix':
+        admin_gang_edit_prefix();
+        break;
+    case 'gedit_finances':
+        admin_gang_edit_finances();
+        break;
+    case 'gedit_staff':
+        admin_gang_edit_staff();
+        break;
+    case 'gedit_capacity':
+        admin_gang_edit_capacity();
+        break;
+    case 'gedit_crime':
+        admin_gang_edit_crime();
+        break;
+    case 'gedit_ament':
+        admin_gang_edit_ament();
+        break;
+    default:
+        echo 'Error: This script requires an action.';
+        break;
 }
 
 /**
@@ -63,43 +65,30 @@ default:
 function admin_gang_record(): void
 {
     global $db, $ir, $h;
-    $gang =
-            (isset($_POST['gang']) && is_numeric($_POST['gang']))
-                    ? abs(intval($_POST['gang'])) : '';
+    $gang            =
+        (isset($_POST['gang']) && is_numeric($_POST['gang']))
+            ? abs(intval($_POST['gang'])) : '';
     $_POST['reason'] =
-            (isset($_POST['reason'])
-                    && preg_match(
-                            "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
-                            $_POST['reason']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['reason'])))
-                    : '';
-    if ($gang)
-    {
+        (isset($_POST['reason'])
+            && preg_match(
+                "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
+                $_POST['reason']))
+            ? strip_tags(stripslashes($_POST['reason']))
+            : '';
+    if ($gang) {
         staff_csrf_stdverify('staff_gangs_record',
-                'staff_gangs.php?action=grecord');
-        $q =
-                $db->query(
-                        "SELECT `gangNAME`, `gangDESC`, `gangPREF`,
-                         `gangMONEY`, `gangCRYSTALS`, `gangRESPECT`,
-                         `gangPRESIDENT`, `gangVICEPRES`, `gangCAPACITY`,
-                         `gangCRIME`, `gangCHOURS`, `gangAMENT`, `gangID`
-                         FROM `gangs`
-                         WHERE `gangID`  = $gang");
-        if ($db->num_rows($q) == 0)
-        {
-            $db->free_result($q);
+            'staff_gangs.php?action=grecord');
+        $r = $db->row(
+            'SELECT * FROM gangs WHERE gangID = ?',
+            $gang,
+        );
+        if (empty($r)) {
             $_POST['gang'] = 0;
             admin_gang_record();
-        }
-        elseif (!$_POST['reason'])
-        {
+        } elseif (!$_POST['reason']) {
             $_POST['gang'] = 0;
             admin_gang_record();
-        }
-        else
-        {
-            $r = $db->fetch_row($q);
-            $db->free_result($q);
+        } else {
             echo "
             <table width='100%' border='1'>
             		<tr>
@@ -132,14 +121,12 @@ function admin_gang_record(): void
             </table>
    			";
             stafflog_add(
-                    $ir['username'] . ' looked at gang id ' . $r['gangID']
-                            . ' (' . $r['gangNAME']
-                            . ')\'s record. with the reason '
-                            . $_POST['reason']);
+                $ir['username'] . ' looked at gang id ' . $r['gangID']
+                . ' (' . $r['gangNAME']
+                . ')\'s record. with the reason '
+                . $_POST['reason']);
         }
-    }
-    else
-    {
+    } else {
         $csrf = request_csrf_html('staff_gangs_record');
         echo "
 		<form action='staff_gangs.php?action=grecord' method='post'>
@@ -159,72 +146,64 @@ function admin_gang_record(): void
 function admin_gang_credit(): void
 {
     global $db, $ir, $h;
-    $gang =
-            (isset($_POST['gang']) && is_numeric($_POST['gang']))
-                    ? abs(intval($_POST['gang'])) : '';
-    $money =
-            (isset($_POST['money']) && is_numeric($_POST['money']))
-                    ? abs(intval($_POST['money'])) : 0;
+    $gang     =
+        (isset($_POST['gang']) && is_numeric($_POST['gang']))
+            ? abs(intval($_POST['gang'])) : '';
+    $money    =
+        (isset($_POST['money']) && is_numeric($_POST['money']))
+            ? abs(intval($_POST['money'])) : 0;
     $crystals =
-            (isset($_POST['crystals']) && is_numeric($_POST['crystals']))
-                    ? abs(intval($_POST['crystals'])) : 0;
-    $reason =
-            (isset($_POST['reason'])
-                    && preg_match(
-                            "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
-                            $_POST['reason']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['reason'])))
-                    : '';
-    if (($money != 0 || $crystals != 0) && ($gang && $reason))
-    {
-        $q =
-                $db->query(
-                        "SELECT `gangNAME`
-                         FROM `gangs`
-                         WHERE `gangID` = $gang");
-        if ($db->num_rows($q) == 0)
-        {
-            $db->free_result($q);
+        (isset($_POST['crystals']) && is_numeric($_POST['crystals']))
+            ? abs(intval($_POST['crystals'])) : 0;
+    $reason   =
+        (isset($_POST['reason'])
+            && preg_match(
+                "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
+                $_POST['reason']))
+            ? strip_tags(stripslashes($_POST['reason']))
+            : '';
+    if (($money != 0 || $crystals != 0) && ($gang && $reason)) {
+        $gangname = $db->cell(
+            "SELECT gangNAME FROM gangs WHERE gangID = ?",
+            $gang,
+        );
+        if (empty($gangname)) {
             echo 'Invalid gang.';
             $h->endpage();
             exit;
         }
         staff_csrf_stdverify('staff_gangs_credit2',
-                'staff_gangs.php?action=gcredit');
-        $gangname = $db->fetch_single($q);
-        $db->free_result($q);
-        $db->query(
-                "UPDATE `gangs`
-                 SET `gangMONEY` = `gangMONEY` + $money,
-                 `gangCRYSTALS` = `gangCRYSTALS` + $crystals
-                 WHERE `gangID` = $gang");
+            'staff_gangs.php?action=gcredit');
+        $db->update(
+            'gangs',
+            [
+                'gangMONEY' => new EasyPlaceholder('gangMONEY + ?', $money),
+                'gangCRYSTALS' => new EasyPlaceholder('gangCRYSTALS + ?', $money),
+            ],
+            ['gangID' => $gang],
+        );
         echo "The gang {$gangname} was successfully credited.";
         stafflog_add(
-                "{$ir['username']} credited {$gangname} (gang ID {$gang})
+            "{$ir['username']} credited {$gangname} (gang ID {$gang})
                  with {$money} money and/or {$crystals} crystals
                  with the reason {$reason}");
-    }
-    elseif ($gang && ($money != 0 || $crystals != 0))
-    {
+    } elseif ($gang && ($money != 0 || $crystals != 0)) {
         staff_csrf_stdverify('staff_gangs_credit1',
-                'staff_gangs.php?action=gcredit');
-        $q =
-                $db->query(
-                        "SELECT `gangNAME`
-                         FROM `gangs`
-                         WHERE `gangID` = $gang");
-        if ($db->num_rows($q) == 0)
-        {
-            $db->free_result($q);
+            'staff_gangs.php?action=gcredit');
+        $gang_name = $db->cell(
+            'SELECT gangNAME FROM gangs WHERE gangID = ?',
+            $gang,
+        );
+        if (empty($gang_name)) {
             echo 'Invalid gang.';
             $h->endpage();
             exit;
         }
         $csrf = request_csrf_html('staff_gangs_credit2');
         echo '
-        You are crediting ' . $db->fetch_single($q) . ' with '
-                . money_formatter($money)
-                . " and/or $crystals crystals.
+        You are crediting ' . $gang_name . ' with '
+            . money_formatter($money)
+            . " and/or $crystals crystals.
         <br />
         <form action='staff_gangs.php?action=gcredit' method='post'>
         	<input type='hidden' name='gang' value='$gang' />
@@ -236,10 +215,7 @@ function admin_gang_credit(): void
         	<input type='submit' value='Credit' />
         </form>
            ";
-        $db->free_result($q);
-    }
-    else
-    {
+    } else {
         $csrf = request_csrf_html('staff_gangs_credit1');
         echo "
         <h3>Credit Gang</h3>
@@ -284,20 +260,13 @@ function admin_gang_wars(): void
 	<h3>Manage Gang Wars</h3>
 	<table width="75%" border="2">
    	';
-    $q =
-            $db->query(
-                'SELECT `warID`, `warDECLARED`, `warDECLARER`,
-                     `g1`.`gangNAME` AS `declarer`,
-                     `g1`.`gangRESPECT` AS `drespect`,
-                     `g2`.`gangNAME` AS `defender`,
-                     `g2`.`gangRESPECT` AS `frespect`
-                     FROM `gangwars` AS `w`
-                     LEFT JOIN `gangs` AS `g1`
-                     ON `w`.`warDECLARER` = `g1`.`gangID`
-                     LEFT JOIN `gangs` AS `g2`
-                     ON `w`.`warDECLARED` = `g2`.`gangID`');
-    while ($r = $db->fetch_row($q))
-    {
+    $q = $db->run(
+        'SELECT warID, warDECLARED, warDECLARER, g1.gangNAME AS declarer, g1.gangRESPECT AS drespect, g2.gangNAME AS defender, g2.gangRESPECT AS frespect
+        FROM gangwars AS w
+        LEFT JOIN gangs AS g1 ON w.warDECLARER = g1.gangID
+        LEFT JOIN gangs AS g2 ON w.warDECLARED = g2.gangID',
+    );
+    foreach ($q as $r) {
         $csrf = request_csrf_html("staff_gangs_wardelete{$r['warID']}");
         echo "
 		<tr>
@@ -323,7 +292,6 @@ function admin_gang_wars(): void
 		</tr>
    		";
     }
-    $db->free_result($q);
     echo '</table>';
 }
 
@@ -334,39 +302,32 @@ function admin_gang_wardelete(): void
 {
     global $db, $ir, $h;
     $_GET['war'] =
-            (isset($_GET['war']) && is_numeric($_GET['war']))
-                    ? abs(intval($_GET['war'])) : 0;
+        (isset($_GET['war']) && is_numeric($_GET['war']))
+            ? abs(intval($_GET['war'])) : 0;
     staff_csrf_stdverify("staff_gangs_wardelete{$_GET['war']}",
-            'staff_gangs.php?action=gwar');
-    $q =
-            $db->query(
-                    "SELECT `warDECLARED`, `warDECLARER`,
-                     `g1`.`gangNAME` AS `declarer`,
-                     `g1`.`gangRESPECT` AS `drespect`,
-                     `g2`.`gangNAME` AS `defender`,
-                     `g2`.`gangRESPECT` AS `frespect`
-                     FROM `gangwars` AS `w`
-                     LEFT JOIN `gangs` AS `g1`
-                     ON `w`.`warDECLARER` = `g1`.`gangID`
-                     LEFT JOIN `gangs` AS `g2`
-                     ON `w`.`warDECLARED` = `g2`.`gangID`
-                     WHERE `w`.`warID` = {$_GET['war']}");
-    if ($db->num_rows($q) == 0)
-    {
-        $db->free_result($q);
+        'staff_gangs.php?action=gwar');
+    $r = $db->row(
+        'SELECT warDECLARED, warDECLARER, g1.gangNAME AS declarer, g1.gangRESPECT AS drespect, g2.gangNAME AS defender, g2.gangRESPECT AS frespect
+        FROM gangwars AS w
+        LEFT JOIN gangs AS g1 ON w.warDECLARER = g1.gangID
+        LEFT JOIN gangs AS g2 ON w.warDECLARED = g2.gangID
+        WHERE w.warID = ?',
+        $_GET['war'],
+    );
+    if (empty($r)) {
         echo 'Invalid war.<br />
         &gt; <a href="staff_gangs.php?action=gwar">Go Back</a>';
         $h->endpage();
         exit;
     }
-    $r = $db->fetch_row($q);
-    $db->free_result($q);
-    $db->query("DELETE FROM `gangwars`
-    			WHERE `warID` = {$_GET['war']}");
+    $db->delete(
+        'gangwars',
+        ['warID' => $_GET['war']],
+    );
     echo 'War cleared.<br />
     &gt; <a href="staff_gangs.php?action=gwar">Go Back</a>';
     stafflog_add(
-            "{$ir['username']} deleted war ID {$_GET['war']}
+        "{$ir['username']} deleted war ID {$_GET['war']}
              (<a href='gangs.php?action=view&amp;ID={$r['warDECLARER']}'>{$r['declarer']}</a>
              	[{$r['drespect']} respect]
              	vs.
@@ -381,31 +342,26 @@ function admin_gang_edit_begin(): void
 {
     global $db, $ir, $h;
     $gang =
-            (isset($_POST['gang']) && is_numeric($_POST['gang']))
-                    ? abs(intval($_POST['gang'])) : '';
-    if ($gang)
-    {
-        $q =
-                $db->query(
-                        "SELECT `gangNAME`
-                         FROM `gangs`
-                         WHERE `gangID` = $gang");
-        if ($db->num_rows($q) == 0)
-        {
-            $db->free_result($q);
+        (isset($_POST['gang']) && is_numeric($_POST['gang']))
+            ? abs(intval($_POST['gang'])) : '';
+    if ($gang) {
+        $theirname = $db->cell(
+            'SELECT gangNAME FROM gangs WHERE gangID = ?',
+            $gang,
+        );
+        if (empty($theirname)) {
             echo 'Invalid gang.';
             $h->endpage();
             exit;
         }
-        $theirname = $db->fetch_single($q);
         $edits =
-                [1 => ['Name And Description', 'gedit_name', '4'],
-                        2 => ['Prefix', 'gedit_prefix', '4'],
-                        3 => ['Finances + Respect', 'gedit_finances', '4'],
-                        4 => ['Staff', 'gedit_staff', '4'],
-                        5 => ['Capacity', 'gedit_capacity', '4'],
-                        6 => ['Organised Crime', 'gedit_crime', '4'],
-                        7 => ['Announcement', 'gedit_ament', '4']];
+            [1 => ['Name And Description', 'gedit_name', '4'],
+                2 => ['Prefix', 'gedit_prefix', '4'],
+                3 => ['Finances + Respect', 'gedit_finances', '4'],
+                4 => ['Staff', 'gedit_staff', '4'],
+                5 => ['Capacity', 'gedit_capacity', '4'],
+                6 => ['Organised Crime', 'gedit_crime', '4'],
+                7 => ['Announcement', 'gedit_ament', '4']];
         echo "
         <h3>Manage Gang</h3>
         You are managing the gang: $theirname
@@ -419,16 +375,12 @@ function admin_gang_edit_begin(): void
         			<th>Use</th>
         		</tr>
    		";
-        foreach ($edits as $k => $v)
-        {
-            if ($v[2] >= $ir['user_level'])
-            {
+        foreach ($edits as $k => $v) {
+            if ($v[2] >= $ir['user_level']) {
                 $a = "green'>Yes";
                 $l =
-                        "<a href='staff_gangs.php?action=$v[1]&amp;gang=$gang'>Go</a>";
-            }
-            else
-            {
+                    "<a href='staff_gangs.php?action=$v[1]&amp;gang=$gang'>Go</a>";
+            } else {
                 $a = "red'>No";
                 $l = 'N/A';
             }
@@ -441,9 +393,7 @@ function admin_gang_edit_begin(): void
    			";
         }
         echo '</table>';
-    }
-    else
-    {
+    } else {
         echo "
 		<form action='staff_gangs.php?action=gedit' method='post'>
 			<h4>Gang Management</h4>
@@ -461,52 +411,47 @@ function admin_gang_edit_begin(): void
 function admin_gang_edit_name(): void
 {
     global $db, $ir, $h;
-    $gang =
-            (isset($_GET['gang']) && is_numeric($_GET['gang']))
-                    ? abs(intval($_GET['gang'])) : 0;
+    $gang              =
+        (isset($_GET['gang']) && is_numeric($_GET['gang']))
+            ? abs(intval($_GET['gang'])) : 0;
     $_POST['gangNAME'] =
-            (isset($_POST['gangNAME'])
-                    && preg_match(
-                            "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
-                            $_POST['gangNAME']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['gangNAME'])))
-                    : '';
+        (isset($_POST['gangNAME'])
+            && preg_match(
+                "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
+                $_POST['gangNAME']))
+            ? strip_tags(stripslashes($_POST['gangNAME']))
+            : '';
     $_POST['gangDESC'] =
-            (isset($_POST['gangDESC']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['gangDESC'])))
-                    : '';
-    $q =
-            $db->query(
-                    "SELECT `gangNAME`,`gangDESC`
-                     FROM `gangs`
-                     WHERE `gangID` = $gang");
-    if ($db->num_rows($q) == 0)
-    {
-        $db->free_result($q);
+        (isset($_POST['gangDESC']))
+            ? strip_tags(stripslashes($_POST['gangDESC']))
+            : '';
+    $r                 = $db->row(
+        'SELECT gangNAME, gangDESC FROM gangs WHERE gangID = ?',
+        $gang,
+    );
+    if (empty($r)) {
         echo 'Invalid gang.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
         $h->endpage();
         exit;
     }
-    $r = $db->fetch_row($q);
-    $db->free_result($q);
-    if ($gang && $_POST['gangNAME'] && $_POST['gangDESC'])
-    {
+    if ($gang && $_POST['gangNAME'] && $_POST['gangDESC']) {
         staff_csrf_stdverify('staff_gangs_edit_name',
-                "staff_gangs.php?action=gedit_name&amp;gang={$gang}");
-        $db->query(
-                "UPDATE `gangs`
-                 SET `gangNAME` = '{$_POST['gangNAME']}',
-                 `gangDESC` = '{$_POST['gangDESC']}'
-                 WHERE `gangID` = $gang");
+            "staff_gangs.php?action=gedit_name&amp;gang={$gang}");
+        $db->update(
+            'gangs',
+            [
+                'gangNAME' => $_POST['gangNAME'],
+                'gangDESC' => $_POST['gangDESC'],
+            ],
+            ['gangID' => $gang],
+        );
         echo 'Gang has been successfully modified.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
         stafflog_add("{$ir['username']} edited gang ID $gang's name and/or description");
         $h->endpage();
         exit;
-    }
-    else
-    {
+    } else {
         $csrf = request_csrf_html('staff_gangs_edit_name');
         echo "
         <h3>Gang Management: Name/Description</h3>
@@ -544,44 +489,37 @@ function admin_gang_edit_name(): void
 function admin_gang_edit_prefix(): void
 {
     global $db, $ir, $h;
-    $gang =
-            (isset($_GET['gang']) && is_numeric($_GET['gang']))
-                    ? abs(intval($_GET['gang'])) : 0;
+    $gang              =
+        (isset($_GET['gang']) && is_numeric($_GET['gang']))
+            ? abs(intval($_GET['gang'])) : 0;
     $_POST['gangPREF'] =
-            (isset($_POST['gangPREF']) && strlen($_POST['gangPREF']) <= 5)
-                    ? $db->escape(strip_tags(stripslashes($_POST['gangPREF'])))
-                    : '';
-    $q =
-            $db->query(
-                    "SELECT `gangNAME`, `gangPREF`
-                     FROM `gangs`
-                     WHERE `gangID` = $gang");
-    if ($db->num_rows($q) == 0)
-    {
-        $db->free_result($q);
+        (isset($_POST['gangPREF']) && strlen($_POST['gangPREF']) <= 5)
+            ? strip_tags(stripslashes($_POST['gangPREF']))
+            : '';
+    $r                 = $db->row(
+        'SELECT gangNAME, gangPREF FROM gangs WHERE gangID = ?',
+        $gang,
+    );
+    if (empty($r)) {
         echo 'Invalid gang.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
         $h->endpage();
         exit;
     }
-    $r = $db->fetch_row($q);
-    $db->free_result($q);
-    if ($gang && $_POST['gangPREF'])
-    {
+    if ($gang && $_POST['gangPREF']) {
         staff_csrf_stdverify('staff_gangs_edit_prefix',
-                "staff_gangs.php?action=gedit_prefix&amp;gang={$gang}");
-        $db->query(
-                "UPDATE `gangs`
-                 SET `gangPREF` = '{$_POST['gangPREF']}'
-                 WHERE `gangID` = $gang");
+            "staff_gangs.php?action=gedit_prefix&amp;gang={$gang}");
+        $db->update(
+            'gangs',
+            ['gangPREF' => $_POST['gangPREF']],
+            ['gangID' => $gang],
+        );
         echo 'Gang has been successfully modified.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
         stafflog_add("{$ir['username']} edited gang ID $gang's prefix");
         $h->endpage();
         exit;
-    }
-    else
-    {
+    } else {
         $csrf = request_csrf_html('staff_gangs_edit_prefix');
         echo "
         <h3>Gang Management: Prefix</h3>
@@ -612,59 +550,54 @@ function admin_gang_edit_prefix(): void
 function admin_gang_edit_finances(): void
 {
     global $db, $ir, $h;
-    $gang =
-            (isset($_GET['gang']) && is_numeric($_GET['gang']))
-                    ? abs(intval($_GET['gang'])) : 0;
-    $money =
-            (isset($_POST['money']) && is_numeric($_POST['money']))
-                    ? abs(intval($_POST['money'])) : 0;
+    $gang     =
+        (isset($_GET['gang']) && is_numeric($_GET['gang']))
+            ? abs(intval($_GET['gang'])) : 0;
+    $money    =
+        (isset($_POST['money']) && is_numeric($_POST['money']))
+            ? abs(intval($_POST['money'])) : 0;
     $crystals =
-            (isset($_POST['crystals']) && is_numeric($_POST['crystals']))
-                    ? abs(intval($_POST['crystals'])) : 0;
-    $reason =
-            (isset($_POST['reason'])
-                    && preg_match(
-                            "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
-                            $_POST['reason']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['reason'])))
-                    : '';
-    $respect =
-            (isset($_POST['respect']) && is_numeric($_POST['respect']))
-                    ? abs(intval($_POST['respect'])) : 0;
-    $q =
-            $db->query(
-                    "SELECT `gangNAME`, `gangMONEY`, `gangCRYSTALS`,
-                     `gangRESPECT`
-                     FROM `gangs`
-                     WHERE `gangID` = $gang");
-    if ($db->num_rows($q) == 0)
-    {
-        $db->free_result($q);
+        (isset($_POST['crystals']) && is_numeric($_POST['crystals']))
+            ? abs(intval($_POST['crystals'])) : 0;
+    $reason   =
+        (isset($_POST['reason'])
+            && preg_match(
+                "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
+                $_POST['reason']))
+            ? strip_tags(stripslashes($_POST['reason']))
+            : '';
+    $respect  =
+        (isset($_POST['respect']) && is_numeric($_POST['respect']))
+            ? abs(intval($_POST['respect'])) : 0;
+    $r        = $db->row(
+        "SELECT gangNAME, gangMONEY, gangCRYSTALS, gangRESPECT FROM gangs WHERE gangID = ?",
+        $gang,
+    );
+    if (empty($r)) {
         echo 'Invalid gang.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
         $h->endpage();
         exit;
     }
-    $r = $db->fetch_row($q);
-    $db->free_result($q);
-    if ($gang && $reason)
-    {
+    if ($gang && $reason) {
         staff_csrf_stdverify('staff_gangs_edit_finances',
-                "staff_gangs.php?action=gedit_finances&amp;gang={$gang}");
-        $db->query(
-                "UPDATE `gangs`
-                 SET `gangMONEY` = $money, `gangCRYSTALS` = $crystals,
-                 `gangRESPECT` = $respect
-                 WHERE `gangID` = $gang");
+            "staff_gangs.php?action=gedit_finances&amp;gang={$gang}");
+        $db->update(
+            'gangs',
+            [
+                'gangMONEY' => $money,
+                'gangCRYSTALS' => $crystals,
+                'gangRESPECT' => $reason,
+            ],
+            ['gangID' => $gang],
+        );
         echo 'Gang has been successfully modified.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
         stafflog_add(
-                "{$ir['username']} edited gang ID $gang's finances with the reason $reason");
+            "{$ir['username']} edited gang ID $gang's finances with the reason $reason");
         $h->endpage();
         exit;
-    }
-    else
-    {
+    } else {
         $csrf = request_csrf_html('staff_gangs_edit_finances');
         echo "
         <h3>Gang Management: Financial Details</h3>
@@ -713,55 +646,50 @@ function admin_gang_edit_finances(): void
 function admin_gang_edit_staff(): void
 {
     global $db, $ir, $h;
-    $gang =
-            (isset($_GET['gang']) && is_numeric($_GET['gang']))
-                    ? abs(intval($_GET['gang'])) : 0;
+    $gang      =
+        (isset($_GET['gang']) && is_numeric($_GET['gang']))
+            ? abs(intval($_GET['gang'])) : 0;
     $president =
-            (isset($_POST['president']) && is_numeric($_POST['president']))
-                    ? abs(intval($_POST['president'])) : '';
-    $vicepres =
-            (isset($_POST['vicepres']) && is_numeric($_POST['vicepres']))
-                    ? abs(intval($_POST['vicepres'])) : '';
-    $reason =
-            (isset($_POST['reason'])
-                    && preg_match(
-                            "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
-                            $_POST['reason']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['reason'])))
-                    : '';
-    $q =
-            $db->query(
-                    "SELECT `gangNAME`, `gangPRESIDENT`, `gangVICEPRES`
-                     FROM `gangs`
-                     WHERE `gangID` = $gang");
-    if ($db->num_rows($q) == 0)
-    {
-        $db->free_result($q);
+        (isset($_POST['president']) && is_numeric($_POST['president']))
+            ? abs(intval($_POST['president'])) : '';
+    $vicepres  =
+        (isset($_POST['vicepres']) && is_numeric($_POST['vicepres']))
+            ? abs(intval($_POST['vicepres'])) : '';
+    $reason    =
+        (isset($_POST['reason'])
+            && preg_match(
+                "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
+                $_POST['reason']))
+            ? strip_tags(stripslashes($_POST['reason']))
+            : '';
+    $r         = $db->row(
+        "SELECT gangNAME, gangPRESIDENT, gangVICEPRES FROM gangs WHERE gangID = ?",
+        $gang,
+    );
+    if (empty($r)) {
         echo 'Invalid gang.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
         $h->endpage();
         exit;
     }
-    $r = $db->fetch_row($q);
-    $db->free_result($q);
-    if ($gang && $reason && $president && $vicepres)
-    {
+    if ($gang && $reason && $president && $vicepres) {
         staff_csrf_stdverify('staff_gangs_edit_staff',
-                "staff_gangs.php?action=gedit_staff&amp;gang={$gang}");
-        $db->query(
-                "UPDATE `gangs`
-                 SET `gangPRESIDENT` = $president,
-                 `gangVICEPRES` = $vicepres
-                 WHERE `gangID` = $gang");
+            "staff_gangs.php?action=gedit_staff&amp;gang={$gang}");
+        $db->update(
+            'gangs',
+            [
+                'gangPRESIDENT' => $president,
+                'gangVICEPRESIDENT' => $vicepres,
+            ],
+            ['gangID' => $gang],
+        );
         echo 'Gang has been successfully modified.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
         stafflog_add(
-                "{$ir['username']} edited gang ID $gang's staff with the reason $reason");
+            "{$ir['username']} edited gang ID $gang's staff with the reason $reason");
         $h->endpage();
         exit;
-    }
-    else
-    {
+    } else {
         $csrf = request_csrf_html('staff_gangs_edit_staff');
         echo "
         <h3>Gang Management: Staff</h3>
@@ -804,51 +732,44 @@ function admin_gang_edit_staff(): void
 function admin_gang_edit_capacity(): void
 {
     global $db, $ir, $h;
-    $gang =
-            (isset($_GET['gang']) && is_numeric($_GET['gang']))
-                    ? abs(intval($_GET['gang'])) : 0;
+    $gang     =
+        (isset($_GET['gang']) && is_numeric($_GET['gang']))
+            ? abs(intval($_GET['gang'])) : 0;
     $capacity =
-            (isset($_POST['capacity']) && is_numeric($_POST['capacity']))
-                    ? abs(intval($_POST['capacity'])) : '';
-    $reason =
-            (isset($_POST['reason'])
-                    && preg_match(
-                            "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
-                            $_POST['reason']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['reason'])))
-                    : '';
-    $q =
-            $db->query(
-                    "SELECT `gangNAME`, `gangCAPACITY`
-                     FROM `gangs`
-                     WHERE `gangID` = $gang");
-    if ($db->num_rows($q) == 0)
-    {
-        $db->free_result($q);
+        (isset($_POST['capacity']) && is_numeric($_POST['capacity']))
+            ? abs(intval($_POST['capacity'])) : '';
+    $reason   =
+        (isset($_POST['reason'])
+            && preg_match(
+                "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
+                $_POST['reason']))
+            ? strip_tags(stripslashes($_POST['reason']))
+            : '';
+    $r        = $db->row(
+        'SELECT gangNAME, gangCAPACITY FROM gangs WHERE gangID = ?',
+        $gang,
+    );
+    if (empty($r)) {
         echo 'Invalid gang.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
         $h->endpage();
         exit;
     }
-    $r = $db->fetch_row($q);
-    $db->free_result($q);
-    if ($gang && $reason && $capacity)
-    {
+    if ($gang && $reason && $capacity) {
         staff_csrf_stdverify('staff_gangs_edit_capacity',
-                "staff_gangs.php?action=gedit_capacity&amp;gang={$gang}");
-        $db->query(
-                "UPDATE `gangs`
-                 SET `gangCAPACITY` = $capacity
-                 WHERE `gangID` = $gang");
+            "staff_gangs.php?action=gedit_capacity&amp;gang={$gang}");
+        $db->update(
+            'gangs',
+            ['gangCAPACITY' => $capacity],
+            ['gangID' => $gang],
+        );
         echo 'Gang has been successfully modified.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
         stafflog_add(
-                "{$ir['username']} edited gang ID $gang's capacity with the reason $reason");
+            "{$ir['username']} edited gang ID $gang's capacity with the reason $reason");
         $h->endpage();
         exit;
-    }
-    else
-    {
+    } else {
         $csrf = request_csrf_html('staff_gangs_edit_capacity');
         echo "
         <h3>Gang Management: Capacity</h3>
@@ -885,54 +806,50 @@ function admin_gang_edit_capacity(): void
 function admin_gang_edit_crime(): void
 {
     global $db, $ir, $h;
-    $gang =
-            (isset($_GET['gang']) && is_numeric($_GET['gang']))
-                    ? abs(intval($_GET['gang'])) : 0;
-    $crime =
-            (isset($_POST['crime']) && is_numeric($_POST['crime']))
-                    ? abs(intval($_POST['crime'])) : '';
+    $gang   =
+        (isset($_GET['gang']) && is_numeric($_GET['gang']))
+            ? abs(intval($_GET['gang'])) : 0;
+    $crime  =
+        (isset($_POST['crime']) && is_numeric($_POST['crime']))
+            ? abs(intval($_POST['crime'])) : '';
     $chours =
-            (isset($_POST['chours']) && is_numeric($_POST['chours']))
-                    ? abs(intval($_POST['chours'])) : '';
+        (isset($_POST['chours']) && is_numeric($_POST['chours']))
+            ? abs(intval($_POST['chours'])) : '';
     $reason =
-            (isset($_POST['reason'])
-                    && preg_match(
-                            "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
-                            $_POST['reason']))
-                    ? $db->escape(strip_tags(stripslashes($_POST['reason'])))
-                    : '';
-    $q =
-            $db->query(
-                    "SELECT `gangNAME`, `gangCRIME`, `gangCHOURS`
-                     FROM `gangs`
-                     WHERE `gangID` = $gang");
-    if ($db->num_rows($q) == 0)
-    {
-        $db->free_result($q);
+        (isset($_POST['reason'])
+            && preg_match(
+                "/^[a-z0-9_]+([\\s]{1}[a-z0-9_]|[a-z0-9_])+$/i",
+                $_POST['reason']))
+            ? strip_tags(stripslashes($_POST['reason']))
+            : '';
+    $r      = $db->row(
+        'SELECT gangNAME, gangCRIME, gangCHOURS FROM gangs WHERE gangID = ?',
+        $gang,
+    );
+    if (empty($r)) {
         echo 'Invalid gang.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
         $h->endpage();
         exit;
     }
-    $r = $db->fetch_row($q);
-    $db->free_result($q);
-    if ($gang && $reason && $crime && $chours)
-    {
+    if ($gang && $reason && $crime && $chours) {
         staff_csrf_stdverify('staff_gangs_edit_crime',
-                "staff_gangs.php?action=gedit_crime&amp;gang={$gang}");
-        $db->query(
-                "UPDATE `gangs`
-                 SET `gangCRIME` = $crime, `gangCHOURS` = $chours
-                 WHERE `gangID` = $gang");
+            "staff_gangs.php?action=gedit_crime&amp;gang={$gang}");
+        $db->update(
+            'gangs',
+            [
+                'gangCRIME' => $crime,
+                'gangCHOURS' => $chours,
+            ],
+            ['gangID' => $gang],
+        );
         echo 'Gang has been successfully modified.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
         stafflog_add(
-                "{$ir['username']} edited gang ID $gang's organised crime with the reason $reason");
+            "{$ir['username']} edited gang ID $gang's organised crime with the reason $reason");
         $h->endpage();
         exit;
-    }
-    else
-    {
+    } else {
         $csrf = request_csrf_html('staff_gangs_edit_crime');
         echo "
         <h3>Gang Management: Organised Crimes</h3>
@@ -975,44 +892,36 @@ function admin_gang_edit_crime(): void
 function admin_gang_edit_ament(): void
 {
     global $db, $ir, $h;
-    $gang =
-            (isset($_GET['gang']) && is_numeric($_GET['gang']))
-                    ? abs(intval($_GET['gang'])) : '';
+    $gang               =
+        (isset($_GET['gang']) && is_numeric($_GET['gang']))
+            ? abs(intval($_GET['gang'])) : '';
     $_POST['gangAMENT'] =
-            (isset($_POST['gangAMENT']))
-                    ? $db->escape(
-                            strip_tags(stripslashes($_POST['gangAMENT']))) : '';
-    $q =
-            $db->query(
-                    "SELECT `gangNAME`, `gangAMENT`
-                     FROM `gangs`
-                     WHERE `gangID` = $gang");
-    if ($db->num_rows($q) == 0)
-    {
-        $db->free_result($q);
+        (isset($_POST['gangAMENT']))
+            ? strip_tags(stripslashes($_POST['gangAMENT'])) : '';
+    $r                  = $db->row(
+        'SELECT gangNAME, gangAMENT FROM gangs WHERE gangID = ?',
+        $gang,
+    );
+    if (empty($r)) {
         echo 'Invalid gang.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
         $h->endpage();
         exit;
     }
-    $r = $db->fetch_row($q);
-    $db->free_result($q);
-    if ($gang && $_POST['gangAMENT'])
-    {
+    if ($gang && $_POST['gangAMENT']) {
         staff_csrf_stdverify('staff_gangs_edit_ament',
-                "staff_gangs.php?action=gedit_ament&amp;gang={$gang}");
-        $db->query(
-                "UPDATE `gangs`
-                 SET `gangAMENT` = '{$_POST['gangAMENT']}'
-                 WHERE `gangID` = $gang");
+            "staff_gangs.php?action=gedit_ament&amp;gang={$gang}");
+        $db->update(
+            'gangs',
+            ['gangAMENT' => $_POST['gangAMENT']],
+            ['gangID' => $gang],
+        );
         echo 'Gang has been successfully modified.<br />
         &gt; <a href="staff_gangs.php?action=gedit">Go Back</a>';
         stafflog_add("{$ir['username']} edited gang ID $gang's announcement");
         $h->endpage();
         exit;
-    }
-    else
-    {
+    } else {
         $csrf = request_csrf_html('staff_gangs_edit_ament');
         echo "
         <h3>Gang Management: Announcement</h3>
@@ -1036,4 +945,5 @@ function admin_gang_edit_ament(): void
            ";
     }
 }
+
 $h->endpage();

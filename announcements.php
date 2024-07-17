@@ -2,17 +2,16 @@
 declare(strict_types=1);
 /**
  * MCCodes v2 by Dabomstew & ColdBlooded
- * 
+ *
  * Repository: https://github.com/davemacaulay/mccodesv2
  * License: MIT License
  */
 global $db, $ir, $userid, $h;
 require_once('globals.php');
 $ac = $ir['new_announcements'];
-$q =
-        $db->query(
-                'SELECT `a_text`, `a_time` FROM `announcements` '
-                        . 'ORDER BY `a_time` DESC');
+$q = $db->run(
+    'SELECT a_text, a_time FROM announcements ORDER BY a_time DESC',
+);
 echo '
 <table width="80%" cellspacing="1" cellpadding="1" class="table">
 		<tr>
@@ -20,7 +19,7 @@ echo '
 	<th width="70%">Announcement</th>
 		</tr>
    ';
-while ($r = $db->fetch_row($q))
+foreach ($q as $r)
 {
     if ($ac > 0)
     {
@@ -40,12 +39,13 @@ while ($r = $db->fetch_row($q))
 		</tr>
    ';
 }
-$db->free_result($q);
 echo '</table>';
 if ($ir['new_announcements'] > 0)
 {
-    $db->query(
-            'UPDATE `users` ' . 'SET `new_announcements` = 0 '
-                    . "WHERE `userid` = '{$userid}'");
+    $db->update(
+        'users',
+        ['new_announcements' => 0],
+        ['userid' => $userid],
+    );
 }
 $h->endpage();

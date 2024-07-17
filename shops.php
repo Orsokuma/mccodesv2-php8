@@ -9,26 +9,22 @@ declare(strict_types=1);
 
 global $db, $ir, $h;
 require_once('globals.php');
-if (!isset($_GET['shop']))
-{
+if (!isset($_GET['shop'])) {
     $_GET['shop'] = 0;
 }
-$_GET['shop'] = abs((int) $_GET['shop']);
-if (!$_GET['shop'])
-{
+$_GET['shop'] = abs((int)$_GET['shop']);
+if (!$_GET['shop']) {
     echo 'You begin looking through town and you see a few shops.<br />';
-    $q =
-            $db->query(
-                    "SELECT `shopID`, `shopNAME`, `shopDESCRIPTION`
-                     FROM `shops`
-                     WHERE `shopLOCATION` = {$ir['location']}");
+    $q = $db->run(
+        'SELECT shopID, shopNAME, shopDESCRIPTION FROM shops WHERE shopLOCATION = ?',
+        $ir['location'],
+    );
     echo "<table width='85%' cellspacing='1' class='table'>
     		<tr>
     			<th>Shop</th>
     			<th>Description</th>
     		</tr>";
-    while ($r = $db->fetch_row($q))
-    {
+    foreach ($q as $r) {
         echo "<tr>
         		<td>
         			<a href='shops.php?shop={$r['shopID']}'>{$r['shopNAME']}</a>
@@ -37,20 +33,13 @@ if (!$_GET['shop'])
         	  </tr>";
     }
     echo '</table>';
-    $db->free_result($q);
-}
-else
-{
-    $sd =
-            $db->query(
-                    "SELECT `shopLOCATION`, `shopNAME`
-     				 FROM `shops`
-     				 WHERE `shopID` = {$_GET['shop']}");
-    if ($db->num_rows($sd) > 0)
-    {
-        $shopdata = $db->fetch_row($sd);
-        if ($shopdata['shopLOCATION'] == $ir['location'])
-        {
+} else {
+    $shopdata = $db->row(
+        'SELECT shopLOCATION, shopNAME FROM shops WHERE shopID = ?',
+        $_GET['shop'],
+    );
+    if (!empty($shopdata)) {
+        if ($shopdata['shopLOCATION'] == $ir['location']) {
             echo "Browsing items at <b>{$shopdata['shopNAME']}...</b><br />
 			<table cellspacing='1' class='table'>
 				<tr>
@@ -60,23 +49,18 @@ else
 					<th>Sell Price</th>
 					<th>Buy</th>
 				</tr>";
-            $qtwo =
-                    $db->query(
-                            "SELECT `itmtypename`, `itmname`, `itmdesc`,
-                             `itmbuyprice`, `itmsellprice`, `sitemID`
-                             FROM `shopitems` AS `si`
-                             INNER JOIN `items` AS `i`
-                             ON `si`.`sitemITEMID` = `i`.`itmid`
-                             INNER JOIN `itemtypes` AS `it`
-                             ON `i`.`itmtype` = `it`.`itmtypeid`
-                             WHERE `si`.`sitemSHOP` = {$_GET['shop']}
-                             ORDER BY `itmtype` ASC, `itmbuyprice` ASC,
-                             `itmname` ASC");
-            $lt = '';
-            while ($r = $db->fetch_row($qtwo))
-            {
-                if ($lt != $r['itmtypename'])
-                {
+            $qtwo = $db->run(
+                'SELECT itmtypename, itmname, itmdesc, itmbuyprice, itmsellprice, sitemID
+                FROM shopitems AS si
+                INNER JOIN items AS i ON si.sitemITEMID = i.itmid
+                INNER JOIN itemtypes AS it ON i.itmtype = it.itmtypeid
+                WHERE si.sitemSHOP = ?
+                ORDER BY itmtype, itmbuyprice, itmname',
+                $_GET['shop'],
+            );
+            $lt   = '';
+            foreach ($qtwo as $r) {
+                if ($lt != $r['itmtypename']) {
                     $lt = $r['itmtypename'];
                     echo "\n<tr>
                     			<th colspan='5'>{$lt}</th>
@@ -86,9 +70,9 @@ else
                 			<td>{$r['itmname']}</td>
                 			<td>{$r['itmdesc']}</td>
                 			<td>" . money_formatter($r['itmbuyprice'])
-                        . '</td>
+                    . '</td>
                             <td>' . money_formatter($r['itmsellprice'])
-                        . "</td>
+                    . "</td>
                             <td>
                             	<form action='itembuy.php?ID={$r['sitemID']}' method='post'>
                             		Qty: <input type='text' name='qty' value='1' />
@@ -97,18 +81,12 @@ else
                             </td>
                         </tr>";
             }
-            $db->free_result($qtwo);
             echo '</table>';
-        }
-        else
-        {
+        } else {
             echo 'You are trying to access a shop in another city!';
         }
-    }
-    else
-    {
+    } else {
         echo 'You are trying to access an invalid shop!';
     }
-    $db->free_result($sd);
 }
 $h->endpage();

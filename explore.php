@@ -10,8 +10,7 @@ declare(strict_types=1);
 global $ir, $userid, $h, $set, $domain;
 require_once('globals.php');
 $tresder = rand(100, 999);
-if ($ir['jail'] > 0 || $ir['hospital'] > 0)
-{
+if ($ir['jail'] > 0 || $ir['hospital'] > 0) {
     die('This page cannot be accessed while in jail or hospital.');
 }
 echo "<b>You begin exploring the area you're in,
@@ -29,8 +28,7 @@ echo "<b>You begin exploring the area you're in,
 			<a href='monorail.php'>Travel Agency</a><br />
 			<a href='estate.php'>Estate Agent</a><br />
 			<a href='bank.php'>City Bank</a>";
-if ($ir['location'] == 5)
-{
+if ($ir['location'] == 5) {
     echo "	<br />
 			<a href='cyberbank.php'>Cyber Bank</a><br />";
 }
@@ -43,8 +41,7 @@ echo "	</td>
 			<a href='slotsmachine.php?tresde=$tresder'>Slots Machine</a><br />
 			<a href='roulette.php?tresde=$tresder'>Roulette</a><br />
 			<a href='lucky.php'>Lucky Boxes</a>";
-if ($ir['location'] == 5)
-{
+if ($ir['location'] == 5) {
     echo "	<br />
 			<a href='slotsmachine3.php'>Super Slots</a><br />";
 }

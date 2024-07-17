@@ -20,9 +20,9 @@ if (!isset($_SESSION['started']))
     $_SESSION['started'] = true;
 }
 ob_start();
-require 'lib/basic_error_handler.php';
+require __DIR__.'/lib/basic_error_handler.php';
 set_error_handler('error_php');
-require 'global_func.php';
+require __DIR__.'/global_func.php';
 $domain = determine_game_urlbase();
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] == 0)
 {
@@ -31,68 +31,57 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] == 0)
     exit;
 }
 $userid = (int)($_SESSION['userid'] ?? 0);
-require 'header.php';
+require __DIR__.'/header.php';
 
 global $_CONFIG;
-include 'config.php';
+include __DIR__.'/config.php';
 const MONO_ON = 1;
-require "class/class_db_{$_CONFIG['driver']}.php";
-$db = new database();
-$db->configure($_CONFIG['hostname'], $_CONFIG['username'],
-        $_CONFIG['password'], $_CONFIG['database']);
-$db->connect();
-$c = $db->connection_id;
+$db = ParagonIE\EasyDB\Factory::fromArray([
+    'mysql:host=' . $_CONFIG['hostname'] . ';dbname=' . $_CONFIG['database'],
+    $_CONFIG['username'],
+    $_CONFIG['password'],
+]);
 $set = get_site_settings();
 if ($set['use_timestamps_over_crons']) {
     define('SILENT_CRONS', true);
     require_once __DIR__ . '/crons/cronless_crons.php';
 }
 global $jobquery, $housequery;
-if (isset($jobquery) && $jobquery)
-{
-    $is =
-            $db->query(
-                    "SELECT `u`.*, `us`.*, `j`.*, `jr`.*
-                     FROM `users` AS `u`
-                     INNER JOIN `userstats` AS `us`
-                     ON `u`.`userid`=`us`.`userid`
-                     LEFT JOIN `jobs` AS `j` ON `j`.`jID` = `u`.`job`
-                     LEFT JOIN `jobranks` AS `jr`
-                     ON `jr`.`jrID` = `u`.`jobrank`
-                     WHERE `u`.`userid` = {$userid}
-                     LIMIT 1");
-}
-elseif (isset($housequery) && $housequery)
-{
-    $is =
-            $db->query(
-                    "SELECT `u`.*, `us`.*, `h`.*
-                     FROM `users` AS `u`
-                     INNER JOIN `userstats` AS `us`
-                     ON `u`.`userid`=`us`.`userid`
-                     LEFT JOIN `houses` AS `h` ON `h`.`hWILL` = `u`.`maxwill`
-                     WHERE `u`.`userid` = {$userid}
-                     LIMIT 1");
-}
-else
-{
-    $is =
-            $db->query(
-                    "SELECT `u`.*, `us`.*
-                     FROM `users` AS `u`
-                     INNER JOIN `userstats` AS `us`
-                     ON `u`.`userid`=`us`.`userid`
-                     WHERE `u`.`userid` = {$userid}
-                     LIMIT 1");
-}
-$ir = $db->fetch_row($is);
+$statement = match(true) {
+    isset($jobquery) && $jobquery => 'SELECT u.*, us.*, j.*, jr.*
+        FROM users AS u
+        INNER JOIN userstats AS us ON u.userid = us.userid
+        LEFT JOIN jobs AS j ON j.jID = u.job
+        LEFT JOIN jobranks AS jr ON jr.jrID = u.jobrank
+        WHERE u.userid = ?
+        LIMIT 1',
+    isset($housequery) && $housequery => 'SELECT u.*, us.*, h.*
+        FROM users AS u
+        INNER JOIN userstats AS us ON u.userid = us.userid
+        LEFT JOIN houses AS h ON h.hWILL = u.maxwill
+        WHERE u.userid = ?
+        LIMIT 1',
+    default => 'SELECT u.*, us.*
+        FROM users AS u
+        INNER JOIN userstats AS us ON u.userid = us.userid
+        WHERE u.userid = ?
+        LIMIT 1',
+};
+$ir = $db->row($statement, $userid);
 set_userdata_data_types($ir);
+if (empty($ir)) {
+    session_unset();
+    session_destroy();
+    header('Location: https://' .$domain. '/login.php');
+    exit;
+}
 if ($ir['force_logout'] > 0)
 {
-    $db->query(
-            "UPDATE `users`
-    			SET `force_logout` = 0
-    			WHERE `userid` = {$userid}");
+    $db->update(
+        'users',
+        ['force_logout' => 0],
+        ['userid' => $userid],
+    );
     session_unset();
     session_destroy();
     $login_url = "https://{$domain}/login.php";

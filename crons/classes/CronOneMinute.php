@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use ParagonIE\EasyDB\EasyDB;
+
 if (!defined('CRON_FILE_INC') || CRON_FILE_INC !== true) {
     exit;
 }
@@ -13,10 +15,10 @@ final class CronOneMinute extends CronHandler
     private static ?self $instance = null;
 
     /**
-     * @param database|null $db
+     * @param EasyDB|null $db
      * @return self|null
      */
-    public static function getInstance(?database $db): ?self
+    public static function getInstance(?EasyDB $db): ?self
     {
         parent::getInstance($db);
         if (self::$instance === null) {
@@ -25,6 +27,9 @@ final class CronOneMinute extends CronHandler
         return self::$instance;
     }
 
+    /**
+     * @return string
+     */
     public function getClassName(): string
     {
         return __CLASS__;
@@ -51,20 +56,24 @@ final class CronOneMinute extends CronHandler
      */
     public function updateJailHospitalTimes(): void
     {
-        $this->db->query(
-            'UPDATE users SET hospital = GREATEST(hospital - ' . $this->pendingIncrements . ', 0), jail = GREATEST(jail - ' . $this->pendingIncrements . ', 0) WHERE jail > 0 OR hospital > 0'
+        $this->basicQueryWrap(
+            'UPDATE users SET hospital = GREATEST(hospital - ?, 0), jail = GREATEST(jail - ?, 0) WHERE jail > 0 OR hospital > 0',
+            $this->pendingIncrements,
+            $this->pendingIncrements,
         );
-        $this->updateAffectedRowCnt();
-        $get_counts = $this->db->query(
+        $counts = $this->db->row(
             'SELECT 
             SUM(IF(hospital > 0, 1, 0)) AS hc,
             SUM(IF(jail > 0, 1, 0)) AS jc
             FROM users'
         );
-        $counts     = $this->db->fetch_row($get_counts);
-        $this->db->query(
-            'UPDATE settings SET conf_value = IF(conf_name = \'hospital_count\', ' . $counts['hc'] . ', conf_value), conf_value = IF(conf_name = \'jail_count\', ' . $counts['jc'] . ', conf_value) WHERE conf_name IN (\'hospital_count\', \'jail_count\')'
+        $this->basicQueryWrap(
+            'UPDATE settings SET 
+                    conf_value = IF(conf_name = \'hospital_count\', ?, conf_value),
+                    conf_value = IF(conf_name = \'jail_count\', ?, conf_value)
+                WHERE conf_name IN (\'hospital_count\', \'jail_count\')',
+            $counts['hc'],
+            $counts['jc'],
         );
-        $this->updateAffectedRowCnt();
     }
 }

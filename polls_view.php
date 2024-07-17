@@ -9,20 +9,13 @@ declare(strict_types=1);
 
 global $db, $h;
 require_once('globals.php');
-$q =
-        $db->query(
-                "SELECT *
-				 FROM `polls`
-				 WHERE `active` = '0'
-				 ORDER BY `id` DESC");
-if (!$db->num_rows($q))
-{
+$q = $db->run(
+    "SELECT * FROM polls WHERE active = '0' ORDER BY id DESC",
+);
+if (empty($q)) {
     echo '<b>There are no finished polls right now</b>';
-}
-else
-{
-    while ($r = $db->fetch_row($q))
-    {
+} else {
+    foreach ($q as $r) {
         echo "<table cellspacing='1' width='75%' class='table'>
         		<tr>
         			<th>Choice</th>
@@ -33,18 +26,13 @@ else
         		<tr>
         			<th colspan='4'>{$r['question']}</th>
         		</tr>";
-        for ($i = 1; $i <= 10; $i++)
-        {
-            if ($r['choice' . $i])
-            {
-                $k = 'choice' . $i;
+        for ($i = 1; $i <= 10; $i++) {
+            if ($r['choice' . $i]) {
+                $k  = 'choice' . $i;
                 $ke = 'voted' . $i;
-                if ($r['votes'] != 0)
-                {
+                if ($r['votes'] != 0) {
                     $perc = $r[$ke] / $r['votes'] * 100;
-                }
-                else
-                {
+                } else {
                     $perc = 0;
                 }
                 echo "<tr>
@@ -62,10 +50,9 @@ else
         	  </tr>
 			  <tr>
 			  	<th colspan='4'>Winner: " . $r['choice' . $r['winner']]
-                . '</th>
+            . '</th>
               </tr>
 		</table><br />';
     }
 }
-$db->free_result($q);
 $h->endpage();
