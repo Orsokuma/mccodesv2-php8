@@ -2,8 +2,8 @@ services:
   web:
     image: php:8.3-apache
     ports:
-      - "4567:80"
-      - "4568:443"
+      - "9000:80"
+      - "9001:443"
     depends_on:
       - db
     volumes:
@@ -19,7 +19,7 @@ services:
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     ports:
-      - "4569:8080"
+      - "9002:8080"
     depends_on:
       - db
     links:
