@@ -33,7 +33,7 @@ class StaffRolesManagement
      */
     private function setViewPath(): void
     {
-        $this->viewPath = __DIR__ . '/views';
+        $this->viewPath = $_SERVER['DOCUMENT_ROOT'] . '/app/view';
     }
 
     /**
