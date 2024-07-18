@@ -60,12 +60,11 @@ require 'header.php';
 include 'config.php';
 global $_CONFIG;
 const MONO_ON = 1;
-require "class/class_db_{$_CONFIG['driver']}.php";
-$db = new database();
-$db->configure($_CONFIG['hostname'], $_CONFIG['username'],
-    $_CONFIG['password'], $_CONFIG['database']);
-$db->connect();
-$c   = $db->connection_id;
+$db  = ParagonIE\EasyDB\Factory::fromArray([
+    'mysql:host=' . $_CONFIG['hostname'] . ';dbname=' . $_CONFIG['database'],
+    $_CONFIG['username'],
+    $_CONFIG['password'],
+]);
 $set = get_site_settings();
 if ($set['use_timestamps_over_crons']) {
     define('SILENT_CRONS', true);
