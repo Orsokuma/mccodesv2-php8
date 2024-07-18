@@ -225,7 +225,7 @@ OUT;
 </td>
 </tr>
 </table>
-                {$db->num_queries} queries{$query_extra}</body>
+</body>
 </html>
 OUT;
     }
