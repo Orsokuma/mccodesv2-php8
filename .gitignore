@@ -2,3 +2,5 @@
 .DS_Store
 config.php
 vendor
+docker/secrets
+docker/ssl/*.pem

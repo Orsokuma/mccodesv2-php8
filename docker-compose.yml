@@ -1,43 +1,63 @@
 services:
   web:
-    image: php:8.3-apache
+    build:
+      context: .
+      args:
+        - SSL_ENABLED=true
     ports:
-      - "9000:80"
-      - "9001:443"
+      - 9000:80
+      - 9001:443
     depends_on:
-      - db
-    volumes:
-      - .:/var/www/html/.
-    restart: "no"
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      DB_HOST_FILE: /run/secrets/db_host
+      DB_USER_FILE: /run/secrets/db_user
+      DB_PASS_FILE: /run/secrets/db_pass
+      DB_NAME_FILE: /run/secrets/db_name
+      APP_KEY_FILE: /run/secrets/app_key
+    secrets:
+      - db_host
+      - db_user
+      - db_pass
+      - db_name
+      - app_key
+    develop:
+      watch:
+       - action: sync
+         path: .
+         target: /var/www/html
   db:
-    image: mysql
+    image: mysql:8.4.0
     ports:
-      - "3306:3306"
+      - 3306:3306
+    restart: unless-stopped
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./db/initial_data.sql:/docker-entrypoint-initdb.d/02-initial_data.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 10s
+      timeout: 15s
+      retries: 5
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass1
-      MYSQL_DATABASE: mccv2
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    ports:
-      - "9002:8080"
-    depends_on:
-      - db
-    links:
-      - web
-    environment:
-      PMA_HOST: db
-
-# Note:
-# If you encounter either mysqli not being found or captcha images not loading, chances are that the docker image was updated and those modules are no longer part of it
-# A new image will be built for this so that the dependencies are there and ready for immediate development
-# For now, log into the running container's shell - assuming default config, it'll be named something like "mccodesv2-php-web-1"
-# Execute the following command:
-# apt install libpng-dev -y && docker-php-ext-install mysqli gd
-# Optionally, you can also install a couple of useful PHP packages
-# docker-php-ext-install mbstring pdo pdo_mysql sockets sodium xsl
-
-# After installation, the extensions should automatically be enabled (where applicable). If not, you can enable them manually.
-# docker-php-ext-enable mysqli gd
-
-# Note (cont.)
-# Be sure to restart the Apache container to apply your changes!
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_pass
+      MYSQL_DATABASE_FILE: /run/secrets/db_name
+    secrets:
+      - db_pass
+      - db_name
+secrets:
+  db_host:
+    file: docker/secrets/db_host.txt
+  db_user:
+    file: docker/secrets/db_user.txt
+  db_pass:
+    file: docker/secrets/db_pass.txt
+  db_name:
+    file: docker/secrets/db_name.txt
+  app_key:
+    file: docker/secrets/app_key.txt
+volumes:
+  db_data:
