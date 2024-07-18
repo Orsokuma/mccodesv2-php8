@@ -33,11 +33,7 @@ require __DIR__ . '/header.php';
 global $_CONFIG;
 include __DIR__ . '/config.php';
 const MONO_ON = 1;
-$db  = ParagonIE\EasyDB\Factory::fromArray([
-    'mysql:host=' . $_CONFIG['hostname'] . ';dbname=' . $_CONFIG['database'],
-    $_CONFIG['username'],
-    $_CONFIG['password'],
-]);
+$db  = get_db();
 $set = get_site_settings();
 if ($set['use_timestamps_over_crons']) {
     define('SILENT_CRONS', true);

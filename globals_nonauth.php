@@ -23,11 +23,7 @@ set_error_handler('error_php');
 global $_CONFIG;
 require __DIR__ . '/config.php';
 const MONO_ON = 1;
-$db = ParagonIE\EasyDB\Factory::fromArray([
-    'mysql:host=' . $_CONFIG['hostname'] . ';dbname=' . $_CONFIG['database'],
-    $_CONFIG['username'],
-    $_CONFIG['password'],
-]);
+$db  = get_db();
 
 require_once('global_func.php');
 $set = get_site_settings();
