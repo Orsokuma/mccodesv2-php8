@@ -251,7 +251,7 @@ class CronHandler
         }
         $this->db->update(
             'cron_times',
-            ['last_run' => new EasyPlaceholder('CONCAT(CONCAT(DATE_FORMAT(NOW(), \'%Y-%m-%d\', \' \'), SEC_TO_TIME((TIME_TO_SEC(NOW(3)) DIV ?) * ?))', $div, $div)],
+            ['last_run' => new EasyPlaceholder('CONCAT(CONCAT(DATE_FORMAT(NOW(), \'%Y-%m-%d\'), \' \'), SEC_TO_TIME((TIME_TO_SEC(NOW(3)) DIV ?) * ?))', $div, $div)],
             ['name' => self::$cron],
         );
         $this->db->insert(
