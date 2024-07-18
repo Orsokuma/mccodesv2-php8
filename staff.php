@@ -304,8 +304,7 @@ function index(): void
                 </tr>
                 <tr>
                     <th>MySQL Driver:</th>
-                    <td>" . $_CONFIG['driver']
-            . "</td>
+                    <td>PDO</td>
                 </tr>
                 <tr>
                     <th>Codes Version:</th>
