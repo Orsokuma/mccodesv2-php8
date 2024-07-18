@@ -8,7 +8,9 @@ declare(strict_types=1);
  * License: MIT License
  */
 
+use ParagonIE\EasyDB\EasyDB;
 use ParagonIE\EasyDB\EasyPlaceholder;
+use ParagonIE\EasyDB\Factory;
 
 /**
  * Return the difference between the current time and a given time, formatted in appropriate units so the number is not too big or small.
@@ -1300,4 +1302,17 @@ function check_challenge_beaten(array $r): void
             echo '<br /> You gained ' . money_formatter($m) . ' for beating the challenge bot ' . $r['username'];
         }
     }
+}
+
+/**
+ * @return EasyDB
+ */
+function get_db(): EasyDB
+{
+    global $_CONFIG;
+    return Factory::fromArray([
+        'mysql:host=' . $_CONFIG['hostname'] . ';dbname=' . $_CONFIG['database'],
+        $_CONFIG['username'],
+        $_CONFIG['password'],
+    ]);
 }
