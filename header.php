@@ -102,7 +102,7 @@ EOF;
         if ($ir['donatordays']) {
             $u = "<span style='color: red;'>{$ir['username']}</span>";
             $d =
-                "<img src='donator.gif'
+                "<img src='app/view/assets/images/donator.gif'
                      alt='Donator: {$ir['donatordays']} Days Left'
                      title='Donator: {$ir['donatordays']} Days Left' />";
         }
@@ -112,7 +112,7 @@ EOF;
 
         print
             <<<OUT
-<img src="title.jpg" alt="Mccodes Version 2" /><br />
+<img src="app/view/assets/images/title.jpg" alt="Mccodes Version 2" /><br />
 <!-- Begin Main Content -->
 <table width="100%" border="0" cellpadding="0" cellspacing="0">
 <tr>
@@ -125,15 +125,15 @@ EOF;
 [<a href='logout.php'>Emergency Logout</a>]
 <hr />
 <b>Energy:</b> {$enperc}%<br />
-<img src='greenbar.png' width='$enperc' height='10' /><img src='redbar.png' width='$enopp' height='10' /><br />
+<img src='app/view/assets/images/greenbar.png' width='$enperc' height='10' /><img src='app/view/assets/images/redbar.png' width='$enopp' height='10' /><br />
 <b>Will:</b> {$wiperc}%<br />
-<img src='bluebar.png' width='$wiperc' height='10' /><img src='redbar.png' width='$wiopp' height='10' /><br />
+<img src='app/view/assets/images/bluebar.png' width='$wiperc' height='10' /><img src='app/view/assets/images/redbar.png' width='$wiopp' height='10' /><br />
 <b>Brave:</b> {$ir['brave']}/{$ir['maxbrave']}<br />
-<img src='yellowbar.png' width='$brperc' height='10' /><img src='redbar.png' width='$bropp' height='10' /><br />
+<img src='app/view/assets/images/yellowbar.png' width='$brperc' height='10' /><img src='app/view/assets/images/redbar.png' width='$bropp' height='10' /><br />
 <b>EXP:</b> {$experc}%<br />
-<img src='bluebar.png' width='$experc' height='10' /><img src='redbar.png' width='$exopp' height='10' /><br />
+<img src='app/view/assets/images/bluebar.png' width='$experc' height='10' /><img src='app/view/assets/images/redbar.png' width='$exopp' height='10' /><br />
 <b>Health:</b> {$hpperc}%<br />
-<img src='greenbar.png' width='$hpperc' height='10' /><img src='redbar.png' width='$hpopp' height='10' /><br /><hr />
+<img src='app/view/assets/images/greenbar.png' width='$hpperc' height='10' /><img src='app/view/assets/images/redbar.png' width='$hpopp' height='10' /><br /><hr />
 <!-- Links -->
 OUT;
         if ($ir['fedjail'] > 0) {

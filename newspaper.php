@@ -21,7 +21,7 @@ echo '
 			<td width="34%"><a href="halloffame.php">HALL OF FAME</a></td>
 		</tr>
 		<tr>
-			<td width="34%"><img src="ad_filler.png" alt="Ad" title="Ad" /></td>
+			<td width="34%"><img src="app/view/assets/images/ad_filler.png" alt="Ad" title="Ad" /></td>
 			<td colspan="2">' . nl2br($paper)
     . '</td>
 		</tr>

@@ -24,7 +24,7 @@ ob_start();
        class="table2">
     <tr>
         <td class="lgrad"></td>
-        <td class="center"><img src="title.jpg"
+        <td class="center"><img src="app/view/assets/images/title.jpg"
                                 alt="Mccodes Version 2"/><br/> <!-- Begin Main Content -->
             <h2>Installer</h2> <span
                     style='color: red; font-weight: bold;'> If

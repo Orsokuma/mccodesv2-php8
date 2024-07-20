@@ -356,6 +356,6 @@ if ($youdata['hp'] <= 0 or $odata['hp'] <= 0) {
         echo 'You have nothing to fight with.';
     }
     echo '</table>';
-    echo "<table width='50%' align='center'><tr><td align=right>Your Health: </td><td><img src=greenbar.png width={$vars['hpperc']} height=10><img src=redbar.png width={$vars['hpopp']} height=10></td><tr><td align=right>Opponents Health:  </td><td><img src=greenbar.png width={$vars2['hpperc']} height=10><img src=redbar.png width={$vars2['hpopp']} height=10></td></tr></table>";
+    echo "<table width='50%' align='center'><tr><td align=right>Your Health: </td><td><img src=app/view/assets/images/greenbar.png width={$vars['hpperc']} height=10><img src=app/view/assets/images/redbar.png width={$vars['hpopp']} height=10></td><tr><td align=right>Opponents Health:  </td><td><img src=app/view/assets/images/greenbar.png width={$vars2['hpperc']} height=10><img src=app/view/assets/images/redbar.png width={$vars2['hpopp']} height=10></td></tr></table>";
 }
 $h->endpage();

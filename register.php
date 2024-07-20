@@ -39,7 +39,7 @@ print
 <table width="970" border="0" cellpadding="0" cellspacing="0" class="table2">
 <tr>
 <td class="lgrad"></td>
-<td class="center"><img src="title.jpg" alt="Mccodes Version 2" /><br />
+<td class="center"><img src="app/view/assets/images/title.jpg" alt="Mccodes Version 2" /><br />
 <!-- Begin Main Content -->
 EOF;
 $IP = str_replace(['/', '\\', '\0'], '', $_SERVER['REMOTE_ADDR']);

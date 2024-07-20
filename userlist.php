@@ -71,7 +71,7 @@ foreach ($q as $r) {
         ($r['donatordays'])
             ? '<span style="color:red; font-weight:bold;">'
             . $r['username']
-            . '</span> <img src="donator.gif" alt="Donator: '
+            . '</span> <img src="app/view/assets/images/donator.gif" alt="Donator: '
             . $r['donatordays']
             . ' Days Left" title="Donator: '
             . $r['donatordays'] . ' Days Left" />'

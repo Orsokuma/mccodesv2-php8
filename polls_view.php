@@ -39,7 +39,7 @@ if (empty($q)) {
                 		<td>{$r[$k]}</td>
                 		<td>{$r[$ke]}</td>
                 		<td>
-                			<img src='bargreen.gif' alt='Bar' width='$perc' height='10' />
+                			<img src='app/view/assets/images/bargreen.gif' alt='Bar' width='$perc' height='10' />
                 		</td>
                 		<td>$perc%</td>
                 	  </tr>";

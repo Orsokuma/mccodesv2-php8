@@ -67,7 +67,7 @@ These are the people on your contact list.
         if ($r['donatordays']) {
             $r['username'] = "<font color=red>{$r['username']}</font>";
             $d             =
-                "<img src='donator.gif' alt='Donator: {$r['donatordays']} Days Left' title='Donator: {$r['donatordays']} Days Left' />";
+                "<img src='app/view/assets/images/donator.gif' alt='Donator: {$r['donatordays']} Days Left' title='Donator: {$r['donatordays']} Days Left' />";
         }
         echo '
 		<tr>
