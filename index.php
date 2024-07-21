@@ -338,14 +338,14 @@ class Index extends CommonObjects
             ];
         } else {
             $replacements = [
-                '{{MAIL_COUNT}}' => $this->player['new_mail'],
-                '{{EVENTS_COUNT}}' => $this->player['new_events'],
+                '{{MAIL_COUNT}}' => number_format($this->player['new_mail']),
+                '{{EVENTS_COUNT}}' => number_format($this->player['new_events']),
                 '{{ANNOUNCEMENTS_COUNT}}' => $this->player['new_announcements'],
                 '{{MAIL_BOLD}}' => $this->player['new_mail'] > 0 ? 'class="text-bold"' : '',
                 '{{EVENTS_BOLD}}' => $this->player['new_events'] > 0 ? 'class="text-bold"' : '',
                 '{{ANNOUNCEMENTS_BOLD}}' => $this->player['new_announcements'] > 0 ? 'class="text-bold"' : '',
-                '{{HOSPITAL_COUNT}}' => $this->siteSettings['hospital_count'],
-                '{{JAIL_COUNT}}' => $this->siteSettings['jail_count'],
+                '{{HOSPITAL_COUNT}}' => number_format($this->siteSettings['hospital_count']),
+                '{{JAIL_COUNT}}' => number_format($this->siteSettings['jail_count']),
                 '{{DATE}}' => date('F jS, Y'),
                 '{{TIME}}' => date('g:i:sa'),
             ];
