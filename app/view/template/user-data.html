@@ -1,0 +1,27 @@
+<b>Name:</b> {{USERNAME_FORMATTED}} [{{USERID}}] {{ICON:DONATOR}}<br />
+<b>Money:</b> {{MONEY}}<br />
+<b>Level:</b> {{LEVEL}}<br />
+<b>Crystals:</b> {{CRYSTALS}}<br />
+[<a href="/auth/logout">Logout</a>]
+<hr />
+<strong>Energy:</strong> {{ENERGY_PERCENT}}%<br>
+<div class="progress" role="progressbar" aria-label="Energy" aria-valuenow="{{ENERGY_PERCENT}}" aria-valuemin="0" aria-valuemax="100">
+    <div class="progress-bar bg-success" style="width: {{ENERGY_PERCENT}}%;"></div>
+</div>
+<strong>Will:</strong> {{WILL_PERCENT}}%<br>
+<div class="progress" role="progressbar" aria-label="Will" aria-valuenow="{{WILL_PERCENT}}" aria-valuemin="0" aria-valuemax="100">
+    <div class="progress-bar bg-info" style="width: {{WILL_PERCENT}}%;"></div>
+</div>
+<strong>Brave:</strong> {{BRAVE}}/{{BRAVE_MAX}}<br>
+<div class="progress" role="progressbar" aria-label="Brave" aria-valuenow="{{BRAVE_PERCENT}}" aria-valuemin="0" aria-valuemax="100">
+    <div class="progress-bar bg-warning" style="width: {{BRAVE_PERCENT}}%;"></div>
+</div>
+<strong>EXP:</strong> {{EXP_PERCENT}}%<br>
+<div class="progress" role="progressbar" aria-label="Experience" aria-valuenow="{{EXP_PERCENT}}" aria-valuemin="0" aria-valuemax="100">
+    <div class="progress-bar bg-info" style="width: {{EXP_PERCENT}}%;"></div>
+</div>
+<strong>Health:</strong> {{HP_PERCENT}}%<br>
+<div class="progress" role="progressbar" aria-label="Health" aria-valuenow="{{HP_PERCENT}}" aria-valuemin="0" aria-valuemax="100">
+    <div class="progress-bar bg-success" style="width: {{HP_PERCENT}}%;"></div>
+</div>
+<hr>

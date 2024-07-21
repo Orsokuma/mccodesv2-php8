@@ -1,0 +1,50 @@
+<div class="row">
+    <div class="col">
+        <h3>&gt; {{GAME_NAME}} Log-In</h3>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <fieldset>
+            <legend>About {{GAME_NAME}}</legend>
+            {{GAME_DESCRIPTION}}
+        </fieldset>
+    </div>
+    <div class="col">
+        <fieldset>
+            <legend>Login</legend>
+            <form action="/login" method="post" name="login" id="login" onsubmit="return saveme();">
+                <input type="hidden" name="verf" value="{{CSRF_TOKEN}}">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" name="username" id="username" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" name="password" id="password" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    Remember me?<br>
+                    <div class="form-check">
+                        <label for="save-on" class="form-check-label">
+                            <input type="radio" value="ON" name="save" id="save-on" class="form-check-input"> Yes
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <label for="save-off" class="form-check-label">
+                            <input type="radio" value="OFF" name="save" id="save-off" class="form-check-input"> No
+                        </label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    Submit
+                </button>
+            </form>
+        </fieldset>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <h3><a href="/register">REGISTER NOW!</a></h3>
+    </div>
+</div>

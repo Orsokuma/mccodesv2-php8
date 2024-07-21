@@ -2,6 +2,7 @@
   "require": {
     "paragonie/easydb": "^3.0",
     "ext-ctype": "*",
-    "ext-gd": "*"
+    "ext-gd": "*",
+    "twbs/bootstrap": "^5.3"
   }
 }

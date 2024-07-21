@@ -1,0 +1,51 @@
+<h3>General Info:</h3>
+<table class="table">
+    <tbody>
+    <tr>
+        <td><b>Name:</b> {{USERNAME}}</td>
+        <td><b>Crystals:</b> {{CRYSTALS}}</td>
+    </tr>
+    <tr>
+        <td><b>Level:</b> {{LEVEL}}</td>
+        <td><b>Exp:</b> {{EXP}}%</td>
+    </tr>
+    <tr>
+        <td><b>Money:</b> {{MONEY}}</td>
+        <td><b>HP:</b> {{HP}}/{{HP_MAX}}</td>
+    </tr>
+    <tr>
+        <td><b>Property:</b> {{PROPERTY}}</td>
+        <td>&nbsp;</td>
+    </tr>
+    </tbody>
+</table>
+
+<h3>Stats Info:</h3>
+<table class="table">
+    <tbody>
+    <tr>
+        <td><b>Strength:</b> {{STRENGTH}} [Ranked: {{STRENGTH_RANK}}]</td>
+        <td><b>Agility:</b> {{AGILITY}} [Ranked: {{AGILITY_RANK}}]</td>
+    </tr>
+    <tr>
+        <td><b>Guard:</b> {{GUARD}} [Ranked: {{GUARD_RANK}}]</td>
+        <td><b>Labour:</b> {{LABOUR}} [Ranked: {{LABOUR_RANK}}]</td>
+    </tr>
+    <tr>
+        <td><b>IQ: </b> {{IQ}} [Ranked: {{IQ_RANK}}]</td>
+        <td><b>Total stats:</b> {{TOTAL_STATS}} [Ranked: {{TOTAL_RANK}}]</td>
+    </tr>
+    </tbody>
+</table>
+<hr>
+<form action="/" method="post">
+    <div class="form-group">
+        <label for="notepad">Your Personal Notepad:</label>
+        <textarea rows="10" name="pn_update" id="notepad" class="form-control">{{USER_NOTEPAD}}</textarea>
+    </div>
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">
+            Update Notes
+        </button>
+    </div>
+</form>

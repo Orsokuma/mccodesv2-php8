@@ -57,39 +57,39 @@ textarea {
 }
 
 .lgrad {
-    background-image: url("../app/view/assets/images/lgrad.jpg");
+    background-image: url("../images/lgrad.jpg");
     background-repeat: repeat-y;
     width: 19px;
 }
 
 .linegrad {
-    background-image: url(../app/view/assets/images/linegrad.PNG);
+    background-image: url(../images/linegrad.PNG);
     background-repeat: repeat-y;
     background-position: center;
     width: 2px;
 }
 
 .rgrad {
-    background-image: url(../app/view/assets/images/rgrad.jpg);
+    background-image: url(../images/rgrad.jpg);
     background-repeat: repeat-y;
     width: 19px;
 }
 
 .dgrad {
-    background-image: url(../app/view/assets/images/dgrad.jpg);
+    background-image: url(../images/dgrad.jpg);
     background-repeat: repeat-x;
     height: 38px;
 }
 
 .dgradl {
-    background-image: url(../app/view/assets/images/dgradl.jpg);
+    background-image: url(../images/dgradl.jpg);
     background-repeat: no-repeat;
     height: 38px;
     width: 38px;
 }
 
 .dgradr {
-    background-image: url(../app/view/assets/images/dgradr.jpg);
+    background-image: url(../images/dgradr.jpg);
     background-repeat: no-repeat;
     height: 38px;
     width: 38px;
@@ -121,14 +121,14 @@ td .alt {
 }
 
 td .h {
-    background-image: url(../app/view/assets/images/tablehgrad.png);
+    background-image: url(../images/tablehgrad.png);
     background-repeat: repeat-x;
     font-weight: bold;
     background-color: #D6D6D6;
 }
 
 .table th {
-    background-image: url(../app/view/assets/images/tablehgrad.png);
+    background-image: url(../images/tablehgrad.png);
     background-repeat: repeat-x;
     font-weight: bold;
     background-color: #D6D6D6;

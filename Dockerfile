@@ -21,8 +21,14 @@ RUN apt update && apt install -y \
 # Uncomment the next line when deploying to production
 # RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
+# Get Composer
+COPY --from=composer/composer:latest-bin /composer /usr/bin/composer
+
 # This is to prevent removing config.php from gitignore for now. Might be removed when non-docker install gets improved.
 COPY . /var/www/html
+
+# Install Composer dependencies
+RUN cd /var/www/html && composer install
 
 COPY ./docker/run_cron_job.sh /usr/local/bin/run_cron_job.sh
 COPY ./docker/cron_jobs /etc/cron.d/cron_jobs

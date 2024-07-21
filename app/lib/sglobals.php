@@ -117,7 +117,7 @@ if ($ir['force_logout'] > 0) {
     exit;
 }
 if (!is_staff()) {
-    echo 'This page cannot be accessed.<br />&gt; <a href="index.php">Go Home</a>';
+    echo 'This page cannot be accessed.<br />&gt; <a href="../../index.php">Go Home</a>';
     die;
 }
 check_level();

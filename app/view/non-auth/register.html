@@ -1,0 +1,88 @@
+<div class="row">
+    <div class="col">
+        <h3>{{GAME_NAME}} Registration</h3>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <form action="/register" method="post">
+            <input type="hidden" name="verf" value="{{CSRF_TOKEN}}">
+            <input type="hidden" name="ref" value="{{REF_ID}}">
+            <div class="row py-1">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" name="username" id="username" onkeyup="CheckUsername(this.value);" class="form-control" required>
+                        <span class="form-text text-small" id="usernameresult"></span>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label for="pw1">Password</label>
+                        <input type="password" name="password" id="pw1" onkeyup="CheckPasswords(this.value);PasswordMatch();" class="form-control" required>
+                        <span class="form-text text-small" id="passwordresult"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="row py-1">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label for="pw2">Confirm Password</label>
+                        <input type="password" name="cpassword" id="pw2" onkeyup="PasswordMatch();" class="form-control" required>
+                        <span class="form-text text-small" id="cpasswordresult"></span>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" name="email" id="email" onkeyup="CheckEmail(this.value);" class="form-control" required>
+                        <span class="form-text text-small" id="emailresult"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="row py-1">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label for="gender">Gender</label>
+                        <select name="gender" id="gender" class="form-control">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                        <span class="form-help text-muted">This is your character's gender, not necessarily your own</span>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label for="promo-code">Promo Code</label>
+                        <input type="text" name="promo" id="promo-code" class="form-control">
+                    </div>
+                </div>
+            </div>
+
+            {{IF:SETTINGS:REGCAP_ON}}
+            <div class="row py-1">
+                <div class="col-sm-3">
+                    <img src="/app/lib/CaptchaGenerator.php" alt="CAPTCHA image">
+                </div>
+                <div class="col">
+                    <div class="form-group">
+                        <label for="captcha">Captcha</label>
+                        <input type="text" name="captcha" id="captcha" class="form-control" required>
+                    </div>
+                </div>
+            </div>
+            {{ENDIF}}
+
+            <div class="row py-2">
+                <div class="col">
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                            Submit
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <br>&gt; <a href="/">Go Back</a>
+    </div>
+</div>

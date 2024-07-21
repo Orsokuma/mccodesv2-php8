@@ -1,0 +1,35 @@
+.text-center {
+    text-align: center;
+}
+
+.w-5 {
+    width: 5%;
+}
+
+.w-25 {
+    width: 25%;
+}
+
+.w-50 {
+    width: 50%;
+}
+
+.w-75 {
+    width: 75%;
+}
+
+.w-100 {
+    width: 100%;
+}
+
+a {
+    text-decoration: none;
+}
+
+.text-bold {
+    font-weight: 700;
+}
+
+.text-small, .form-help {
+    font-size: 0.8em;
+}

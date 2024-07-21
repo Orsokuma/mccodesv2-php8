@@ -1,0 +1,51 @@
+<div class="row">
+    <div class="col">
+        <h3>Bank</h3>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <strong>You currently have {{BANKMONEY_FORMATTED}} in the bank.</strong><br>
+        At the end of each day, your bank balance will go up by 2%.
+    </div>
+</div>
+<div class="row">
+    <div class="col-6">
+        <strong>Deposit Money</strong><br>
+        <form action="/bank/deposit" method="post">
+            <div class="form-group">
+                <div class="form-floating mb-3">
+                    <input type="number" name="deposit" id="deposit" class="form-control" value="{{MONEY}}" required>
+                    <label for="deposit">Amount</label>
+                </div>
+            </div>
+            <div class="form-group pt-1">
+                <button type="submit" class="btn btn-primary">
+                    Deposit
+                </button>
+            </div>
+        </form>
+        <p class="pt-2">
+            It will cost you {{FEE_PERCENTAGE}}% of the money you deposit, rounded up. The maximum fee is {{FEE_MAX}}.
+        </p>
+    </div>
+    <div class="col-6">
+        <strong>Withdraw Money</strong><br>
+        <form action="/bank/withdraw" method="post">
+            <div class="form-group">
+                <div class="form-floating mb-3">
+                    <input type="number" name="withdraw" id="withdraw" class="form-control" value="{{BANKMONEY}}" required>
+                    <label for="withdraw">Amount</label>
+                </div>
+            </div>
+            <div class="form-group pt-1">
+                <button type="submit" class="btn btn-primary">
+                    Withdraw
+                </button>
+            </div>
+        </form>
+        <p class="pt-2">
+            There are no fees for withdrawals.
+        </p>
+    </div>
+</div>
