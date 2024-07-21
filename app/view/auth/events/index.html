@@ -1,6 +1,11 @@
 <div class="row">
     <div class="col">
         <h3>Events</h3>
+        {{IF:EVENT_COUNT}}
+        <div class="float-end">
+            &middot; <a href="/events/delete-all" class="text-danger">Delete All</a>
+        </div>
+        {{ENDIF}}
     </div>
 </div>
 {{PAGINATION}}
@@ -21,3 +26,8 @@
     </div>
 </div>
 {{PAGINATION}}
+<div class="row pt-2">
+    <div class="col text-small text-end">
+        <a href="/events/reset-unread-event-counter">Reset Unread Event Counter</a>
+    </div>
+</div>
