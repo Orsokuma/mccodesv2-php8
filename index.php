@@ -104,7 +104,7 @@ class Index extends CommonObjects
         }
         // Set our kinda-mostly-maybe-a-little-bit "end" time and render in
         $page_load = microtime(true) - PAGE_START;
-        $content = str_replace('{{PAGE_LOAD}}', number_format($page_load, 3).'s', $content);
+        $content   = str_replace('{{PAGE_LOAD}}', number_format($page_load, 3) . 's', $content);
         // Finally, throw it all at the user!
         echo $content;
     }
