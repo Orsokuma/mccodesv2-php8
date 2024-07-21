@@ -773,23 +773,7 @@ class SiteFunctions
      */
     public function determine_game_urlbase(): string
     {
-        $domain = $_SERVER['HTTP_HOST'];
-        $turi   = $_SERVER['REQUEST_URI'];
-        $turiq  = '';
-        for ($t = strlen($turi) - 1; $t >= 0; $t--) {
-            if ($turi[$t] != '/') {
-                $turiq = $turi[$t] . $turiq;
-            } else {
-                break;
-            }
-        }
-        $turiq = '/' . $turiq;
-        if ($turiq == '/') {
-            $domain .= substr($turi, 0, -1);
-        } else {
-            $domain .= str_replace($turiq, '', $turi);
-        }
-        return $domain;
+        return $_SERVER['HTTP_HOST'];
     }
 
     /**
