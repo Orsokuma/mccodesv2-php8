@@ -12,7 +12,7 @@ abstract class CommonObjects
 {
     protected const string MISSED_REQUIRED_FIELD = 'You didn\'t enter a valid %s.';
     protected const string MISSED_REQUIRED_OBJECT = 'You didn\'t select a valid %s.';
-    protected const string NO_EXIST_OR_NOT_YOURS = 'Either that %s doesn\'t exist, or it\'s not yours.';
+    protected const string NOT_EXIST_OR_NOT_YOURS = 'Either that %s doesn\'t exist, or it\'s not yours.';
     protected const string OBJECT_DELETED = 'That %s has been deleted.';
     protected const string NO_OBJECT_TO_DELETE = 'You have no %s to delete.';
     protected const array UNKNOWN_ACTION_TAKEN = [
