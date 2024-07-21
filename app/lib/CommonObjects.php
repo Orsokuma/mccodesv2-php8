@@ -88,7 +88,6 @@ abstract class CommonObjects
      */
     protected function setPlayer(?array $player = null): void
     {
-        global $jobquery, $housequery;
         if (!empty($player)) {
             $this->player = $player;
             return;
@@ -98,27 +97,14 @@ abstract class CommonObjects
             $this->player = null;
             return;
         }
-        $statement    = match (true) {
-            isset($jobquery) && $jobquery => 'SELECT u.*, us.*, j.*, jr.*
-                FROM users AS u
-                INNER JOIN userstats AS us ON u.userid = us.userid
-                LEFT JOIN jobs AS j ON j.jID = u.job
-                LEFT JOIN jobranks AS jr ON jr.jrID = u.jobrank
-                WHERE u.userid = ?
-                LIMIT 1',
-            isset($housequery) && $housequery => 'SELECT u.*, us.*, h.*
-                FROM users AS u
-                INNER JOIN userstats AS us ON u.userid = us.userid
-                LEFT JOIN houses AS h ON h.hWILL = u.maxwill
-                WHERE u.userid = ?
-                LIMIT 1',
-            default => 'SELECT u.*, us.*
-                FROM users AS u
-                INNER JOIN userstats AS us ON u.userid = us.userid
-                WHERE u.userid = ?
-                LIMIT 1',
-        };
-        $this->player = $this->pdo->row($statement, $userid);
+        $this->player = $this->pdo->row(
+            'SELECT u.*, us.*
+            FROM users AS u
+            INNER JOIN userstats AS us ON u.userid = us.userid
+            WHERE u.userid = ?
+            LIMIT 1',
+            $userid,
+        );
         if (!empty($this->player)) {
             $this->setUserdataDataTypes($this->player);
         }
