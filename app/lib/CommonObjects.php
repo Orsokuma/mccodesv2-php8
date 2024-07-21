@@ -159,9 +159,19 @@ abstract class CommonObjects
      */
     protected function afterPost(array $response, ?string $subRoute = null): void
     {
-        $_SESSION[$response['type']] = $response['message'];
-        header('Location: https://' . $this->func->determine_game_urlbase() . '/' . ltrim($response['redirect'] ?? $subRoute ?? '', '/'));
+        $this->setResponseSession($response);
+        $location = '/' . ltrim(($subRoute ?? '') . (!empty($response['redirect']) ? '/' . $response['redirect'] : ''), '/');
+        header('Location: https://' . $this->func->determine_game_urlbase() . $location);
         exit;
+    }
+
+    /**
+     * @param array $response
+     * @return void
+     */
+    protected function setResponseSession(array $response): void
+    {
+        $_SESSION[$response['type']] = $response['message'];
     }
 
     /**
