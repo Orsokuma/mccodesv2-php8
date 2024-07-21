@@ -214,12 +214,7 @@ class Index extends CommonObjects
         $template    = file_get_contents($this->view . '/template/alert.html');
         $alerts      = ['error', 'warning', 'info', 'success'];
         $alert_title = function ($type) {
-            return match ($type) {
-                'error' => 'Error.',
-                'warning' => 'Warning.',
-                'info' => 'Information.',
-                'success' => 'Success.',
-            };
+            return $type === 'info' ? 'Information' : ucfirst($type);
         };
         foreach ($alerts as $alert) {
             if (array_key_exists($alert, $_SESSION)) {
