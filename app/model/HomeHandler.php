@@ -88,7 +88,7 @@ class HomeHandler extends HomeController
      */
     public function post(?string $subRoute = null): void
     {
-        $this->afterPost($this->handlePost($subRoute));
+        $this->sendResponse($this->handlePost($subRoute));
     }
 
     /**

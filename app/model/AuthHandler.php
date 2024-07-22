@@ -89,7 +89,7 @@ class AuthHandler extends AuthController
      */
     public function post(?string $subRoute = null): void
     {
-        $this->afterPost($this->handlePost($subRoute));
+        $this->sendResponse($this->handlePost($subRoute));
     }
 
     /**

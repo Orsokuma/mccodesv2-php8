@@ -31,7 +31,7 @@ class BankHandler extends BankController
      */
     public function post(?string $subRoute = null): void
     {
-        $this->afterPost($this->handlePost($subRoute), 'bank');
+        $this->sendResponse($this->handlePost($subRoute), 'bank');
     }
 
     /**
