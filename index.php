@@ -162,6 +162,8 @@ class Index extends CommonObjects
             '/explore' => 'ExploreHandler',
             '/announcements' => 'AnnouncementsHandler',
             '/announcements/:number' => 'AnnouncementsHandler',
+            '/crimes' => 'CrimesHandler',
+            '/crimes/:number' => 'CrimesHandler',
             '/events' => 'EventsHandler',
             '/events/:string' => 'EventsHandler',
             '/events/:string/:number' => 'EventsHandler',
