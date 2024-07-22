@@ -1,0 +1,27 @@
+<tr>
+    <td>
+        {{DATE}}<br>
+        {{OTHER_USERNAME}}
+    </td>
+    <td>
+        <strong>{{SUBJECT}}</strong><br>
+        {{MESSAGE}}
+    </td>
+</tr>
+<tr>
+    <td colspan="2" class="text-small">
+        <div class="w-100" style="display:inline-block;">
+            {{IF:!SYSTEM}}
+            <span class="float-start">
+                <a href="/report-player/{{OTHER_ID}}">Report</a>
+            </span>
+            {{ENDIF}}
+            <span class="float-end">
+                {{IF:!SYSTEM}}
+                <a href="/mailbox/compose/{{OTHER_ID}}">Reply</a> &middot;
+                {{ENDIF}}
+                <a href="/mailbox/delete/{{ID}}" class="text-danger">Delete</a>
+            </span>
+        </div>
+    </td>
+</tr>
