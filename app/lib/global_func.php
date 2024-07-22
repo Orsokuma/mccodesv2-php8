@@ -773,7 +773,15 @@ class SiteFunctions
      */
     public function determine_game_urlbase(): string
     {
-        return $_SERVER['HTTP_HOST'];
+        $port = 80;
+        if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
+            $port = 443;
+            $set = $this->get_site_settings();
+            if (!empty($set['ssl_port']) && $set['ssl_port'] !== $port) {
+                $port = $set['ssl_port'];
+            }
+        }
+        return parse_url($_SERVER['HTTP_HOST'], PHP_URL_HOST).(!in_array($port, [80, 443]) ? ':'.$port : '');
     }
 
     /**
