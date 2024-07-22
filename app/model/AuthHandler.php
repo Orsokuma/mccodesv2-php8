@@ -15,7 +15,6 @@ class AuthHandler extends AuthController
      */
     public function get(?string $subRoute = null): void
     {
-        echo 'ROUTE: '.$subRoute;
         match ($subRoute) {
             'logout' => $this->doLogout(),
             'register' => $this->displayRegister(),
