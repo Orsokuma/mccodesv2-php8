@@ -13,7 +13,6 @@ abstract class AuthController extends CommonObjects
 {
     private const string CREDENTIALS_DO_NOT_MATCH = 'Either the username/password you entered was incorrect, or they don\'t match an account.';
     private const string CAPTCHA_FAILED = 'Captcha test failed.';
-    private const string USERNAME_TAKEN = 'That username is already taken. Please choose a different one.';
     private const string PASSWORD_MISMATCH = 'The passwords you entered do not match. Note: Passwords <strong>are</strong> case-sensitive.';
     private const string REFERRER_NOT_EXISTS = 'Your "referrer" doesn\'t exist.';
     private const string MULTIPLE_ACCOUNTS_NOT_PERMITTED = 'Multiple accounts are not permitted.';
