@@ -168,6 +168,8 @@ class Index extends CommonObjects
             '/mailbox' => 'MailboxHandler',
             '/mailbox/:string' => 'MailboxHandler',
             '/mailbox/:string/:number' => 'MailboxHandler',
+            '/preferences' => 'PreferencesHandler',
+            '/preferences/:alpha' => 'PreferencesHandler',
         ];
         if (!$this->player['jail'] && !$this->player['hospital']) {
             $this->routes += [
