@@ -115,7 +115,7 @@ class MailboxHandler extends MailboxController
                 '{{ID}}' => $row['mail_id'],
                 '{{DATE}}' => $date->format($this->siteSettings['default_date_format']),
                 '{{SUBJECT}}' => $row['mail_subject'],
-                '{{MESSAGE}}' => $row['mail_text'],
+                '{{MESSAGE}}' => nl2br($row['mail_text']),
                 '{{OTHER_ID}}' => $other,
                 '{{OTHER_USERNAME}}' => !empty($row['username']) ? '<a href="/profile/' . $other . '">' . $row['username'] . '</a> [' . $other . ']' : 'SYSTEM',
             ]);
