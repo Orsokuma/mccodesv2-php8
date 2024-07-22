@@ -183,7 +183,7 @@ class EventsHandler extends EventsController
      */
     public function post(?string $subRoute = null, ?string $id = null): void
     {
-        $this->afterPost($this->handlePost($subRoute, $id), 'events');
+        $this->sendResponse($this->handlePost($subRoute, $id), 'events');
     }
 
     /**
