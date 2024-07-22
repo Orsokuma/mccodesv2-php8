@@ -1,0 +1,12 @@
+<tr>
+    <td>{{NAME}}</td>
+    <td>{{BRAVE}} Brave</td>
+    <td>
+        <form action="/criminal/{{ID}}" method="post">
+            <input type="hidden" name="verf" value="{{CSRF_TOKEN}}">
+            <button type="submit" class="btn btn-primary">
+                Do
+            </button>
+        </form>
+    </td>
+</tr>
