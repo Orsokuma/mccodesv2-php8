@@ -63,13 +63,14 @@ class MailboxHandler extends MailboxController
      */
     private function displayBox(string $type, ?int $id): void
     {
+        $page_num = $id > 0 ? $id : 1;
         $box      = $type === 'to' ? 'inbox' : 'outbox';
         $opposite = $type === 'to' ? 'from' : 'to';
         $count    = $this->pdo->cell(
             'SELECT COUNT(*) FROM mail WHERE mail_' . $type . ' = ?',
             $this->player['userid'],
         );
-        $pages    = new Pagination($count, $id ?? 1, '/mailbox/' . $box . '/(:num)');
+        $pages    = new Pagination($count, $page_num ?? 1, '/mailbox/' . $box . '/(:num)');
         $template = file_get_contents($this->view . '/auth/mail/box.html');
         echo strtr($template, [
             '{{PAGINATION}}' => $pages->toHtml(),
