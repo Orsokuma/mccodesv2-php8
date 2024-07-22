@@ -28,6 +28,8 @@ services:
        - action: sync
          path: .
          target: /var/www/html
+         ignore:
+           - vendor/
   db:
     image: mysql:8.4.0
     ports:
