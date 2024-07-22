@@ -30,3 +30,4 @@ $_CONFIG = [
     'database' => read_secret('DB_NAME'),
     'code' => read_secret('APP_KEY'),
 ];
+const FORCE_SSL = true;
