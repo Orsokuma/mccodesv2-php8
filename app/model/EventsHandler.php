@@ -40,8 +40,7 @@ class EventsHandler extends EventsController
      */
     private function displayDeleteOneConfirmation(?int $id): void
     {
-        $template = file_get_contents($this->view . '/template/confirm-action.html');
-        echo strtr($template, [
+        $this->displayConfirmationInterstitial([
             '{{ACTION}}' => '/events/delete/' . $id,
             '{{CONTENT}}' => 'delete this event?',
         ]);
@@ -52,8 +51,7 @@ class EventsHandler extends EventsController
      */
     private function displayDeleteAllConfirmation(): void
     {
-        $template = file_get_contents($this->view . '/template/confirm-action.html');
-        echo strtr($template, [
+        $this->displayConfirmationInterstitial([
             '{{ACTION}}' => '/events/delete-all',
             '{{CONTENT}}' => 'delete all events?',
         ]);
