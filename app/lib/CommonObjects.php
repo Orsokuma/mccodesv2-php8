@@ -10,6 +10,9 @@ use ParagonIE\EasyDB\Factory;
  */
 abstract class CommonObjects
 {
+    protected const string NO_CHANGES = 'No changes were detected.';
+    protected const string USERNAME_TAKEN = 'That username is already taken. Please choose a different one.';
+    protected const string CSRF_FAILURE = 'Your change has been blocked for your security.';
     protected const string MISSED_REQUIRED_FIELD = 'You didn\'t enter a valid %s.';
     protected const string MISSED_REQUIRED_OBJECT = 'You didn\'t select a valid %s.';
     protected const string NOT_EXIST_OR_NOT_YOURS = 'Either that %s doesn\'t exist, or it\'s not yours.';
