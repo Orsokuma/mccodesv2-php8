@@ -2,7 +2,6 @@
 declare(strict_types=1);
 define('PAGE_START', microtime(true));
 require __DIR__ . '/vendor/autoload.php';
-/** @noinspection PhpIncludeInspection */
 require __DIR__ . '/config.php';
 require __DIR__ . '/app/lib/global_func.php';
 require __DIR__ . '/app/lib/Toro.php';
