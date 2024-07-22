@@ -117,7 +117,7 @@ class MailboxHandler extends MailboxController
                 '{{SUBJECT}}' => $row['mail_subject'],
                 '{{MESSAGE}}' => nl2br($row['mail_text']),
                 '{{OTHER_ID}}' => $other,
-                '{{OTHER_USERNAME}}' => !empty($row['username']) ? '<a href="/profile/' . $other . '">' . $row['username'] . '</a> [' . $other . ']' : 'SYSTEM',
+                '{{OTHER_USERNAME}}' => !empty($row['username']) ? '<a href="/profile/' . $other . '">' . $row['username'] . '</a> [' . $other . ']' : '<em class="text-bold">SYSTEM</em>',
             ]);
         }
         $this->unflagUnread($unread);
