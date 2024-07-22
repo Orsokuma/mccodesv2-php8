@@ -202,4 +202,14 @@ abstract class CommonObjects
             }
         }
     }
+
+    /**
+     * @param array $opts
+     * @return void
+     */
+    protected function displayConfirmationInterstitial(array $opts): void
+    {
+        $template = file_get_contents($this->view . '/template/confirm-action.html');
+        echo strtr($template, $opts);
+    }
 }
