@@ -1,0 +1,22 @@
+<div class="row">
+    <div class="col">
+        <h5>Change Pic</h5>
+    </div>
+</div>
+<div class="row">
+    <div class="col-2">
+        <img src="{{CURRENT}}" title="Current Display Picture" alt="Current Display Picture" class="img-rounded mw-250 mh-250">
+    </div>
+    <div class="col">
+        <form action="/preferences/pic" method="post">
+            <input type="hidden" name="verf" value="{{CSRF_TOKEN}}">
+            <div class="form-group py-2">
+                <label for="pic">Display Pic</label>
+                <input type="text" name="pic" id="pic" class="form-control" placeholder="{{CURRENT}}">
+            </div>
+            <button type="submit" class="btn btn-primary">
+                Update
+            </button>
+        </form>
+    </div>
+</div>

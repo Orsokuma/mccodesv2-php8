@@ -1,0 +1,19 @@
+<div class="row">
+    <div class="col">
+        <h5>Change Name</h5>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <form action="/preferences/name" method="post">
+            <input type="hidden" name="verf" value="{{CSRF_TOKEN}}">
+            <div class="form-group py-2">
+                <label for="name">New</label>
+                <input type="text" name="name" id="name" class="form-control" placeholder="{{CURRENT}}">
+            </div>
+            <button type="submit" class="btn btn-primary">
+                Update
+            </button>
+        </form>
+    </div>
+</div>

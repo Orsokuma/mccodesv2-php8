@@ -1,0 +1,18 @@
+<div class="row">
+    <div class="col">
+        <h5>Change Sex</h5>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <p class="py-2">
+            Are you sure you want to become {{OPPOSITE}}?
+        </p>
+        <form action="/preferences/sex" method="post">
+            <input type="hidden" name="verf" value="{{CSRF_TOKEN}}">
+            <button type="submit" class="btn btn-primary">
+                Yes!
+            </button>
+        </form>
+    </div>
+</div>
