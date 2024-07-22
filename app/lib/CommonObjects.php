@@ -158,7 +158,7 @@ abstract class CommonObjects
      * @param string|null $subRoute
      * @return void
      */
-    protected function afterPost(array $response, ?string $subRoute = null): void
+    protected function sendResponse(array $response, ?string $subRoute = null): void
     {
         $this->setResponseSession($response);
         $location = '/' . ltrim(($subRoute ?? '') . (!empty($response['redirect']) ? '/' . $response['redirect'] : ''), '/');
