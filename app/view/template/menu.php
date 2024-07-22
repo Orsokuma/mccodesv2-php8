@@ -17,7 +17,7 @@ if ($player['hospital']) {
     <?php
 } ?>
 <a href="/events" {{EVENTS_BOLD}}>Events ({{EVENTS_COUNT}})</a><br>
-<a href="/mail" {{MAIL_BOLD}}>Mailbox ({{MAIL_COUNT}})</a><br>
+<a href="/mailbox" {{MAIL_BOLD}}>Mailbox ({{MAIL_COUNT}})</a><br>
 <a href="/announcements" {{ANNOUNCEMENTS_BOLD}}>Announcements ({{ANNOUNCEMENTS_COUNT}})</a><br>
 <?php
 if ($player['jail'] && !$player['hospital']) {
