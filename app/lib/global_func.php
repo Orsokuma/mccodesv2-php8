@@ -871,6 +871,29 @@ class SiteFunctions
     }
 
     /**
+     * @param string $url
+     * @return int
+     */
+    public function getRemoteFileSize(string $url): int
+    {
+        $opts = [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 3,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_TIMEOUT        => 2,
+            CURLOPT_HEADER => true,
+            CURLOPT_NOBODY => true,
+        ];
+        $ch = curl_init($url);
+        curl_setopt_array($ch, $opts);
+        curl_exec($ch);
+        $size = curl_getinfo($ch, CURLINFO_CONTENT_LENGTH_DOWNLOAD);
+        curl_close($ch);
+        return (int)$size;
+    }
+
+    /**
      * @return array
      */
     public function get_site_settings(): array
