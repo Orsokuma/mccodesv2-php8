@@ -34,7 +34,25 @@ class Index extends CommonObjects
     public function __construct()
     {
         parent::__construct();
+        if (defined('FORCE_SSL') && FORCE_SSL) {
+            $this->checkSSL();
+        }
         $this->serveSite();
+    }
+
+    /**
+     * @return void
+     */
+    private function checkSSL(): void
+    {
+        if (!isset($_SERVER['HTTPS']) || $_SERVER['HTTPS'] !== 'on') {
+            $location = 'https://'.$this->func->determine_game_urlbase();
+            if (!empty($this->siteSettings['ssl_port']) && $this->siteSettings['ssl_port'] !== 443) {
+                $location .= ':' . $this->siteSettings['ssl_port'];
+            }
+            header('Location: '.$location);
+            exit;
+        }
     }
 
     /**
