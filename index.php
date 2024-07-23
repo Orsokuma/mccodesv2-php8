@@ -216,6 +216,7 @@ class Index extends CommonObjects
                 'global' => filemtime(__DIR__ . '/app/view/assets/css/global.css'),
             ],
             'js' => [
+                'auth' => filemtime(__DIR__ . '/app/view/assets/js/auth.js'),
                 'nonauth' => filemtime(__DIR__ . '/app/view/assets/js/nonauth.js'),
                 'staff' => filemtime(__DIR__ . '/app/view/assets/js/staff.js'),
             ],
