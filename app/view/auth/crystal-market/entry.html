@@ -1,0 +1,17 @@
+<tr>
+    <td>{{AMOUNT}}</td>
+    <td>{{PRICE_EACH}}</td>
+    <td>{{PRICE_TOTAL}}</td>
+    <td><a href="{{SELLER_ID}}">{{SELLER_NAME}}</a> [{{SELLER_ID}}]</td>
+    <td>
+        {{IF:SELLER=USER}}
+        <a href="/crystal-market/remove/{{ID}}">
+            Remove
+        </a>
+        {{ELSE}}
+        <a href="/crystal-market/purchase/{{ID}}">
+            Purchase
+        </a>
+        {{ENDIF}}
+    </td>
+</tr>

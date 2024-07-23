@@ -1,0 +1,31 @@
+<div class="row">
+    <div class="col">
+        <h3>Crystal Market: Purchase</h3>
+    </div>
+</div>
+<div class="row py-2">
+    <div class="col">
+        <p>
+            This listing has {{AMOUNT}} crystals available at {{PRICE_EACH}} each.<br>
+            Total value: {{PRICE_TOTAL}}
+        </p>
+        <form action="/crystal-market/purchase/{{ID}}" method="post">
+            <input type="hidden" name="verf" value="{{CSRF_TOKEN}}">
+            <div class="form-group">
+                <label for="amount">Amount</label>
+                <input type="number" name="amount" id="amount" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="user">Gift Recipient</label>
+                <select name="user" id="user" class="form-control">
+                    {{MENU:USERS}}
+                </select>
+            </div>
+            <div class="form-group mt-2">
+                <button type="submit" class="btn btn-primary">
+                    Purchase
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

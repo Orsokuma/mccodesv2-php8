@@ -1,0 +1,42 @@
+<div class="row">
+    <div class="col">
+        <h3>Crystal Market: Add</h3>
+    </div>
+</div>
+<div class="row py-2">
+    <div class="col">
+        <form action="/crystal-market/add" method="post">
+            <input type="hidden" name="verf" value="{{CSRF_TOKEN}}">
+            <div class="form-group">
+                <label for="amount">Amount</label>
+                <input type="number" name="amount" id="amount" class="form-control" oninput="updateTotalValue();" min="1" max="{{CRYSTALS}}" required>
+            </div>
+            <div class="form-group">
+                <label for="price">Price Each</label>
+                <input type="number" name="price" id="price" class="form-control" oninput="updateTotalValue();" required>
+                <span class="form-help text-muted" id="total-value"></span>
+            </div>
+            <div class="form-group mt-2">
+                <button type="submit" class="btn btn-primary">
+                    Add
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const updateTotalValue = () => {
+        const amount = document.getElementById("amount").value;
+        const price = document.getElementById("price").value;
+        const totalElem = document.getElementById("total-value");
+        if (amount > 0 && price > 0 && totalElem !== undefined) {
+            const limit = 999999999999999999999999999999;
+            const multi = price * amount;
+            totalElem.innerText =
+                multi <= limit
+                ? `Total value: $${multi.toLocaleString()} (${formatMoney(multi)})`
+                : `$${limit.toLocaleString()} or above`;
+        }
+    };
+</script>
