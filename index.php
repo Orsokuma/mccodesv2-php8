@@ -192,6 +192,7 @@ class Index extends CommonObjects
     private function populateRoutesCommon(): void
     {
         $routes = [
+            '/api' => 'InternalAPI',
             '/auth/:alpha' => 'AuthHandler',
             '/rules' => 'RulesHandler',
             '/privacy-policy' => 'PrivacyPolicyHandler',
