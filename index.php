@@ -73,6 +73,7 @@ class Index extends CommonObjects
             '{{CSS_VERSION_NONAUTH}}' => $versions['css']['nonauth'],
             '{{CSS_VERSION_GLOBAL}}' => $versions['css']['global'],
             '{{JS_VERSION_NONAUTH}}' => $versions['js']['nonauth'],
+            '{{JS_VERSION_AUTH}}' => $versions['js']['auth'],
         ];
 
         // Render the route serve's content to the buffer
