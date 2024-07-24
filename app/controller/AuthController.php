@@ -27,13 +27,13 @@ abstract class AuthController extends CommonObjects
         if (empty($_POST['username'])) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_FIELD, 'username'),
+                'message' => sprintf(self::INVALID_ENTRY, 'username'),
             ];
         }
         if (empty($password)) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_FIELD, 'password'),
+                'message' => sprintf(self::INVALID_ENTRY, 'password'),
             ];
         }
         $row = $this->pdo->row(
@@ -220,7 +220,7 @@ abstract class AuthController extends CommonObjects
         if (empty($_POST['username'])) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_FIELD, 'username'),
+                'message' => sprintf(self::INVALID_ENTRY, 'username'),
             ];
         }
         if ($this->siteSettings['regcap_on']) {
@@ -236,19 +236,19 @@ abstract class AuthController extends CommonObjects
         if (empty($_POST['email'])) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_FIELD, 'email'),
+                'message' => sprintf(self::INVALID_ENTRY, 'email'),
             ];
         }
         if (!in_array($_POST['gender'] ?? '', ['Male', 'Female'])) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_FIELD, 'gender'),
+                'message' => sprintf(self::INVALID_ENTRY, 'gender'),
             ];
         }
         if (empty($_POST['password']) || empty($_POST['cpassword'])) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_FIELD, 'password/password confirmation'),
+                'message' => sprintf(self::INVALID_ENTRY, 'password/password confirmation'),
             ];
         }
         if ($_POST['password'] !== $_POST['cpassword']) {
@@ -282,7 +282,7 @@ abstract class AuthController extends CommonObjects
         if ($e_check > 0) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_FIELD, 'email'),
+                'message' => sprintf(self::INVALID_ENTRY, 'email'),
             ];
         }
         return false;

@@ -41,7 +41,7 @@ class BankController extends CommonObjects
         if (empty($_POST['deposit'])) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_FIELD, 'deposit amount'),
+                'message' => sprintf(self::INVALID_ENTRY, 'deposit amount'),
             ];
         }
         if ($_POST['deposit'] > $this->player['money']) {
@@ -97,7 +97,7 @@ class BankController extends CommonObjects
         if (empty($_POST['withdraw'])) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_FIELD, 'withdraw amount'),
+                'message' => sprintf(self::INVALID_ENTRY, 'withdraw amount'),
             ];
         }
         if ($_POST['withdraw'] > $this->player['bankmoney']) {

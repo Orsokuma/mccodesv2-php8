@@ -24,7 +24,7 @@ class EventsController extends CommonObjects
         if (empty($id)) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_OBJECT, 'event'),
+                'message' => sprintf(self::INVALID_SELECTION, 'event'),
             ];
         }
         $row = $this->pdo->row(

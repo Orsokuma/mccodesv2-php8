@@ -34,7 +34,7 @@ class MailboxController extends CommonObjects
         if (empty($_POST['message'])) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_FIELD, 'message'),
+                'message' => sprintf(self::INVALID_ENTRY, 'message'),
             ];
         }
         if (strlen($_POST['subject']) > $this->mailSettings['subject_max_length']) {
@@ -52,7 +52,7 @@ class MailboxController extends CommonObjects
         if (empty($_POST['user'])) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_FIELD, 'recipient'),
+                'message' => sprintf(self::INVALID_ENTRY, 'recipient'),
             ];
         }
         $recipient = $this->pdo->cell(
@@ -99,7 +99,7 @@ class MailboxController extends CommonObjects
         if (empty($id)) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_OBJECT, 'message'),
+                'message' => sprintf(self::INVALID_SELECTION, 'message'),
             ];
         }
         $row = $this->pdo->row(

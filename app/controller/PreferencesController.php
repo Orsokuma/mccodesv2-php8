@@ -54,7 +54,7 @@ class PreferencesController extends CommonObjects
             if (empty($_POST[$str])) {
                 return [
                     'type' => 'error',
-                    'message' => sprintf(self::MISSED_REQUIRED_FIELD, $str . ' password'),
+                    'message' => sprintf(self::INVALID_ENTRY, $str . ' password'),
                 ];
             }
         }
@@ -97,7 +97,7 @@ class PreferencesController extends CommonObjects
         if (empty($_POST['name'])) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_FIELD, 'name'),
+                'message' => sprintf(self::INVALID_ENTRY, 'name'),
             ];
         }
         if ($_POST['name'] === $this->player['username']) {

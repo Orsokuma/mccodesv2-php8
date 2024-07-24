@@ -26,7 +26,7 @@ class CrystalMarketController extends CommonObjects
             if (empty($_POST[$num])) {
                 return [
                     'type' => 'error',
-                    'message' => sprintf(self::MISSED_REQUIRED_FIELD, $num),
+                    'message' => sprintf(self::INVALID_ENTRY, $num),
                 ];
             }
         }
@@ -87,7 +87,7 @@ class CrystalMarketController extends CommonObjects
         if (empty($id)) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_OBJECT, 'listing'),
+                'message' => sprintf(self::INVALID_SELECTION, 'listing'),
             ];
         }
         $row = $this->pdo->row(
@@ -126,7 +126,7 @@ class CrystalMarketController extends CommonObjects
         if (empty($id)) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_OBJECT, 'listing'),
+                'message' => sprintf(self::INVALID_SELECTION, 'listing'),
             ];
         }
         $row = $this->pdo->row(
@@ -149,7 +149,7 @@ class CrystalMarketController extends CommonObjects
         if (empty($_POST['amount'])) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_FIELD, 'amount'),
+                'message' => sprintf(self::INVALID_ENTRY, 'amount'),
             ];
         }
         if ($_POST['amount'] > $row['cmQTY']) {
@@ -217,7 +217,7 @@ class CrystalMarketController extends CommonObjects
         if (empty($id)) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_OBJECT, 'listing'),
+                'message' => sprintf(self::INVALID_SELECTION, 'listing'),
             ];
         }
         $row = $this->pdo->row(
@@ -240,7 +240,7 @@ class CrystalMarketController extends CommonObjects
         if (empty($_POST['amount'])) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_FIELD, 'amount'),
+                'message' => sprintf(self::INVALID_ENTRY, 'amount'),
             ];
         }
         if ($_POST['amount'] > $row['cmQTY']) {

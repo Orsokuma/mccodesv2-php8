@@ -47,7 +47,7 @@ class CrystalMarketHandler extends CrystalMarketController
         if (empty($id)) {
             $this->sendResponse([
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_OBJECT, 'listing'),
+                'message' => sprintf(self::INVALID_SELECTION, 'listing'),
             ]);
         }
         $row = $this->pdo->row(
@@ -85,7 +85,7 @@ class CrystalMarketHandler extends CrystalMarketController
         if (empty($id)) {
             $this->sendResponse([
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_OBJECT, 'listing'),
+                'message' => sprintf(self::INVALID_SELECTION, 'listing'),
             ]);
         }
         $row = $this->pdo->row(
@@ -119,7 +119,7 @@ class CrystalMarketHandler extends CrystalMarketController
         if (empty($id)) {
             $this->sendResponse([
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_OBJECT, 'listing'),
+                'message' => sprintf(self::INVALID_SELECTION, 'listing'),
             ]);
         }
         $row = $this->pdo->row(

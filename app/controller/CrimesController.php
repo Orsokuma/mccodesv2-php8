@@ -21,7 +21,7 @@ class CrimesController extends CommonObjects
         if (empty($id)) {
             return [
                 'type' => 'error',
-                'message' => sprintf(self::MISSED_REQUIRED_OBJECT, 'crime'),
+                'message' => sprintf(self::INVALID_SELECTION, 'crime'),
             ];
         }
         $row = $this->pdo->row(
