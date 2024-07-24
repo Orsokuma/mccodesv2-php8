@@ -18,6 +18,8 @@ abstract class CommonObjects
     protected const string NOT_ENOUGH = 'You don\'t have enough %s to do that.';
     protected const string NOT_EXISTS = 'That %s doesn\'t exist.';
     protected const string NOT_EXIST_OR_NOT_YOURS = 'Either that %s doesn\'t exist, or it\'s not yours.';
+    protected const string OBJECT_ADDED = 'That %s has been added.';
+    protected const string OBJECT_EDITED = 'That %s has been edited.';
     protected const string OBJECT_DELETED = 'That %s has been deleted.';
     protected const string OBJECTS_DELETED = '%s have been deleted.';
     protected const string NO_OBJECT_TO_DELETE = 'You have no %s to delete.';
