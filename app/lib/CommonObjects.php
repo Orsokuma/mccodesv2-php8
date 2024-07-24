@@ -211,6 +211,9 @@ abstract class CommonObjects
     }
 
     /**
+     * $opts requires 2 keys; {{CONTENT}} and {{ACTION}}.
+     * The "content" placeholder is used to finish off the "Are you sure you want to ..."
+     * The "action" placeholder is used as the form's action attribute value
      * @param array $opts
      * @return void
      */
