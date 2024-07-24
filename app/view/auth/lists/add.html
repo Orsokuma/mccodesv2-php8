@@ -1,0 +1,42 @@
+<div class="row">
+    <div class="col">
+        <h3>{{LIST}}: Add</h3>
+    </div>
+</div>
+<div class="row py-2">
+    <div class="col">
+        <form action="/list/{{LIST}}/add" method="post">
+            <input type="hidden" name="verf" value="{{CSRF_TOKEN}}">
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label for="user1">Select a user</label>
+                        <select name="user1" id="user1" class="form-control">
+                            <option value="0" selected>-- SELECT --</option>
+                            {{MENU:USERS}}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <label for="user2"><em class="text-bold">OR</em> enter a user ID</label>
+                        <input type="number" name="user2" id="user2" class="form-control">
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col">
+                    <label for="comment">Comment</label>
+                    <textarea name="comment" id="comment" rows="10" class="form-control"></textarea>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col">
+                    <button type="submit" class="btn btn-primary">
+                        Add
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
