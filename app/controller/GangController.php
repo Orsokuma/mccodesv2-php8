@@ -97,14 +97,20 @@ class GangController extends CommonObjects
      */
     protected function doCreateGang(): array
     {
+        if ($this->player['gang']) {
+            ToroHook::fire('404');
+        }
         if (!isset($_POST['verf']) || !$this->func->verify_csrf_code('creategang', stripslashes($_POST['verf']))) {
             return [
                 'type' => 'error',
                 'message' => self::CSRF_FAILURE,
             ];
         }
-        if ($this->player['gang']) {
-            ToroHook::fire('404');
+        if (self::GANG_CREATION_COST > $this->player['money']) {
+            return [
+                'type' => 'error',
+                'message' => sprintf(self::NOT_ENOUGH, 'money'),
+            ];
         }
         $strs = ['name', 'description'];
         foreach ($strs as $str) {
