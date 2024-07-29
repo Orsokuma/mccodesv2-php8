@@ -18,6 +18,12 @@ class GangController extends CommonObjects
      */
     protected function doApplyToGang(int $gangId): array
     {
+        if (empty($_POST['verf']) || !$this->func->verify_csrf_code('apply', $_POST['verf'])) {
+            return [
+                'type' => 'error',
+                'message' => self::CSRF_FAILURE,
+            ];
+        }
         if ($this->player['gang']) {
             return [
                 'type' => 'error',
