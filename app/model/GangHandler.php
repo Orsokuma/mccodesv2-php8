@@ -78,35 +78,6 @@ class GangHandler extends GangController
     }
 
     /**
-     * @return void
-     */
-    private function viewGangList(): void
-    {
-        $template = file_get_contents($this->view . '/auth/gangs/list.html');
-        $entry    = file_get_contents($this->view . '/auth/gangs/list-entry.html');
-        $rows     = $this->pdo->run(
-            'SELECT g.gangID, g.gangNAME, g.gangRESPECT, g.gangCAPACITY, u.username
-            FROM gangs AS g
-            INNER JOIN users AS u ON g.gangPRESIDENT = u.userid
-            ORDER BY g.gangRESPECT DESC'
-        );
-        $content  = '';
-        foreach ($rows as $row) {
-            $member_count = $this->getMemberCount($row['gangID']);
-            $content      .= strtr($entry, [
-                '{{NAME}}' => $row['gangNAME'],
-                '{{MEMBERS}}' => number_format($member_count),
-                '{{CAPACITY}}' => $row['gangCAPACITY'],
-                '{{PRESIDENT}}' => $row['username'],
-                '{{RESPECT}}' => $row['gangRESPECT'],
-            ]);
-        }
-        echo strtr($template, [
-            '{{GANG_LIST}}' => $content,
-        ]);
-    }
-
-    /**
      * @param int $gangId
      * @return void
      */
@@ -178,6 +149,36 @@ class GangHandler extends GangController
             '{{ID}}' => $row['gangID'],
             '{{NAME}}' => $row['gangNAME'],
             '{{CSRF_TOKEN}}' => $this->func->request_csrf_code('apply'),
+        ]);
+    }
+
+    /**
+     * @return void
+     */
+    private function viewGangList(): void
+    {
+        $template = file_get_contents($this->view . '/auth/gangs/list.html');
+        $entry    = file_get_contents($this->view . '/auth/gangs/list-entry.html');
+        $rows     = $this->pdo->run(
+            'SELECT g.gangID, g.gangNAME, g.gangRESPECT, g.gangCAPACITY, u.username
+            FROM gangs AS g
+            INNER JOIN users AS u ON g.gangPRESIDENT = u.userid
+            ORDER BY g.gangRESPECT DESC'
+        );
+        $content  = '';
+        foreach ($rows as $row) {
+            $member_count = $this->getMemberCount($row['gangID']);
+            $content      .= strtr($entry, [
+                '{{ID}}' => $row['gangID'],
+                '{{NAME}}' => $row['gangNAME'],
+                '{{MEMBERS}}' => number_format($member_count),
+                '{{CAPACITY}}' => $row['gangCAPACITY'],
+                '{{PRESIDENT}}' => $row['username'],
+                '{{RESPECT}}' => $row['gangRESPECT'],
+            ]);
+        }
+        echo strtr($template, [
+            '{{GANG_LIST}}' => $content,
         ]);
     }
 
