@@ -163,6 +163,7 @@ class Index extends CommonObjects
             '/explore' => 'ExploreHandler',
             '/announcements' => 'AnnouncementsHandler',
             '/announcements/:number' => 'AnnouncementsHandler',
+            '/battle-tent' => 'BattleTentHandler',
             '/crimes' => 'CrimesHandler',
             '/crimes/:number' => 'CrimesHandler',
             '/crystal-market' => 'CrystalMarketHandler',
