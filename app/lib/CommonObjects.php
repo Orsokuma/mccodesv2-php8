@@ -25,6 +25,7 @@ abstract class CommonObjects
     protected const string NO_OBJECT_TO_DELETE = 'You have no %s to delete.';
     protected const string ALREADY_EXISTS = 'Another %s with that %s already exists.';
     protected const string PERSONAL_OBJECT_CREATED = 'Your %s has been created.';
+    protected const string ALREADY_IN_GANG = 'You\'re already in a gang.';
     protected const array UNKNOWN_ACTION_TAKEN = [
         'type' => 'error',
         'message' => 'You get a 404, and you get a 404, and you get a 404. Everyone gets a 404. Well, not everyone, but you sure did!',
