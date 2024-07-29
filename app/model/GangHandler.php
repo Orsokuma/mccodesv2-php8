@@ -16,10 +16,9 @@ class GangHandler extends GangController
         match ($subRoute) {
             'create' => $this->displayCreateGang(),
             'view' => $this->viewGang((int)$gangId),
-            'list' => $this->viewGangList(),
             'members' => $this->viewGangMembers((int)$gangId),
             'apply' => $this->viewGangApplicationForm((int)$gangId),
-            default => ToroHook::fire('404'),
+            default => $this->viewGangList(),
         };
     }
 
