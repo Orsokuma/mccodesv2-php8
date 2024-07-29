@@ -18,6 +18,7 @@ class GangHandler extends GangController
             'view' => $this->viewGang((int)$gangId),
             'list' => $this->viewGangList(),
             'members' => $this->viewGangMembers((int)$gangId),
+            'apply' => $this->viewGangApplicationForm((int)$gangId),
             default => ToroHook::fire('404'),
         };
     }
@@ -146,6 +147,42 @@ class GangHandler extends GangController
     }
 
     /**
+     * @param int $gangId
+     * @return void
+     */
+    private function viewGangApplicationForm(int $gangId): void
+    {
+        if ($this->player['gang']) {
+            $this->sendResponse([
+                'type' => 'error',
+                'message' => self::ALREADY_IN_GANG,
+            ]);
+        }
+        if (empty($gangId)) {
+            $this->sendResponse([
+                'type' => 'error',
+                'message' => sprintf(self::INVALID_SELECTION, 'gang'),
+            ]);
+        }
+        $row = $this->pdo->row(
+            'SELECT gangID, gangNAME FROM gangs WHERE gangID = ?',
+            $gangId,
+        );
+        if (empty($row)) {
+            $this->sendResponse([
+                'type' => 'error',
+                'message' => sprintf(self::NOT_EXISTS, 'gang'),
+            ]);
+        }
+        $template = file_get_contents($this->view . '/auth/gangs/apply.html');
+        echo strtr($template, [
+            '{{ID}}' => $row['gangID'],
+            '{{NAME}}' => $row['gangNAME'],
+            '{{CSRF_TOKEN}}' => $this->func->request_csrf_code('apply'),
+        ]);
+    }
+
+    /**
      * @param string|null $subRoute
      * @param string|null $gangId
      * @return void
@@ -158,13 +195,15 @@ class GangHandler extends GangController
 
     /**
      * @param string|null $subRoute
+     * @param string|null $gangId
      * @return array
      * @throws Throwable
      */
-    private function handlePost(?string $subRoute = null): array
+    private function handlePost(?string $subRoute = null, ?string $gangId = null): array
     {
         $response = match ($subRoute) {
             'create' => $this->doCreateGang(),
+            'apply' => $this->doApplyToGang((int)$gangId),
             default => null,
         };
         if (empty($response)) {

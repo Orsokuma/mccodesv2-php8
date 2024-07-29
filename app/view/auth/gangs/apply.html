@@ -1,0 +1,22 @@
+<div class="row">
+    <div class="col">
+        <h3>Apply to join {{NAME}}</h3>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        Type the reason you should be in this gang.<br>
+        <form action="/gangs/apply/{{ID}}" method="post">
+            <input type="hidden" name="verf" value="{{CSRF_TOKEN}}">
+            <div class="form-group">
+                <label for="application">Application</label>
+                <textarea name="application" id="application" rows="10" class="form-control" required></textarea>
+            </div>
+            <div class="py-2">
+                <button type="submit" class="btn btn-primary">
+                    Send Application
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

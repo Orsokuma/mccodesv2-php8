@@ -12,6 +12,69 @@ class GangController extends CommonObjects
 
     /**
      * @param int $gangId
+     * @return string[]
+     * @throws Throwable
+     * @noinspection PhpVariableNamingConventionInspection
+     */
+    protected function doApplyToGang(int $gangId): array
+    {
+        if ($this->player['gang']) {
+            return [
+                'type' => 'error',
+                'message' => self::ALREADY_IN_GANG,
+            ];
+        }
+        $_POST['application'] = array_key_exists('application', $_POST) && !empty($_POST['application']) && is_string($_POST['application']) ? trim($_POST['application']) : null;
+        if (empty($_POST['application'])) {
+            return [
+                'type' => 'error',
+                'message' => sprintf(self::INVALID_ENTRY, 'application'),
+            ];
+        }
+        if (empty($gangId)) {
+            return [
+                'type' => 'error',
+                'message' => sprintf(self::INVALID_SELECTION, 'gang'),
+            ];
+        }
+        $row = $this->pdo->row(
+            'SELECT gangID, gangNAME FROM gangs WHERE gangID = ?',
+            $gangId,
+        );
+        if (empty($row)) {
+            return [
+                'type' => 'error',
+                'message' => sprintf(self::NOT_EXISTS, 'gang'),
+            ];
+        }
+        $save = function () use ($gangId) {
+            $this->pdo->insert(
+                'applications',
+                [
+                    'appUSER' => $this->player['userid'],
+                    'appGANG' => $gangId,
+                    'appTEXT' => $_POST['application'],
+                ],
+            );
+            $event_text = '<a href="/profile/'.$this->player['userid'].'">'.$this->player['username'].'</a> sent an application to join this gang.';
+            $this->pdo->insert(
+                'gangevents',
+                [
+                    'gevGANG' => $_GET['ID'],
+                    'gevTIME' => time(),
+                    'gevTEXT' => $event_text,
+                ],
+            );
+        };
+        $this->pdo->tryFlatTransaction($save);
+        return [
+            'type' => 'success',
+            'message' => 'Your application to join '.$row['gangNAME'].' has been sent.',
+        ];
+    }
+
+    /**
+     * @param int $gangId
      * @return int
      */
     protected function getMemberCount(int $gangId): int
