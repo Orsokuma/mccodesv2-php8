@@ -1,0 +1,25 @@
+<div class="row">
+    <div class="col">
+        <h3>Create A Gang</h3>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <form action="/gangs/create" method="post">
+            <input type="hidden" name="verf" value="{{CSRF_TOKEN}}">
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" name="name" id="name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea name="description" id="description" rows="10" class="form-control"></textarea>
+            </div>
+            <div class="py-2">
+                <button type="submit" class="btn btn-primary">
+                    Create Gang for {{GANG_CREATION_COST}}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

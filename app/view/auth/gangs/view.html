@@ -1,0 +1,28 @@
+<div class="row">
+    <div class="col">
+        <h3><u>{{NAME}} Gang</u></h3>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-6">
+        President: <a href="/profile/{{PRESIDENT_ID}}">{{PRESIDENT_NAME}}</a>
+    </div>
+    <div class="col-sm-6">
+        Vice-President: <a href="/profile/{{VICE_PRESIDENT_ID}}">{{VICE_PRESIDENT_NAME}}</a>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        Members: {{MEMBER_COUNT}}<br>
+        Respect: {{RESPECT}}<br>
+        Tag: {{TAG}}<br>
+        Description:<br>
+        &ldquo;{{DESCRIPTION}}&rdquo;
+    </div>
+</div>
+<div class="row py-2">
+    <div class="col">
+        <a href="/gangs/members/{{ID}}">User List</a> &middot;
+        <a href="/gangs/apply/{{ID}}">Apply</a>
+    </div>
+</div>
