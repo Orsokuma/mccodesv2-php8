@@ -66,7 +66,7 @@ class GangController extends CommonObjects
             $this->pdo->insert(
                 'gangevents',
                 [
-                    'gevGANG' => $_GET['ID'],
+                    'gevGANG' => $gangId,
                     'gevTIME' => time(),
                     'gevTEXT' => $event_text,
                 ],
