@@ -189,7 +189,7 @@ class GangHandler extends GangController
      */
     public function post(?string $subRoute = null, ?string $gangId = null): void
     {
-        $this->sendResponse($this->handlePost($subRoute), 'gangs');
+        $this->sendResponse($this->handlePost($subRoute, $gangId), 'gangs');
     }
 
     /**
