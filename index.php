@@ -302,7 +302,7 @@ class Index extends CommonObjects
      */
     private function renderSidebar(): string
     {
-        return '<div class="col-sm-3">' . $this->renderUserData() . $this->renderMenu() . '</div>';
+        return '<div class="col-sm-3 col-md-2">' . $this->renderUserData() . $this->renderMenu() . '</div>';
     }
 
     /**
